@@ -1,0 +1,108 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: gootube
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: gootube
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: notion-finance
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ap-southeast-1
+  environment:
+    NOTION_API_KEY: ${env:NOTION_API_KEY}
+
+package:
+  patterns:
+    - '!.env'
+    - '!README.md'
+
+functions:
+  func:
+    name: notion-finance-api
+    handler: handler.handler
+    url:
+      authorizer: aws_iam
+    timeout: 60
+
+resources:
+  Resources:
+    AllowCloudFrontInvokeFunctionUrl:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName: notion-finance-api
+        Action: lambda:InvokeFunctionUrl
+        Principal: cloudfront.amazonaws.com
+        SourceArn: 
+          Fn::Sub: arn:aws:cloudfront::${aws:accountId}:distribution/${NotionFinanceDistribution}
+    LambdaOAC:
+      Type: AWS::CloudFront::OriginAccessControl
+      Properties:
+        OriginAccessControlConfig:
+          Name: lambda-oac
+          OriginAccessControlOriginType: lambda
+          SigningBehavior: always
+          SigningProtocol: sigv4
+    NotionFinanceDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          HttpVersion: http2
+          Aliases:
+            - finance.gootube.online
+
+          ViewerCertificate:
+            AcmCertificateArn: arn:aws:acm:us-east-1:467614041356:certificate/3123a71b-13e5-41f7-ae34-5f85bb97b282
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+
+          Origins: 
+            - Id: LambdaOrigin
+              DomainName: rvrzadaconkiqifksktlkl4swe0fmbum.lambda-url.ap-southeast-1.on.aws
+              CustomOriginConfig:
+                OriginProtocolPolicy: https-only
+                OriginSSLProtocols:
+                  - TLSv1.2
+              OriginAccessControlId:
+                Ref: LambdaOAC
+
+            - Id: VercelOrigin
+              DomainName: gootube.vercel.app
+              CustomOriginConfig:
+                OriginProtocolPolicy: https-only
+                OriginSSLProtocols:
+                  - TLSv1.2
+
+          DefaultCacheBehavior:
+            TargetOriginId: VercelOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachedMethods:
+              - GET
+              - HEAD
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: all
+
+          CacheBehaviors:
+            - PathPattern: /api/*
+              TargetOriginId: LambdaOrigin
+              ViewerProtocolPolicy: https-only
+              AllowedMethods:
+                - GET
+                - HEAD
+                - OPTIONS
+                - POST
+                - PUT
+                - PATCH
+                - DELETE
+              CachedMethods:
+                - GET
+                - HEAD
+              CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+              OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac

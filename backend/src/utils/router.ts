@@ -1,6 +1,6 @@
 import { LambdaFunctionURLResult } from "aws-lambda"
 import { APIResponse } from "../types/response"
-import { err } from "./composer"
+import { err } from "./helper"
 
 function normalizePath(path: string, addPrefix: boolean = false):string {
   const PREFIX = "/api";
@@ -9,11 +9,21 @@ function normalizePath(path: string, addPrefix: boolean = false):string {
   return addPrefix ? PREFIX + path : path;
 }
 
+function normalizeQuery(query: Record<string, string|undefined>): Partial<Record<string, string>> {
+  const result: Partial<Record<string, string>> = {};
+  for (const key in query) {
+    const value = query[key];
+    if (value !== undefined)
+      result[key] = value;
+  }
+  return result;
+}
+
 export type RouteHandler<Req = undefined, Res = unknown> = (
   event: {
     method: string
     path: string
-    query: Record<string, string | undefined>
+    query: Partial<Record<string, string>>
     body: Req
   }
 ) => Promise<{ statusCode: number, body: APIResponse<Res>}>
@@ -30,14 +40,15 @@ export class Router {
     this.routes.set(key, handler as RouteHandler<unknown, unknown>);
   }
 
-  async resolve(method: string, path: string, payload: Parameters<RouteHandler>[0]) {
+  async resolve(method: string, path: string, query: Record<string, string|undefined>, body: unknown) {
     const key: RouteKey = `${method.toUpperCase()} ${normalizePath(path)}`;
     const handler = this.routes.get(key);
     let res;
     if (!handler)
       res = err(404, "NOT_FOUND", "Route not found");
-    else res = await handler(payload);
-
+    else {
+      res = await handler({method, path, query: normalizeQuery(query), body});
+    }
     return {
       statusCode: res.statusCode,
       headers: {

@@ -1,4 +1,5 @@
 import { Account } from "./account"
+import { Transaction } from "./transaction"
 
 export type ResponseSuccess<T> = {
   success: true
@@ -26,4 +27,13 @@ export type LogExpenseResponse = {
   oldBalance: number,
   newBalance: number,
   amount: number,
+}
+
+export type ListExpensesResponse = {
+  transactions: Transaction[]
+  total: number
+}
+
+export type TransferBalanceResponse = {
+  
 }

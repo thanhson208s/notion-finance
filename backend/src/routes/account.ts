@@ -1,5 +1,5 @@
 import { GetAccountsResponse } from '../types/response'
-import { ok } from '../utils/composer'
+import { ok } from '../utils/helper'
 import { RouteHandler } from '../utils/router'
 
 export const getAccounts: RouteHandler<undefined, GetAccountsResponse> = async(event) => {

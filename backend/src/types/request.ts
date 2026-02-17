@@ -7,3 +7,11 @@ export type LogExpenseRequest = {
   discount?: number
   linkedCard?: string
 }
+
+export type TransferBalanceRequest = {
+  fromAccount: string,
+  toAccount: string,
+  amount: number
+  note?: string
+  timestamp?: number
+}

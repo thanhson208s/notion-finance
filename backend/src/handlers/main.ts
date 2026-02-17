@@ -1,11 +1,13 @@
 import { LambdaFunctionURLEventWithIAMAuthorizer, LambdaFunctionURLHandlerWithIAMAuthorizer, LambdaFunctionURLResult } from "aws-lambda"
 import { Router } from '../utils/router'
 import { getAccounts } from "../routes/account";
-import { logExpense } from "../routes/transaction";
+import { listExpenses, logExpense, transferBalance } from "../routes/transaction";
 
 const router = new Router();
 router.register('GET', '/accounts', getAccounts);
 router.register('POST', '/expense', logExpense);
+router.register('GET', '/expense', listExpenses);
+router.register('POST', '/transfer', transferBalance);
 
 export const handler: LambdaFunctionURLHandlerWithIAMAuthorizer = async(event: LambdaFunctionURLEventWithIAMAuthorizer): Promise<LambdaFunctionURLResult> => {
   console.log("New client request:", event);
@@ -16,7 +18,7 @@ export const handler: LambdaFunctionURLHandlerWithIAMAuthorizer = async(event: L
     const query = event.queryStringParameters ?? {};
     const body = event.body ? JSON.parse(event.body) : undefined;
 
-    return router.resolve(method, path, { method, path, query, body });
+    return router.resolve(method, path, query, body);
   } catch (e) {
     return {
       statusCode: 500,

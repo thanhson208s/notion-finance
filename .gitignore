@@ -1,4 +1,1 @@
-**/node_modules/
-**/.serverless/
-**/.env
-**/.DS_Store
+.DS_Store

@@ -69,7 +69,7 @@ resources:
                 Ref: LambdaOAC
 
             - Id: VercelOrigin
-              DomainName: gootube.vercel.app
+              DomainName: notion-finance-sigma.vercel.app
               CustomOriginConfig:
                 OriginProtocolPolicy: https-only
                 OriginSSLProtocols:

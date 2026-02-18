@@ -1,3 +1,4 @@
+import { QueryError } from "../types/error";
 import { ResponseError, ResponseSuccess } from "../types/response"
 
 export const ok = <T>(data: T) => ({
@@ -16,27 +17,32 @@ export const err = <T>(statusCode: number, code: string, message: string) => ({
   } satisfies ResponseError
 })
 
-export function getQueryInt(query: Partial<Record<string, string>>, k: string, v: number = 0): number {
-  if (!(k in query)) return v;
+export function getQueryInt(query: Partial<Record<string, string>>, k: string): number {
+  if (!(k in query))
+    throw new QueryError(`Parameter ${k} is missing`);
   const value = parseInt(query[k] as string);
-  if (Number.isNaN(value)) return v;
+  if (Number.isNaN(value))
+    throw new QueryError(`Parameter ${k} is not a number`);
   return value;
 }
 
-export function getQueryFloat(query: Partial<Record<string, string>>, k: string, v: number = 0): number {
-  if (!(k in query)) return v;
+export function getQueryFloat(query: Partial<Record<string, string>>, k: string): number {
+  if (!(k in query))
+    throw new QueryError(`Parameter ${k} is missing`);
   const value = parseFloat(query[k] as string);
-  if (Number.isNaN(value)) return v;
+  if (Number.isNaN(value))
+    throw new QueryError(`Parameter ${k} is not a number`);
   return value;
 }
 
-export function getQueryString(query: Partial<Record<string, string>>, k: string, v: string = ""): string {
-  if (!(k in query)) return v;
-  return query[v] as string;
+export function getQueryString(query: Partial<Record<string, string>>, k: string): string {
+  if (!(k in query))
+    throw new QueryError(`Parameter ${k} is missing`);
+  return query[k] as string;
 }
 
 export function getQueryBool(query: Partial<Record<string, string>>, k: string, v: boolean = false): boolean {
-  if (!(k in query)) return v;
-  const value = Boolean(query[k]);
-  return value;
+  if (!(k in query))
+    throw new QueryError(`Parameter ${k} is missing`);
+  return Boolean(query[k]);
 }

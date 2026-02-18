@@ -1,7 +1,6 @@
 import { LambdaFunctionURLResult } from "aws-lambda"
 import { APIResponse } from "../types/response"
 import { err } from "./helper"
-import { APIErrorCode, APIResponseError, Client } from "@notionhq/client"
 import { Connector } from "./connector"
 
 export type RouteHandler<Req = undefined, Res = unknown> = (
@@ -53,55 +52,11 @@ export class Router {
     let res;
     if (!handler)
       res = err(404, "NOT_FOUND", "Route not found");
-    else {
-      try {
-        res = await handler({method, path, query: Router.normalizeQuery(query), body}, this.connector);
-      } catch(e) {
-        if (e instanceof APIResponseError) {
-          switch(e.code) {
-            case APIErrorCode.ObjectNotFound:
-              res = err(404, e.code, e.message);
-              break;
-            case APIErrorCode.InvalidJSON:
-              res = err(400, e.code, e.message);
-              break;
-            case APIErrorCode.InternalServerError:
-              res = err(500, e.code, e.message);
-              break;
-            case APIErrorCode.ServiceUnavailable:
-              res = err(503, e.code, e.message);
-              break;
-            case APIErrorCode.Unauthorized:
-              res = err(403, e.code, e.message);
-              break;
-            case APIErrorCode.ConflictError:
-              res = err(409, e.code, e.message);
-              break;
-            case APIErrorCode.RateLimited:
-              res = err(429, e.code, e.message);
-              break;
-            case APIErrorCode.InvalidRequest:
-              res = err(400, e.code, e.message);
-              break;
-            case APIErrorCode.InvalidRequestURL:
-              res = err(400, e.code, e.message);
-              break;
-            case APIErrorCode.ValidationError:
-              res = err(400, e.code, e.message);
-              break;
-            case APIErrorCode.RestrictedResource:
-              res = err(403, e.code, e.message);
-              break;
-          } 
-        }
-        else throw e;
-      }
-    }
+    else
+      res = await handler({method, path, query: Router.normalizeQuery(query), body}, this.connector);
     return {
       statusCode: res.statusCode,
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(res.body)
     } as LambdaFunctionURLResult;
   }

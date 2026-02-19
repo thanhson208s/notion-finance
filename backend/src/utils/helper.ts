@@ -1,20 +1,13 @@
 import { QueryError } from "../types/error";
-import { ResponseError, ResponseSuccess } from "../types/response"
 
-export const ok = <T>(data: T) => ({
+export const ok = (data: unknown) => ({
   statusCode: 200,
-  body: {
-    success: true,
-    data
-  } satisfies ResponseSuccess<T>
+  body: data
 })
 
 export const err = <T>(statusCode: number, code: string, message: string) => ({
   statusCode,
-  body: {
-    success: false,
-    error: { code, message }
-  } satisfies ResponseError
+  body: { code, message }
 })
 
 export function getQueryInt(query: Partial<Record<string, string>>, k: string): number {

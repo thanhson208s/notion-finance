@@ -1,21 +1,6 @@
 import { Account } from "./account.type"
 import { Transaction } from "./transaction.type"
 
-export type ResponseSuccess<T> = {
-  success: true
-  data: T
-}
-
-export type ResponseError = {
-  success: false
-  error: {
-    code: string
-    message: string
-  }
-}
-
-export type APIResponse<T> = ResponseSuccess<T> | ResponseError
-
 export type GetAccountsResponse = {
   accounts: Account[]
   total: number,

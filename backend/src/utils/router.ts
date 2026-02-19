@@ -1,5 +1,4 @@
 import { LambdaFunctionURLResult } from "aws-lambda"
-import { APIResponse } from "../types/response"
 import { err } from "./helper"
 import { Connector } from "./connector"
 
@@ -10,7 +9,7 @@ export type RouteHandler<Req = undefined, Res = unknown> = (
     query: Partial<Record<string, string>>
     body: Req
   }, connector: Connector
-) => Promise<{ statusCode: number, body: APIResponse<Res>}>
+) => Promise<{ statusCode: number, body: unknown}>
 
 export type RouteKey = `${string} ${string}`
 

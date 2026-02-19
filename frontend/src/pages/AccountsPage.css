@@ -1,0 +1,174 @@
+/* ---------- LIST ---------- */
+
+.account-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- CARD ---------- */
+
+.account-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+  display:flex;
+  flex-direction: column;
+}
+
+.account-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.account-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.account-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.account-name {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.account-type {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: white;
+  text-transform: uppercase;
+}
+
+.account-balance {
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.account-cash {
+  background: #16a34a;
+}
+
+.account-bank {
+  background: #2563eb;
+}
+
+.account-credit {
+  background: #dc2626;
+}
+
+.account-ewallet {
+  background: #7c3aed;
+}
+
+.account-savings {
+  background: #059669;
+}
+
+.account-paylater {
+  background: #ea580c;
+}
+
+.account-prepaid {
+  background: #d97706;
+}
+
+
+/* ---------- ACTIONS ---------- */
+
+.actions {
+  display: flex;
+  gap: 12px;
+
+  margin-top: 0px;
+
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+
+  transition: 
+    max-height 0.3s ease,
+    opacity 0.2s ease,
+    margin-top 0.3s ease,
+    padding-top 0.3s ease;
+}
+
+.account-card.expanded .actions {
+  max-height: 60px;
+  opacity: 1;
+  margin-top: 16px;
+}
+
+.action-btn {
+  flex: 1;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+
+  font-size: 14px;
+  font-weight: 500;
+  gap: 6px;
+
+  transition: 
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.expense {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.income {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.transfer {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.adjustment {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.expense:hover {
+  background: #dc2626;
+  color: white;
+}
+
+.income:hover {
+  background: #16a34a;
+  color: white;
+}
+
+.transfer:hover {
+  background: #2563eb;
+  color: white;
+}
+
+.adjustment:hover {
+  background: #4b5563;
+  color: white;
+}

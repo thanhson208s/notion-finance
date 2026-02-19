@@ -1,0 +1,29 @@
+/* ---------- HEADER ---------- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+  background: #111827;
+  position: sticky;
+  top: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #22d3ee;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  color: #22d3ee;
+}

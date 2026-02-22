@@ -5,24 +5,58 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow-y: auto;
+}
+
+/* -------- TOOL-BAR -------- */
+
+.account-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.account-select {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  padding: 10px 10px;
+  border-radius: 8px;
+  font-size: 18px;
+}
+
+.account-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
+  margin-left: 20px;
+}
+
+.account-checkbox input {
+  accent-color: #3b82f6;
+  transform: scale(1.75);
 }
 
 /* ---------- CARD ---------- */
 
 .account-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
   cursor: pointer;
   overflow: hidden;
-  transition: box-shadow 0.2s ease;
   display:flex;
-  flex-direction: column;
+  flex-direction: column; 
+
+  background: var(--card);
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 14px;
+  transition: all 0.25s ease;
 }
 
 .account-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #3b82f6;
 }
 
 .account-info {
@@ -91,24 +125,22 @@
 .actions {
   display: flex;
   gap: 12px;
+  margin-top: 16px;
 
-  margin-top: 0px;
-
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-
-  transition: 
-    max-height 0.3s ease,
-    opacity 0.2s ease,
-    margin-top 0.3s ease,
-    padding-top 0.3s ease;
+  animation: actions-anim 0.25s ease;
 }
 
-.account-card.expanded .actions {
-  max-height: 60px;
-  opacity: 1;
-  margin-top: 16px;
+@keyframes actions-anim {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    max-height: 0px;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 60px;
+  }
 }
 
 .action-btn {
@@ -144,7 +176,7 @@
 }
 
 .transfer {
-  background: #eff6ff;
+  background: #d6e6fa;
   color: #2563eb;
 }
 
@@ -153,22 +185,170 @@
   color: #4b5563;
 }
 
-.expense:hover {
+.expense.action-select {
   background: #dc2626;
   color: white;
 }
 
-.income:hover {
+.income.action-select  {
   background: #16a34a;
   color: white;
 }
 
-.transfer:hover {
+.transfer.action-select  {
   background: #2563eb;
   color: white;
 }
 
-.adjustment:hover {
+.adjustment.action-select  {
   background: #4b5563;
   color: white;
+}
+
+/* ---------- CUSTOM CHECKBOX ---------- */
+
+.checkbox-wrapper {
+  display: flex;
+}
+
+.checkbox-wrapper input[type="checkbox"] {
+  visibility: hidden;
+  display: none;
+}
+
+.checkbox-wrapper *,
+.checkbox-wrapper ::after,
+.checkbox-wrapper ::before {
+  box-sizing: border-box;
+}
+
+/* The switch - the box around the slider */
+.checkbox-wrapper .switch {
+  --width-of-switch: 3.5em;
+  --height-of-switch: 1.6em;
+  /* size of sliding icon -- sun and moon */
+  --size-of-icon: 1.2em;
+  /* it is like a inline-padding of switch */
+  --slider-offset: 0.3em;
+  position: relative;
+  width: var(--width-of-switch);
+  height: var(--height-of-switch);
+  display: inline-block;
+}
+
+/* The slider */
+.checkbox-wrapper .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #f4f4f5;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.checkbox-wrapper .slider:before {
+  position: absolute;
+  content: "";
+  height: var(--size-of-icon,1.4em);
+  width: var(--size-of-icon,1.4em);
+  border-radius: 20px;
+  left: var(--slider-offset,0.3em);
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(40deg,#ff0080,#ff8c00 70%);
+  ;
+  transition: .4s;
+}
+
+.checkbox-wrapper input:checked + .slider {
+  background-color: #303136;
+}
+
+.checkbox-wrapper input:checked + .slider:before {
+  left: calc(100% - (var(--size-of-icon,1.4em) + var(--slider-offset,0.3em)));
+  background: #303136;
+  /* change the value of second inset in box-shadow to change the angle and direction of the moon  */
+  box-shadow: inset -3px -2px 5px -2px #8983f7, inset -10px -4px 0 0 #a3dafb;
+}
+
+/* ---------- FORMS ---------- */
+
+.form-wrapper {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid #334155;
+  animation: form-anim 0.25s ease;
+}
+
+@keyframes form-anim {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    max-height: 0px;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 200px;
+  }
+}
+
+.form-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.form-row input {
+  width: 100%;
+  font-size: 20px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px;
+  color: #e2e8f0;
+  text-align: right;
+}
+
+.form-row select {
+  width: 100%;
+  font-size: 20px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px;
+  color: #e2e8f0;
+  height: 40px;
+}
+
+.form-row label {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.form-row textarea {
+  width: 100%;
+  font-size: 20px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #e2e8f0;
+  resize: none;
+  font-family: inherit;
+}
+
+.input-number::placeholder,
+.input-textarea::placeholder {
+  color: #64748b;   /* slightly dimmer */
 }

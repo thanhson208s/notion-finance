@@ -9,14 +9,22 @@ export type Account = {
   balance: number
 }
 
+export type CategoryType = 'Income' | 'Expense' | 'Financial'
+
+export type Category = {
+  id: string
+  name: string
+  type: CategoryType
+  parentId: string | null
+}
+
 export type AppState = {
   accounts: Account[]
 }
 
 export type AppAction =
   | { type: "update", accounts: Account[] }
-  | { type: "expense", id: string, amount: number }
-  | { type: "income", id: string, amount: number };
+  | { type: "filter", value: 'all' | 'assets' | 'liabilities' };
 
 export const AppContext = createContext<{
   state: AppState,

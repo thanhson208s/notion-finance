@@ -7,18 +7,6 @@ import CardsPage from "./pages/CardsPage"
 import PromotionsPage from "./pages/PromotionsPage"
 
 export default function App() {
-  // const [state, dispatch] = useReducer((state: AppState, action: AppAction) => {
-  //   switch(action.type) {
-  //     case 'update':
-  //       return {
-  //         ...state,
-  //         accounts: action.accounts
-  //       };
-  //     default:
-  //       return state;
-  //   }
-  // }, { accounts: [] });
-  
   return (
     <div className="app">
       <BrowserRouter>

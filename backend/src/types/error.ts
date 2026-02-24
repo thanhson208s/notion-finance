@@ -16,3 +16,9 @@ export class QueryError extends CustomError {
     super("QUERY_ERROR", message);
   }
 }
+
+export class DatabaseError extends CustomError {
+  constructor(message: string) {
+    super("DATABASE_ERROR", message);
+  }
+}

@@ -6,12 +6,3 @@ export type Category = {
   type: CategoryType
   parentId: string | null
 }
-
-export function createCategory(id: string, name: string, type: string, parentId: string | null) {
-  return {
-    id,
-    name,
-    type: type as CategoryType,
-    parentId
-  } satisfies Category;
-}

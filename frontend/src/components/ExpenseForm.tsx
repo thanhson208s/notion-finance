@@ -1,11 +1,40 @@
 import type { Category } from '../App'
 import { useEffect, useState } from 'react'
 
-export default function ExpenseForm() {
+type LogExpenseResponse = {
+  accountId: string,
+  oldBalance: number,
+  newBalance: number,
+  amount: number,
+  categoryId: string,
+  note: string
+}
+
+type LogExpenseError = {
+  code: string,
+  message: string
+}
+
+type LogExpenseStatus = {
+  status: 'success',
+  data: LogExpenseResponse
+} | {
+  status: 'error',
+  data: LogExpenseError
+} | { status: 'idle' } | { status: 'loading' };
+
+export default function ExpenseForm({accountId}: {
+  accountId: string
+}) {
+  const [ status, setStatus ] = useState<LogExpenseStatus>({status: 'idle'});
   const [ categories, setCategories ] = useState<Category[]>([]);
   const [ amount, setAmount ] = useState<number>(0);
-  const [ categoryId, setCategoryId ] = useState<string | null>(null);
+  const [ categoryId, setCategoryId ] = useState<string>("");
   const [ note, setNote ] = useState<string>("");
+  const [ errors, setErrors ] = useState<{
+    amount?: boolean,
+    categoryId?: boolean
+  }>({});
 
   useEffect(() => {
     const controller = new AbortController();
@@ -13,7 +42,9 @@ export default function ExpenseForm() {
     (async() => {
       try {
         const response = await fetch(
-          "https://finance.gootube.online/api/categories?type=Expense",
+          "https://finance.gootube.online/api/categories?" + new URLSearchParams({
+            type: "Expense"
+          }).toString(),
           { signal: controller.signal }
         );
 
@@ -34,6 +65,90 @@ export default function ExpenseForm() {
     };
   }, []);
 
+  const submit = async () => {
+    const errorAmount = !amount || amount <= 0;
+    const errorCategoryId = !categoryId || categoryId === "";
+
+    setErrors({
+      amount: errorAmount,
+      categoryId: errorCategoryId
+    });
+
+    if (!errorAmount && !errorCategoryId) {
+      setStatus({status: 'loading'});
+      try {
+        const response = await fetch("https://finance.gootube.online/api/expense", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            accountId, amount, categoryId, note
+          })
+        });
+
+        if (!response.ok) {
+          setStatus({status: 'error', data: await response.json() as LogExpenseError})
+          return;
+        }
+
+        setStatus({status: 'success', data: await response.json() as LogExpenseResponse});
+      } catch(e) {
+        if (e instanceof Error)
+          console.log(e.message);
+        setStatus({status: 'idle'});
+      }
+    }
+  }
+
+  if (status.status === 'loading') {
+    return (
+      <div className='submit-state'>
+        <div className='circle-loading'></div>
+      </div>
+    )
+  }
+
+  if (status.status === 'success') {
+    return (
+      <div className='submit-state'>
+        <div className='circle-state circle-success'>✓</div>
+
+        <button
+          className='form-btn retry-btn'
+          onClick={() => {
+            setStatus({status: "idle"});
+            setAmount(0);
+            setCategoryId("");
+            setNote("");
+          }}
+        >
+          Log again
+        </button>
+      </div>
+    )
+  }
+
+  if (status.status === 'error') {
+    return (
+      <div className='submit-state'>
+        <div className='circle-state circle-error'>✕</div>
+        
+        <button
+          className='form-btn retry-btn'
+          onClick={() => {
+            setStatus({status: "idle"});
+            setAmount(0);
+            setCategoryId("");
+            setNote("");
+          }}
+        >
+          Try again
+        </button>
+      </div>
+    )
+  }
+
   return (
     <form className="form-main">
       <div className="form-row">
@@ -51,6 +166,7 @@ export default function ExpenseForm() {
           }}
           placeholder='0'
           inputMode="numeric"
+          className={`${errors.amount ? 'input-error' : ''}`}
         />
       </div>
 
@@ -58,10 +174,29 @@ export default function ExpenseForm() {
         <label>Category</label>
         <select
           title="Category"
-          value={categories.find(category => category.id === categoryId)?.name ?? "None"}
+          value={categories.find(category => category.id === categoryId)?.id ?? ""}
           onChange={(e) => setCategoryId(e.target.value)}
+          className={`${errors.categoryId ? 'input-error' : ''}`}
         >
           <option value="">None</option>
+          {categories.filter(category => category.parentId === null).map(category => {
+            const subCategories = categories.filter(sub => sub.parentId === category.id);
+            if (subCategories.length > 0) {
+              subCategories.push({
+                id: category.id,
+                name: category.name,
+                type: category.type,
+                parentId: category.id
+              } satisfies Category);
+              return (<optgroup label={category.name} key={category.id}>
+                {subCategories.map(sub => {return(
+                  <option value={sub.id} key={sub.id}>{sub.name}</option>
+                )})}
+              </optgroup>);
+            } else {
+              return (<option value={category.id} key={category.id}>{category.name}</option>);
+            }
+          })}
         </select>
       </div>
 
@@ -72,6 +207,16 @@ export default function ExpenseForm() {
           onChange={(e) => setNote(e.target.value)}
           placeholder='Note...'
         />
+      </div>
+
+      <div className="form-buttons">
+        <button
+          type="button"
+          className='form-btn submit-btn'
+          onClick={submit}
+        >
+          Submit
+        </button>
       </div>
     </form>
   )

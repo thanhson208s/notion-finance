@@ -5,7 +5,6 @@ export type Transaction = {
   fromAccountId?: string
   toAccountId?: string
   categoryId: string
-  discount?: number
+  note: string
   linkedCardId?: string
-  note?: string
 }

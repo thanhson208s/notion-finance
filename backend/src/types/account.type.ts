@@ -21,15 +21,6 @@ export type Account = {
   balance: number
 }
 
-export function createAccount(id: string, name: string, type: string, balance: number): Account {
-  return {
-    id,
-    name,
-    type: type as AccountType,
-    balance
-  } satisfies Account;
-}
-
 export function isAssetType(type: AccountType) {
   return type === "Cash"
     || type === "Prepaid"

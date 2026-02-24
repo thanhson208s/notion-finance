@@ -3,19 +3,25 @@ import { ListIncomesResponse, LogIncomeResponse, ListExpensesResponse, LogExpens
 import { getQueryString, ok } from "../utils/helper";
 import { RouteHandler } from "../utils/router";
 
-export const logExpense: RouteHandler<LogExpenseRequest, LogExpenseResponse> = async(event) => {
+export const logExpense: RouteHandler<LogExpenseRequest, LogExpenseResponse> = async(event, connector) => {
   const req = event.body;
+  const oldBalance = (await connector.fetchAccount(req.accountId)).balance;
+  const amount = (await connector.addExpense(req.accountId, req.amount, req.categoryId, req.note)).amount;
+  const newBalance = (await connector.updateAccountBalance(req.accountId, oldBalance - amount)).balance;
 
   return ok({
-    oldBalance: 0,
-    newBalance: 0,
-    amount: req.amount
+    accountId: req.accountId,
+    oldBalance,
+    newBalance,
+    amount,
+    categoryId: req.categoryId,
+    note: req.note
   } satisfies LogExpenseResponse);
 }
 
-export const listExpenses: RouteHandler<undefined, ListExpensesResponse> = async(event) => {
-  const startDate = getQueryString(event.query, "startDate");
-  const endDate = getQueryString(event.query, "endDate");
+export const listExpenses: RouteHandler<undefined, ListExpensesResponse> = async(event, connector) => {
+  const startDate = getQueryString(event.query, "startDate", true);
+  const endDate = getQueryString(event.query, "endDate", true);
 
   return ok({
     transactions: [],
@@ -23,19 +29,25 @@ export const listExpenses: RouteHandler<undefined, ListExpensesResponse> = async
   } satisfies ListExpensesResponse);
 }
 
-export const logIncome: RouteHandler<LogIncomeRequest, LogIncomeResponse> = async(event) => {
+export const logIncome: RouteHandler<LogIncomeRequest, LogIncomeResponse> = async(event, connector) => {
   const req = event.body;
+  const oldBalance = (await connector.fetchAccount(req.accountId)).balance;
+  const amount = (await connector.addIncome(req.accountId, req.amount, req.categoryId, req.note)).amount;
+  const newBalance = (await connector.updateAccountBalance(req.accountId, oldBalance + amount)).balance;
 
   return ok({
-    oldBalance: 0,
-    newBalance: 0,
-    amount: req.amount
+    accountId: req.accountId,
+    oldBalance,
+    newBalance,
+    amount,
+    categoryId: req.categoryId,
+    note: req.note
   } satisfies LogIncomeResponse);
 }
 
-export const listIncomes: RouteHandler<undefined, ListIncomesResponse> = async(event) => {
-  const startDate = getQueryString(event.query, "startDate");
-  const endDate = getQueryString(event.query, "endDate");
+export const listIncomes: RouteHandler<undefined, ListIncomesResponse> = async(event, connector) => {
+  const startDate = getQueryString(event.query, "startDate", true);
+  const endDate = getQueryString(event.query, "endDate", true);
 
   return ok({
     transactions: [],
@@ -43,9 +55,21 @@ export const listIncomes: RouteHandler<undefined, ListIncomesResponse> = async(e
   } satisfies ListIncomesResponse);
 }
 
-export const transferBalance: RouteHandler<TransferBalanceRequest, TransferBalanceResponse> = async(event) => {
+export const transferBalance: RouteHandler<TransferBalanceRequest, TransferBalanceResponse> = async(event, connector) => {
+  const req = event.body;
+  const oldFromAccountBalance = (await connector.fetchAccount(req.fromAccountId)).balance;
+  const oldToAccountBalance = (await connector.fetchAccount(req.toAccountId)).balance;
+  const amount = (await connector.addTransfer(req.fromAccountId, req.toAccountId, req.amount, req.note)).amount;
+  const newFromAccountBalance = (await connector.updateAccountBalance(req.fromAccountId, oldFromAccountBalance - req.amount)).balance;
+  const newToAccountBalance = (await connector.updateAccountBalance(req.toAccountId, oldToAccountBalance + req.amount)).balance;
+  
   return ok({
-    fromAccountId: "",
-    toAccountId: ""
+    fromAccountId: req.fromAccountId,
+    toAccountId: req.toAccountId,
+    oldFromAccountBalance,
+    newFromAccountBalance,
+    oldToAccountBalance,
+    newToAccountBalance,
+    amount
   } satisfies TransferBalanceResponse);
 }

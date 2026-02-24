@@ -2,9 +2,8 @@ export type LogExpenseRequest = {
   accountId: string
   amount: number
   categoryId: string
-  note?: string
+  note: string
   timestamp?: number
-  discount?: number
   linkedCardId?: string
 }
 
@@ -12,7 +11,7 @@ export type LogIncomeRequest = {
   accountId: string
   amount: number
   categoryId: string
-  note?: string
+  note: string
   timestamp?: number
   linkedCardId?: string
 }
@@ -21,7 +20,7 @@ export type TransferBalanceRequest = {
   fromAccountId: string
   toAccountId: string
   amount: number
-  note?: string
+  note: string
   timestamp?: number
 }
 

@@ -5,9 +5,11 @@ import { listIncomes, logIncome, listExpenses, logExpense, transferBalance } fro
 import { Connector } from "../utils/connector";
 import { APIErrorCode, APIResponseError } from "@notionhq/client";
 import { QueryError, SchemaError } from "../types/error";
+import { getCategories } from "./category.handler";
 
 const router = new Router(new Connector());
 router.register('GET', '/accounts', getAccounts);
+router.register('GET', '/categories', getCategories);
 router.register('POST', '/expense', logExpense);
 router.register('GET', '/expense', listExpenses);
 router.register('POST', '/income', logIncome);

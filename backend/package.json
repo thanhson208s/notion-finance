@@ -12,7 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@notionhq/client": "^5.9.0"
+    "@notionhq/client": "^5.9.0",
+    "moment-timezone": "^0.6.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.160",

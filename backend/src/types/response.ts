@@ -1,4 +1,5 @@
 import { Account } from "./account.type"
+import { Category } from "./category.type"
 import { Transaction } from "./transaction.type"
 
 export type GetAccountsResponse = {
@@ -8,10 +9,17 @@ export type GetAccountsResponse = {
   totalOfLiabilities: number
 }
 
+export type GetCategoriesResponse = {
+  categories: Category[]
+}
+
 export type LogExpenseResponse = {
+  accountId: string,
   oldBalance: number,
   newBalance: number,
   amount: number,
+  categoryId: string,
+  note: string
 }
 
 export type ListExpensesResponse = {
@@ -20,9 +28,12 @@ export type ListExpensesResponse = {
 }
 
 export type LogIncomeResponse = {
+  accountId: string,
   oldBalance: number,
   newBalance: number,
-  amount: number
+  amount: number,
+  categoryId: string,
+  note: string
 }
 
 export type ListIncomesResponse = {
@@ -33,4 +44,9 @@ export type ListIncomesResponse = {
 export type TransferBalanceResponse = {
   fromAccountId: string
   toAccountId: string
+  oldFromAccountBalance: number,
+  newFromAccountBalance: number,
+  oldToAccountBalance: number,
+  newToAccountBalance: number,
+  amount: number
 }

@@ -10,32 +10,50 @@ export const err = <T>(statusCode: number, code: string, message: string) => ({
   body: { code, message }
 })
 
-export function getQueryInt(query: Partial<Record<string, string>>, k: string): number {
-  if (!(k in query))
-    throw new QueryError(`Parameter ${k} is missing`);
+export function getQueryInt<T extends boolean>(query: Partial<Record<string, string>>, k: string, required: T): T extends true ? number : (number | null) {
+  if (!(k in query)) {
+    if (required)
+      throw new QueryError(`Parameter ${k} is missing`);
+    else return null as any;
+  }
   const value = parseInt(query[k] as string);
-  if (Number.isNaN(value))
-    throw new QueryError(`Parameter ${k} is not a number`);
+  if (Number.isNaN(value)) {
+    if (required)
+      throw new QueryError(`Parameter ${k} is not a number`);
+    else return null as any;
+  }
   return value;
 }
 
-export function getQueryFloat(query: Partial<Record<string, string>>, k: string): number {
-  if (!(k in query))
-    throw new QueryError(`Parameter ${k} is missing`);
+export function getQueryFloat<T extends boolean>(query: Partial<Record<string, string>>, k: string, required: T): T extends true ? number : (number | null) {
+  if (!(k in query)) {
+    if (required)
+      throw new QueryError(`Parameter ${k} is missing`);
+    else return null as any;
+  }
   const value = parseFloat(query[k] as string);
-  if (Number.isNaN(value))
-    throw new QueryError(`Parameter ${k} is not a number`);
+  if (Number.isNaN(value)) {
+    if (required)
+      throw new QueryError(`Parameter ${k} is not a number`);
+    else return null as any;
+  }
   return value;
 }
 
-export function getQueryString(query: Partial<Record<string, string>>, k: string): string {
-  if (!(k in query))
-    throw new QueryError(`Parameter ${k} is missing`);
-  return query[k] as string;
+export function getQueryString<T extends boolean>(query: Partial<Record<string, string>>, k: string, required: T): T extends true ? string : (string | null) {
+  if (!(k in query)) {
+    if (required)
+      throw new QueryError(`Parameter ${k} is missing`);
+    else throw null as any;
+  }
+  return String(query[k]);
 }
 
-export function getQueryBool(query: Partial<Record<string, string>>, k: string, v: boolean = false): boolean {
-  if (!(k in query))
-    throw new QueryError(`Parameter ${k} is missing`);
+export function getQueryBool<T extends boolean>(query: Partial<Record<string, string>>, k: string, required: T): T extends true ? boolean : (boolean | null) {
+  if (!(k in query)) {
+    if (required)
+      throw new QueryError(`Parameter ${k} is missing`);
+    else throw null as any
+  }
   return Boolean(query[k]);
 }

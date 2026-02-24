@@ -96,26 +96,26 @@ export default function AccountsPage() {
 
   const handleExpense = (id: string) => {
     if (activeAccount?.action === 'expense')
-      return;
-    setActiveAccount({id, action: 'expense'});
+      setActiveAccount({id, action: null});
+    else setActiveAccount({id, action: 'expense'});
   }
   
   const handleIncome = (id: string) => {
     if (activeAccount?.action === 'income')
-      return;
-    setActiveAccount({id, action: 'income'});
+      setActiveAccount({id, action: null});
+    else setActiveAccount({id, action: 'income'});
   }
   
   const handleTransfer = (id: string) => {
     if (activeAccount?.action === 'transfer')
-      return;
-    setActiveAccount({id, action: 'transfer'});
+      setActiveAccount({id, action: null});
+    else setActiveAccount({id, action: 'transfer'});
   }
   
   const handleAdjustment = (id: string) => {
     if (activeAccount?.action === 'adjustment')
-      return;
-    setActiveAccount({id, action: 'adjustment'});
+      setActiveAccount({id, action: null});
+    else setActiveAccount({id, action: 'adjustment'});
   }
 
   const toggleCard = (id: string) => {
@@ -247,10 +247,10 @@ export default function AccountsPage() {
               {activeAccount?.id === account.id && activeAccount.action && (
                 <div className = 'form-wrapper' onClick={(e) => e.stopPropagation()}>
                   {activeAccount.action === 'expense' && (
-                    <ExpenseForm/>
+                    <ExpenseForm accountId={account.id}/>
                   )}
                   {activeAccount.action === 'income' && (
-                    <IncomeForm/>
+                    <IncomeForm accountId={account.id}/>
                   )}
                 </div>
               )}

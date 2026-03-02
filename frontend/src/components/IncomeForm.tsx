@@ -1,5 +1,6 @@
 import type { Category } from '../App'
 import { useEffect, useState } from 'react'
+import { Radar, Hash } from 'lucide-react'
 
 type LogIncomeResponse = {
   accountId: string,
@@ -66,15 +67,8 @@ export default function IncomeForm({accountId}: {
   }, []);
 
   const submit = async () => {
-    let errorAmount = false
-    if (!amount || amount <= 0) {
-      errorAmount = true;
-    }
-
-    let errorCategoryId = false;
-    if (!categoryId || categoryId === "") {
-      errorCategoryId = true;
-    }
+    const errorAmount = !amount || amount <= 0;
+    const errorCategoryId = !categoryId || categoryId === "";
 
     setErrors({
       amount: errorAmount,
@@ -159,24 +153,29 @@ export default function IncomeForm({accountId}: {
   return (
     <form className="form-main">
       <div className="form-row">
-        <label>Amount</label>
+        <Hash size={24}/>
         <input
           type = "text"
           value = {amount.toLocaleString('vi-VN', {
             style: 'currency', currency: 'VND'
           })}
-          onChange={(e) => setAmount(parseInt(e.target.value.replace(/[^\d]/g, "")))}
-          onKeyDown={(e) => {if (e.code === 'Backspace') setAmount(Math.floor(amount / 10))}}
+          onChange={() => {}}
+          onKeyDown={(e) => {
+            if (e.code === 'Backspace') setAmount(Math.floor(amount / 10))
+            else if (e.code.match(/^Digit[0-9]$/g))
+              setAmount(amount * 10 + parseInt(e.code.slice(-1)))
+          }}
           placeholder='0'
+          inputMode="numeric"
           className={`${errors.amount ? 'input-error' : ''}`}
         />
       </div>
 
       <div className="form-row">
-        <label>Category</label>
+        <Radar size={24}/>
         <select
           title="Category"
-          value={categories.find(category => category.id === categoryId)?.name ?? ""}
+          value={categories.find(category => category.id === categoryId)?.id ?? ""}
           onChange={(e) => setCategoryId(e.target.value)}
           className={`${errors.categoryId ? 'input-error' : ''}`}
         >
@@ -190,13 +189,13 @@ export default function IncomeForm({accountId}: {
                 type: category.type,
                 parentId: category.id
               } satisfies Category);
-              return (<optgroup label={category.name}>
+              return (<optgroup label={category.name} key={category.id}>
                 {subCategories.map(sub => {return(
-                  <option value={sub.id}>{sub.name}</option>
+                  <option value={sub.id} key={sub.id}>{sub.name}</option>
                 )})}
               </optgroup>);
             } else {
-              return (<option value={category.id}>{category.name}</option>);
+              return (<option value={category.id} key={category.id}>{category.name}</option>);
             }
           })}
         </select>

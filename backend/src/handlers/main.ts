@@ -1,6 +1,6 @@
 import { LambdaFunctionURLEventWithIAMAuthorizer, LambdaFunctionURLHandlerWithIAMAuthorizer, LambdaFunctionURLResult } from "aws-lambda"
 import { Router } from '../utils/router'
-import { getAccounts } from "./account.handler";
+import { getAccounts, adjustBalance } from "./account.handler";
 import { listIncomes, logIncome, listExpenses, logExpense, transferBalance } from "./transaction.handler";
 import { Connector } from "../utils/connector";
 import { APIErrorCode, APIResponseError } from "@notionhq/client";
@@ -15,6 +15,7 @@ router.register('GET', '/expense', listExpenses);
 router.register('POST', '/income', logIncome);
 router.register('GET', '/income', listIncomes);
 router.register('POST', '/transfer', transferBalance);
+router.register('POST', '/adjustment', adjustBalance);
 
 export const handler: LambdaFunctionURLHandlerWithIAMAuthorizer = async(event: LambdaFunctionURLEventWithIAMAuthorizer): Promise<LambdaFunctionURLResult> => {
   const method = event.requestContext.http.method;

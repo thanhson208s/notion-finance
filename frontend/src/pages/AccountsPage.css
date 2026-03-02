@@ -278,7 +278,7 @@
 
 .form-wrapper {
   margin-top: 16px;
-  padding-top: 10px;
+  padding-top: 14px;
   border-top: 1px solid #334155;
 }
 
@@ -294,6 +294,14 @@
   gap: 10px;
   align-items: center;
 }
+
+.form-col {
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+  width: 100%;
+}
+
 
 .form-row input {
   width: 100%;
@@ -395,6 +403,21 @@
 
 .retry-btn:hover {
   background: #303030;
+}
+
+.switch-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.25s ease;
+  padding: 0;
+  margin: auto;
+  height: 100%;
+  display: flex;
+}
+
+.rotate-180 {
+  transform: rotateZ(180deg);
 }
 
 /* ---------- LOADING ---------- */

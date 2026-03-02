@@ -59,7 +59,7 @@ export const transferBalance: RouteHandler<TransferBalanceRequest, TransferBalan
   const req = event.body;
   const oldFromAccountBalance = (await connector.fetchAccount(req.fromAccountId)).balance;
   const oldToAccountBalance = (await connector.fetchAccount(req.toAccountId)).balance;
-  const amount = (await connector.addTransfer(req.fromAccountId, req.toAccountId, req.amount, req.note)).amount;
+  const amount = (await connector.addTransfer(req.fromAccountId, req.toAccountId, req.amount)).amount;
   const newFromAccountBalance = (await connector.updateAccountBalance(req.fromAccountId, oldFromAccountBalance - req.amount)).balance;
   const newToAccountBalance = (await connector.updateAccountBalance(req.toAccountId, oldToAccountBalance + req.amount)).balance;
   

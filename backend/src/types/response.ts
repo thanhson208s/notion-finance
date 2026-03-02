@@ -50,3 +50,11 @@ export type TransferBalanceResponse = {
   newToAccountBalance: number,
   amount: number
 }
+
+export type AdjustBalanceResponse = {
+  accountId: string,
+  oldBalance: number,
+  newBalance: number,
+  delta: number,
+  note: string
+}

@@ -1,5 +1,6 @@
 import type { Category } from '../App'
 import { useEffect, useState } from 'react'
+import { Radar, Hash } from 'lucide-react'
 
 type LogExpenseResponse = {
   accountId: string,
@@ -152,7 +153,7 @@ export default function ExpenseForm({accountId}: {
   return (
     <form className="form-main">
       <div className="form-row">
-        <label>Amount</label>
+        <Hash size={24}/>
         <input
           type = "text"
           value = {amount.toLocaleString('vi-VN', {
@@ -171,7 +172,7 @@ export default function ExpenseForm({accountId}: {
       </div>
 
       <div className="form-row">
-        <label>Category</label>
+        <Radar size={24}/>
         <select
           title="Category"
           value={categories.find(category => category.id === categoryId)?.id ?? ""}

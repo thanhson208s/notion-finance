@@ -1,4 +1,12 @@
-export type AccountType = "Cash" | "Bank" | "Credit" | "eWallet" | "Savings" | "PayLater" | "Prepaid"
+export type AccountType = 
+  | "Cash"
+  | "Bank"
+  | "Credit"
+  | "eWallet"
+  | "Savings"
+  | "PayLater"
+  | "Prepaid"
+  | "Gold"
 
 export type Account = {
   id: string

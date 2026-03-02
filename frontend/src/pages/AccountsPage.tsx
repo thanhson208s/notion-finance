@@ -9,6 +9,8 @@ import {
 import { type Account, type AccountType } from '../App'
 import IncomeForm from '../components/IncomeForm'
 import ExpenseForm from '../components/ExpenseForm'
+import TransferForm from '../components/TransferForm'
+import AdjustmentForm from '../components/AdjustmentForm'
 
 type GetAccountsResponse = {
   accounts: Account[]
@@ -35,7 +37,8 @@ export default function AccountsPage() {
     eWallet: "account-ewallet",
     Savings: "account-savings",
     PayLater: "account-paylater",
-    Prepaid: "account-prepaid"
+    Prepaid: "account-prepaid",
+    Gold: "account-gold",
   }
 
   const type2Priority: Record<AccountType, number> = {
@@ -45,7 +48,8 @@ export default function AccountsPage() {
     Credit: 3,
     Savings: 4,
     PayLater: 5,
-    Prepaid: 6
+    Prepaid: 6,
+    Gold: 7,
   }
 
   const type2Group: Record<AccountType, "asset" | "liability"> = {
@@ -54,8 +58,9 @@ export default function AccountsPage() {
     eWallet: "asset",
     Savings: "asset",
     Prepaid: "asset",
+    Gold: "asset",
     Credit: "liability",
-    PayLater: "liability"
+    PayLater: "liability",
   }
 
   useEffect(() => {
@@ -251,6 +256,12 @@ export default function AccountsPage() {
                   )}
                   {activeAccount.action === 'income' && (
                     <IncomeForm accountId={account.id}/>
+                  )}
+                  {activeAccount.action === 'transfer' && (
+                    <TransferForm accountId={account.id} accounts={accounts}/>
+                  )}
+                  {activeAccount.action === 'adjustment' && (
+                    <AdjustmentForm accountId={account.id}/>
                   )}
                 </div>
               )}

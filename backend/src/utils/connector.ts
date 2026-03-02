@@ -145,8 +145,8 @@ export class Connector {
     return await this.addTransaction(null, accountId, amount, categoryId, note);
   }
   
-  async addTransfer(fromAccountId: string, toAccountId: string, amount: number, note: string): Promise<Transaction> {
-    return await this.addTransaction(fromAccountId, toAccountId, amount, "", note);
+  async addTransfer(fromAccountId: string, toAccountId: string, amount: number): Promise<Transaction> {
+    return await this.addTransaction(fromAccountId, toAccountId, amount, process.env.NOTION_TRANSFER_TRANSACTION_ID as string, "");
   }
 
   private mapPageToAccount(page: PageObjectResponse): Account {

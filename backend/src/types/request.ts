@@ -20,13 +20,12 @@ export type TransferBalanceRequest = {
   fromAccountId: string
   toAccountId: string
   amount: number
-  note: string
   timestamp?: number
 }
 
 export type AdjustBalanceRequest = {
   accountId: string,
-  newBalance: number
+  balance: number
   note: string
   timestamp?: number
 }

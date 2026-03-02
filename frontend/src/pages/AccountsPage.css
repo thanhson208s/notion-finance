@@ -119,6 +119,9 @@
   background: #d97706;
 }
 
+.account-gold {
+  background: #e6b033;
+}
 
 /* ---------- ACTIONS ---------- */
 
@@ -392,7 +395,6 @@
 
 .input-error {
   border: 1px solid #ef4444 !important;
-  animation: blinkBorder 0.5s ease;
 }
 
 .retry-btn {

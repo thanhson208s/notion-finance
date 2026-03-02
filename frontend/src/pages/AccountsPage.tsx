@@ -21,6 +21,7 @@ type GetAccountsResponse = {
 
 export default function AccountsPage() {
   const [ accounts, setAccounts ] = useState<Account[]>([]);
+  const [ totals, setTotals ] = useState({ total: 0, totalOfAssets: 0, totalOfLiabilities: 0 });
   const [ activeAccount, setActiveAccount ] = useState<{
     id: string,
     action: 'income' | 'expense' | 'transfer' | 'adjustment' | null
@@ -78,6 +79,7 @@ export default function AccountsPage() {
 
         const data: GetAccountsResponse = await response.json();
         setAccounts(data.accounts);
+        setTotals({ total: data.total, totalOfAssets: data.totalOfAssets, totalOfLiabilities: data.totalOfLiabilities });
       } catch(e) {
         if (e instanceof Error)
           console.log(e.message);
@@ -127,8 +129,18 @@ export default function AccountsPage() {
     setActiveAccount(prev => (prev?.id === id ? null : {id, action: null}));
   }
 
+  const displayedTotal = filter === 'assets' ? totals.totalOfAssets
+    : filter === 'liabilities' ? totals.totalOfLiabilities
+    : totals.total;
+
   return (
     <main className="page">
+      <div className="balance-header">
+        <div className="balance-pill">
+          {displayedTotal.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+        </div>
+      </div>
+
       <div className="account-toolbar">
         <select className="account-select"
           title="filter"

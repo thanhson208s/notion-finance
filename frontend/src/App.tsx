@@ -5,6 +5,10 @@ import AccountsPage from "./pages/AccountsPage"
 import ReportsPage from "./pages/ReportsPage"
 import CardsPage from "./pages/CardsPage"
 import PromotionsPage from "./pages/PromotionsPage"
+import ExpensePage from "./pages/ExpensePage"
+import IncomePage from "./pages/IncomePage"
+import TransferPage from "./pages/TransferPage"
+import AdjustmentPage from "./pages/AdjustmentPage"
 
 export default function App() {
   return (
@@ -15,6 +19,10 @@ export default function App() {
           <Route path="/reports" element={<ReportsPage/>}/>
           <Route path="/cards" element={<CardsPage/>}/>
           <Route path="/promos" element={<PromotionsPage/>}/>
+          <Route path="/expense/:accountId" element={<ExpensePage/>}/>
+          <Route path="/income/:accountId" element={<IncomePage/>}/>
+          <Route path="/transfer/:accountId" element={<TransferPage/>}/>
+          <Route path="/adjustment/:accountId" element={<AdjustmentPage/>}/>
         </Routes>
         <NavBar/>
       </BrowserRouter>

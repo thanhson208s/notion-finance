@@ -31,10 +31,12 @@ Categories are hierarchical. Render top-level items as `<optgroup>` if they have
 | Page | `.page` |
 | Account card | `.account-card`, `.account-info`, `.account-title`, `.account-balance` |
 | Account type badge | `.account-cash`, `.account-bank`, `.account-credit`, `.account-ewallet`, `.account-savings`, `.account-paylater`, `.account-prepaid`, `.account-gold` |
-| Action buttons | `.action-btn`, `.expense`, `.income`, `.transfer`, `.adjustment`, `.action-select` |
+| Action buttons | `.action-btn`, `.expense`, `.income`, `.transfer`, `.adjustment` |
 | Form | `.form-main`, `.form-row`, `.form-col`, `.form-buttons`, `.form-btn`, `.submit-btn`, `.retry-btn` |
 | Form states | `.submit-state`, `.circle-loading`, `.circle-state`, `.circle-success`, `.circle-error` |
 | Validation error | `.input-error` |
+| Transaction page header | `.transaction-header`, `.back-btn`, `.transaction-title` |
+| Transaction page body | `.transaction-body` |
 
 See [guides/styling.md](styling.md) for visual specs (colors, sizes, spacing).
 
@@ -51,6 +53,7 @@ See [guides/styling.md](styling.md) for visual specs (colors, sizes, spacing).
 | `BanknoteArrowDown` | Transfer — from account |
 | `BanknoteArrowUp` | Transfer — to account |
 | `ArrowUpDown` | Switch from/to in TransferForm |
+| `ChevronLeft` | Back button on transaction pages |
 
 ## SigV4 Note
 
@@ -65,8 +68,18 @@ Currently hardcoded: `https://finance.gootube.online/api`
 | Path | Page |
 |---|---|
 | `/` | AccountsPage |
+| `/expense/:accountId` | ExpensePage |
+| `/income/:accountId` | IncomePage |
+| `/transfer/:accountId` | TransferPage |
+| `/adjustment/:accountId` | AdjustmentPage |
 | `/reports` | ReportsPage |
 | `/cards` | CardsPage |
 | `/promos` | PromotionsPage |
 
-NavBar is rendered at the bottom of the screen and uses React Router `<Link>`.
+NavBar is rendered at the bottom of the screen and uses React Router `<Link>`. The accounts tab stays highlighted on all `/expense`, `/income`, `/transfer`, `/adjustment` routes via `useLocation` in `NavBar.tsx`.
+
+## Transaction Pages (`ExpensePage`, `IncomePage`, `TransferPage`, `AdjustmentPage`)
+
+Each transaction form has its own full-screen page under `frontend/src/pages/`. They share `TransactionPage.css` for the sticky header (back button + title). Clicking an action button on an account card navigates to the corresponding page via `useNavigate`. The back button calls `navigate(-1)` to return to AccountsPage.
+
+`TransferPage` fetches the accounts list independently (same pattern as AccountsPage) and passes it to `TransferForm`.

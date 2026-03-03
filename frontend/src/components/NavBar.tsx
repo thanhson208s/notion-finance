@@ -1,11 +1,15 @@
 import './NavBar.css'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { Wallet, ChartBarBig, WalletCards, TicketPercent } from 'lucide-react'
 
 export default function NavBar() {
+  const { pathname } = useLocation();
+  const accountsActive = pathname === '/' ||
+    /^\/(expense|income|transfer|adjustment)\//.test(pathname);
+
   return (
     <nav className="nav-bar">
-      <NavLink to="/" className="nav-item">
+      <NavLink to="/" className={() => accountsActive ? 'nav-item active' : 'nav-item'} end>
         <Wallet size={22} />
       </NavLink>
 

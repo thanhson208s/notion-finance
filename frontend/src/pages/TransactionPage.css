@@ -1,0 +1,51 @@
+/* ---------- TRANSACTION PAGE HEADER ---------- */
+
+.transaction-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #111827;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.back-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #22d3ee;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.transaction-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ---------- ACCOUNT SUMMARY ---------- */
+
+.transaction-account {
+  padding: 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transaction-account-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ---------- FORM AREA ---------- */
+
+.transaction-body {
+  padding: 16px;
+}

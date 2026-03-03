@@ -1,5 +1,6 @@
 import './AccountsPage.css'
 import { useEffect, useState, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -7,10 +8,6 @@ import {
   Pencil
 } from "lucide-react"
 import { type Account, type AccountType } from '../App'
-import IncomeForm from '../components/IncomeForm'
-import ExpenseForm from '../components/ExpenseForm'
-import TransferForm from '../components/TransferForm'
-import AdjustmentForm from '../components/AdjustmentForm'
 
 type GetAccountsResponse = {
   accounts: Account[]
@@ -22,14 +19,12 @@ type GetAccountsResponse = {
 export default function AccountsPage() {
   const [ accounts, setAccounts ] = useState<Account[]>([]);
   const [ totals, setTotals ] = useState({ total: 0, totalOfAssets: 0, totalOfLiabilities: 0 });
-  const [ activeAccount, setActiveAccount ] = useState<{
-    id: string,
-    action: 'income' | 'expense' | 'transfer' | 'adjustment' | null
-  } | null>(null);
+  const [ activeCard, setActiveCard ] = useState<string | null>(null);
   const [ filter, setFilter ] = useState<"all" | "assets" | "liabilities">("all");
   const [ sort, setSort ] = useState<"balance" | "type">("balance");
   const [ hideEmpty, setHideEmpty ] = useState<boolean>(true);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const navigate = useNavigate();
 
   const account2Class: Record<AccountType, string> = {
     Cash: "account-cash",
@@ -66,7 +61,7 @@ export default function AccountsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    
+
     (async() => {
       try {
         const response = await fetch(
@@ -93,40 +88,32 @@ export default function AccountsPage() {
   }, []);
 
   useEffect(() => {
-    if (!activeAccount) return;
-    const card = cardRefs.current[activeAccount.id];
-    if (card) card.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
-  }, [activeAccount]);
+    if (!activeCard) return;
+    const card = cardRefs.current[activeCard];
+    if (!card) return;
 
-  const handleExpense = (id: string) => {
-    if (activeAccount?.action === 'expense')
-      setActiveAccount({id, action: null});
-    else setActiveAccount({id, action: 'expense'});
-  }
-  
-  const handleIncome = (id: string) => {
-    if (activeAccount?.action === 'income')
-      setActiveAccount({id, action: null});
-    else setActiveAccount({id, action: 'income'});
-  }
-  
-  const handleTransfer = (id: string) => {
-    if (activeAccount?.action === 'transfer')
-      setActiveAccount({id, action: null});
-    else setActiveAccount({id, action: 'transfer'});
-  }
-  
-  const handleAdjustment = (id: string) => {
-    if (activeAccount?.action === 'adjustment')
-      setActiveAccount({id, action: null});
-    else setActiveAccount({id, action: 'adjustment'});
-  }
+    let timer: ReturnType<typeof setTimeout>;
+    const centerCard = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const rect = card.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        window.scrollBy({ top: mid - window.innerHeight / 2, behavior: 'smooth' });
+      }, 100);
+    };
+
+    const ro = new ResizeObserver(centerCard);
+    ro.observe(card);
+    centerCard();
+
+    return () => {
+      ro.disconnect();
+      clearTimeout(timer);
+    };
+  }, [activeCard]);
 
   const toggleCard = (id: string) => {
-    setActiveAccount(prev => (prev?.id === id ? null : {id, action: null}));
+    setActiveCard(prev => (prev === id ? null : id));
   }
 
   const displayedTotal = filter === 'assets' ? totals.totalOfAssets
@@ -159,7 +146,6 @@ export default function AccountsPage() {
         >
           <option value="balance">Balance</option>
           <option value="type">Group</option>
-          {/* <option value="frequent">Recent</option> */}
         </select>
 
         <label className="account-checkbox">
@@ -195,8 +181,8 @@ export default function AccountsPage() {
           return (
             <div
               key={account.id}
-              className = 'account-card'
-              onClick = {() => toggleCard(account.id)}
+              className='account-card'
+              onClick={() => toggleCard(account.id)}
               ref={(el) => {cardRefs.current[account.id] = el}}
             >
               <div className="account-info">
@@ -213,7 +199,7 @@ export default function AccountsPage() {
                 </div>
               </div>
 
-              {activeAccount?.id === account.id && (
+              {activeCard === account.id && (
                 <div
                   className="actions"
                   onClick={(e) => e.stopPropagation()}
@@ -221,60 +207,35 @@ export default function AccountsPage() {
                   <button
                     title="Expense"
                     aria-label="Expense"
-                    className={`action-btn expense ${activeAccount?.action === 'expense' ? 'action-select' : ''}`}
-                    onClick={() =>
-                      handleExpense(account.id)
-                    }
+                    className="action-btn expense"
+                    onClick={() => navigate(`/expense/${account.id}`, { state: { account } })}
                   >
                     <ArrowDownRight size={18}/>
                   </button>
 
                   <button
                     aria-label="Income"
-                    className={`action-btn income ${activeAccount?.action === 'income' ? 'action-select' : ''}`}
-                    onClick={() =>
-                      handleIncome(account.id)
-                    }
+                    className="action-btn income"
+                    onClick={() => navigate(`/income/${account.id}`, { state: { account } })}
                   >
                     <ArrowUpRight size={18}/>
                   </button>
 
                   <button
                     aria-label="Transfer"
-                    className={`action-btn transfer ${activeAccount?.action === 'transfer' ? 'action-select' : ''}`}
-                    onClick={() =>
-                      handleTransfer(account.id)
-                    }
+                    className="action-btn transfer"
+                    onClick={() => navigate(`/transfer/${account.id}`, { state: { account } })}
                   >
                     <ArrowLeftRight size={18}/>
                   </button>
 
                   <button
                     aria-label="Adjustment"
-                    className={`action-btn adjustment ${activeAccount?.action === 'adjustment' ? 'action-select' : ''}`}
-                    onClick={() =>
-                      handleAdjustment(account.id)
-                    }
+                    className="action-btn adjustment"
+                    onClick={() => navigate(`/adjustment/${account.id}`, { state: { account } })}
                   >
                     <Pencil size={18}/>
                   </button>
-                </div>
-              )}
-
-              {activeAccount?.id === account.id && activeAccount.action && (
-                <div className = 'form-wrapper' onClick={(e) => e.stopPropagation()}>
-                  {activeAccount.action === 'expense' && (
-                    <ExpenseForm accountId={account.id}/>
-                  )}
-                  {activeAccount.action === 'income' && (
-                    <IncomeForm accountId={account.id}/>
-                  )}
-                  {activeAccount.action === 'transfer' && (
-                    <TransferForm accountId={account.id} accounts={accounts}/>
-                  )}
-                  {activeAccount.action === 'adjustment' && (
-                    <AdjustmentForm accountId={account.id}/>
-                  )}
                 </div>
               )}
             </div>

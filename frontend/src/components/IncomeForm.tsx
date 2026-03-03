@@ -1,6 +1,6 @@
 import type { Category } from '../App'
 import { useEffect, useState } from 'react'
-import { Radar, Hash } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 
 type LogIncomeResponse = {
   accountId: string,
@@ -24,8 +24,9 @@ type LogExpenseStatus = {
   data: LogIncomeError
 } | { status: 'idle' } | { status: 'loading' };
 
-export default function IncomeForm({accountId}: {
+export default function IncomeForm({accountId, onSuccess}: {
   accountId: string
+  onSuccess?: (newBalance: number) => void
 }) {
   const [ status, setStatus ] = useState<LogExpenseStatus>({status: 'idle'});
   const [ categories, setCategories ] = useState<Category[]>([]);
@@ -93,7 +94,9 @@ export default function IncomeForm({accountId}: {
           return;
         }
 
-        setStatus({status: 'success', data: await response.json() as LogIncomeResponse});
+        const data = await response.json() as LogIncomeResponse;
+        setStatus({status: 'success', data});
+        onSuccess?.(data.newBalance);
       } catch(e) {
         if (e instanceof Error)
           console.log(e.message);
@@ -116,7 +119,7 @@ export default function IncomeForm({accountId}: {
         <div className='circle-state circle-success'>✓</div>
 
         <button
-          className='form-btn retry-btn'
+          className='form-btn log-again-btn'
           onClick={() => {
             setStatus({status: "idle"});
             setAmount(0);
@@ -134,9 +137,9 @@ export default function IncomeForm({accountId}: {
     return (
       <div className='submit-state'>
         <div className='circle-state circle-error'>✕</div>
-        
+
         <button
-          className='form-btn retry-btn'
+          className='form-btn try-again-btn'
           onClick={() => {
             setStatus({status: "idle"});
             setAmount(0);
@@ -152,34 +155,29 @@ export default function IncomeForm({accountId}: {
 
   return (
     <form className="form-main">
-      <div className="form-row">
-        <Hash size={24}/>
+      <div className="amount-display">
         <input
-          type = "text"
-          value = {amount.toLocaleString('vi-VN', {
-            style: 'currency', currency: 'VND'
-          })}
+          type="text"
+          value={amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
           onChange={() => {}}
           onKeyDown={(e) => {
-            if (e.code === 'Backspace') setAmount(Math.floor(amount / 10))
-            else if (e.code.match(/^Digit[0-9]$/g))
-              setAmount(amount * 10 + parseInt(e.code.slice(-1)))
+            if (e.code === 'Backspace') { setAmount(Math.floor(amount / 10)); setErrors(p => ({...p, amount: false})) }
+            else if (e.code.match(/^Digit[0-9]$/g)) { setAmount(amount * 10 + parseInt(e.code.slice(-1))); setErrors(p => ({...p, amount: false})) }
           }}
-          placeholder='0'
+          placeholder='0 ₫'
           inputMode="numeric"
-          className={`${errors.amount ? 'input-error' : ''}`}
+          className={`amount-input-big${errors.amount ? ' amount-error' : ''}`}
         />
       </div>
 
-      <div className="form-row">
-        <Radar size={24}/>
+      <div className="category-display">
         <select
           title="Category"
           value={categories.find(category => category.id === categoryId)?.id ?? ""}
-          onChange={(e) => setCategoryId(e.target.value)}
-          className={`${errors.categoryId ? 'input-error' : ''}`}
+          onChange={(e) => { setCategoryId(e.target.value); setErrors(p => ({...p, categoryId: false})) }}
+          className={`category-select-borderless${errors.categoryId ? ' category-error' : ''}`}
         >
-          <option value="">None</option>
+          <option value="">— Category —</option>
           {categories.filter(category => category.parentId === null).map(category => {
             const subCategories = categories.filter(sub => sub.parentId === category.id);
             if (subCategories.length > 0) {
@@ -190,9 +188,7 @@ export default function IncomeForm({accountId}: {
                 parentId: category.id
               } satisfies Category);
               return (<optgroup label={category.name} key={category.id}>
-                {subCategories.map(sub => {return(
-                  <option value={sub.id} key={sub.id}>{sub.name}</option>
-                )})}
+                {subCategories.map(sub => (<option value={sub.id} key={sub.id}>{sub.name}</option>))}
               </optgroup>);
             } else {
               return (<option value={category.id} key={category.id}>{category.name}</option>);
@@ -202,21 +198,17 @@ export default function IncomeForm({accountId}: {
       </div>
 
       <div className="form-row">
-        <textarea 
+        <textarea
           rows={3}
-          value = {note}
+          value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder='Note...'
         />
       </div>
 
       <div className="form-buttons">
-        <button
-          type="button"
-          className='form-btn submit-btn'
-          onClick={submit}
-        >
-          Submit
+        <button type="button" className="form-btn submit-btn-income" onClick={submit}>
+          <TrendingUp size={20} /> Income
         </button>
       </div>
     </form>

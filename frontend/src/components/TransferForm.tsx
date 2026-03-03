@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Account, AccountType } from '../App'
-import {BanknoteArrowDown, BanknoteArrowUp, ArrowUpDown, Hash} from 'lucide-react';
+import { BanknoteArrowDown, BanknoteArrowUp, ArrowUpDown, ArrowLeftRight } from 'lucide-react';
 
 type TransferResponse = {
   fromAccountId: string,
@@ -25,9 +25,10 @@ type TransferStatus = {
   data: TransferError
 } | { status: 'idle' } | { status: 'loading' }
 
-export default function TransferForm({accountId, accounts}: {
+export default function TransferForm({accountId, accounts, onSuccess}: {
   accountId: string,
   accounts: Account[]
+  onSuccess?: (newBalance: number) => void
 }) {
   const [ status, setStatus ] = useState<TransferStatus>({status: "idle"});
   const [ fromAccountId, setFromAccountId ] = useState<string>(accountId);
@@ -86,7 +87,9 @@ export default function TransferForm({accountId, accounts}: {
           return;
         }
 
-        setStatus({status: 'success', data: await response.json() as TransferResponse});
+        const data = await response.json() as TransferResponse;
+        setStatus({status: 'success', data});
+        onSuccess?.(data.fromAccountId === accountId ? data.newFromAccountBalance : data.newToAccountBalance);
       } catch(e) {
         if (e instanceof Error)
           console.log(e.message);
@@ -109,7 +112,7 @@ export default function TransferForm({accountId, accounts}: {
         <div className='circle-state circle-success'>✓</div>
 
         <button
-          className='form-btn retry-btn'
+          className='form-btn log-again-btn'
           onClick={() => {
             setStatus({status: "idle"});
             setAmount(0);
@@ -127,9 +130,9 @@ export default function TransferForm({accountId, accounts}: {
     return (
       <div className='submit-state'>
         <div className='circle-state circle-error'>✕</div>
-        
+
         <button
-          className='form-btn retry-btn'
+          className='form-btn try-again-btn'
           onClick={() => {
             setStatus({status: "idle"});
             setAmount(0);
@@ -161,23 +164,21 @@ export default function TransferForm({accountId, accounts}: {
               title="From Account"
               disabled={accountId === fromAccountId}
               value={accounts.find(account => account.id === fromAccountId)?.id ?? ""}
-              onChange={(e) => setFromAccountId(e.target.value)}
-              className={`${errors.fromAccountId ? 'input-error' : ''}`}
+              onChange={(e) => { setFromAccountId(e.target.value); setErrors(p => ({...p, fromAccountId: false})) }}
+              className={`category-select-borderless transfer-select${errors.fromAccountId ? ' category-error' : ''}`}
             >
-              {(accountId === fromAccountId) ? 
+              {(accountId === fromAccountId) ?
               (
-                <option value={accountId}>{
-                  accounts.find(account => account.id === accountId)?.name
-                }</option>
+                <option value={accountId}>{accounts.find(account => account.id === accountId)?.name}</option>
               ) : (<>
-                <option value="">None</option>
-                {accountTypes.map(accountType => {return (
+                <option value="">— From —</option>
+                {accountTypes.map(accountType => (
                   <optgroup label={accountType} key={accountType}>
-                    {accounts.filter(account => account.type === accountType && account.id !== toAccountId).map(account => {return (
+                    {accounts.filter(account => account.type === accountType && account.id !== toAccountId).map(account => (
                       <option value={account.id} key={account.id}>{`${account.name} (${account.balance.toLocaleString('vi-VN', {style: 'currency', currency: 'VND'})})`}</option>
-                    )})}
+                    ))}
                   </optgroup>
-                )})}
+                ))}
               </>)}
             </select>
           </div>
@@ -187,55 +188,45 @@ export default function TransferForm({accountId, accounts}: {
               title="To Account"
               disabled={accountId === toAccountId}
               value={accounts.find(account => account.id === toAccountId)?.id ?? ""}
-              onChange={(e) => setToAccountId(e.target.value)}
-              className={`${errors.toAccountId ? 'input-error' : ''}`}
+              onChange={(e) => { setToAccountId(e.target.value); setErrors(p => ({...p, toAccountId: false})) }}
+              className={`category-select-borderless transfer-select${errors.toAccountId ? ' category-error' : ''}`}
             >
-              {(accountId === toAccountId) ? 
+              {(accountId === toAccountId) ?
               (
-                <option value={accountId}>{
-                  accounts.find(account => account.id === accountId)?.name
-                }</option>
+                <option value={accountId}>{accounts.find(account => account.id === accountId)?.name}</option>
               ) : (<>
-                <option value="">None</option>
-                {accountTypes.map(accountType => {return (
+                <option value="">— To —</option>
+                {accountTypes.map(accountType => (
                   <optgroup label={accountType} key={accountType}>
-                    {accounts.filter(account => account.type === accountType && account.id !== fromAccountId).map(account => {return (
+                    {accounts.filter(account => account.type === accountType && account.id !== fromAccountId).map(account => (
                       <option value={account.id} key={account.id}>{`${account.name} (${account.balance.toLocaleString('vi-VN', {style: 'currency', currency: 'VND'})})`}</option>
-                    )})}
+                    ))}
                   </optgroup>
-                )})}
+                ))}
               </>)}
             </select>
           </div>
         </div>
       </div>
 
-      <div className="form-row">
-        <Hash size={24}/>
+      <div className="amount-display">
         <input
-          type = "text"
-          value = {amount.toLocaleString('vi-VN', {
-            style: 'currency', currency: 'VND'
-          })}
+          type="text"
+          value={amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
           onChange={() => {}}
           onKeyDown={(e) => {
-            if (e.code === 'Backspace') setAmount(Math.floor(amount / 10))
-            else if (e.code.match(/^Digit[0-9]$/g))
-              setAmount(amount * 10 + parseInt(e.code.slice(-1)))
+            if (e.code === 'Backspace') { setAmount(Math.floor(amount / 10)); setErrors(p => ({...p, amount: false})) }
+            else if (e.code.match(/^Digit[0-9]$/g)) { setAmount(amount * 10 + parseInt(e.code.slice(-1))); setErrors(p => ({...p, amount: false})) }
           }}
-          placeholder='0'
+          placeholder='0 ₫'
           inputMode="numeric"
-          className={`${errors.amount ? 'input-error' : ''}`}
+          className={`amount-input-big${errors.amount ? ' amount-error' : ''}`}
         />
       </div>
 
       <div className="form-buttons">
-        <button
-          type="button"
-          className='form-btn submit-btn'
-          onClick={submit}
-        >
-          Submit
+        <button type="button" className="form-btn submit-btn-transfer" onClick={submit}>
+          <ArrowLeftRight size={20} /> Transfer
         </button>
       </div>
     </form>

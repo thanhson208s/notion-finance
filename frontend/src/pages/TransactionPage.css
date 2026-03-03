@@ -1,3 +1,16 @@
+/* ---------- TRANSACTION PAGE LAYOUT ---------- */
+
+.transaction-page {
+  top: 0;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  margin: 0;
+}
+
 /* ---------- TRANSACTION PAGE HEADER ---------- */
 
 .transaction-header {
@@ -32,16 +45,28 @@
 /* ---------- ACCOUNT SUMMARY ---------- */
 
 .transaction-account {
-  padding: 16px 16px 0;
+  padding: 20px 16px 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
 }
 
 .transaction-account-title {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
+}
+
+.transaction-account .account-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.transaction-account .account-balance {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 /* ---------- FORM AREA ---------- */

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Hash } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
 
 type AdjustmentResponse = {
   accountId: string,
@@ -22,8 +22,9 @@ type AdjustmentStatus = {
   data: AdjustmentError
 } | { status: 'idle' } | { status: 'loading' }
 
-export default function AdjustmentForm({accountId}: {
+export default function AdjustmentForm({accountId, onSuccess}: {
   accountId: string
+  onSuccess?: (newBalance: number) => void
 }) {
   const [ status, setStatus] = useState<AdjustmentStatus>({status: 'idle'});
   const [ balance, setBalance ] = useState<number>(0);
@@ -50,7 +51,9 @@ export default function AdjustmentForm({accountId}: {
           return;
         }
 
-        setStatus({status: 'success', data: await response.json() as AdjustmentResponse});
+        const data = await response.json() as AdjustmentResponse;
+        setStatus({status: 'success', data});
+        onSuccess?.(data.newBalance);
       } catch(e) {
         if (e instanceof Error)
           console.log(e.message);
@@ -73,7 +76,7 @@ export default function AdjustmentForm({accountId}: {
         <div className='circle-state circle-success'>✓</div>
 
         <button
-          className='form-btn retry-btn'
+          className='form-btn log-again-btn'
           onClick={() => {
             setStatus({status: "idle"});
             setBalance(0);
@@ -90,9 +93,9 @@ export default function AdjustmentForm({accountId}: {
     return (
       <div className='submit-state'>
         <div className='circle-state circle-error'>✕</div>
-        
+
         <button
-          className='form-btn retry-btn'
+          className='form-btn try-again-btn'
           onClick={() => {
             setStatus({status: "idle"});
             setBalance(0);
@@ -107,41 +110,33 @@ export default function AdjustmentForm({accountId}: {
 
   return (
     <form className="form-main">
-      <div className="form-row">
-        <Hash size={24}/>
+      <div className="amount-display">
         <input
-          type = "text"
-          value = {balance.toLocaleString('vi-VN', {
-            style: 'currency', currency: 'VND'
-          })}
+          type="text"
+          value={balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
           onChange={() => {}}
           onKeyDown={(e) => {
-            if (e.code === 'Backspace') setBalance(Math.floor(balance / 10))
-            else if (e.code.match(/^Digit[0-9]$/g))
-              setBalance(balance * 10 + parseInt(e.code.slice(-1)))
+            if (e.code === 'Backspace') { setBalance(Math.floor(balance / 10)); setError(false) }
+            else if (e.code.match(/^Digit[0-9]$/g)) { setBalance(balance * 10 + parseInt(e.code.slice(-1))); setError(false) }
           }}
-          placeholder='0'
+          placeholder='0 ₫'
           inputMode="numeric"
-          className={`${error ? 'input-error' : ''}`}
+          className={`amount-input-big${error ? ' amount-error' : ''}`}
         />
       </div>
 
       <div className="form-row">
-        <textarea 
+        <textarea
           rows={3}
-          value = {note}
+          value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder='Note...'
         />
       </div>
 
       <div className="form-buttons">
-        <button
-          type="button"
-          className='form-btn submit-btn'
-          onClick={submit}
-        >
-          Submit
+        <button type="button" className="form-btn submit-btn-adjustment" onClick={submit}>
+          <SlidersHorizontal size={20} /> Adjust
         </button>
       </div>
     </form>

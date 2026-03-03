@@ -386,8 +386,127 @@
   margin-top: 2px;
 }
 
+/* ---------- EXPENSE / INCOME FORM LAYOUT ---------- */
+
+.amount-display {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.amount-input-big {
+  width: 100%;
+  font-size: 44px;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  text-align: center;
+  padding: 0;
+}
+
+.amount-input-big.amount-error {
+  color: #ef4444;
+}
+
+.category-display {
+  display: flex;
+  justify-content: center;
+}
+
+.category-select-borderless {
+  font-size: 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(139, 147, 167, 0.35);
+  outline: none;
+  color: var(--muted);
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+  padding: 4px 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  max-width: 80%;
+}
+
+.category-select-borderless.category-error {
+  color: #ef4444;
+}
+
+.submit-btn-expense {
+  background: #dc2626;
+  color: white;
+  border: none;
+  width: 160px;
+  height: 48px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.submit-btn-expense:hover { background: #b91c1c; }
+
+.submit-btn-income {
+  background: #16a34a;
+  color: white;
+  border: none;
+  width: 160px;
+  height: 48px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.submit-btn-income:hover { background: #15803d; }
+
+.submit-btn-adjustment {
+  background: #4b5563;
+  color: white;
+  border: none;
+  width: 160px;
+  height: 48px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.submit-btn-adjustment:hover { background: #374151; }
+
+.submit-btn-transfer {
+  background: #2563eb;
+  color: white;
+  border: none;
+  width: 160px;
+  height: 48px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.submit-btn-transfer:hover { background: #1d4ed8; }
+
+.transfer-select {
+  max-width: 100%;
+  width: 100%;
+}
+
+.category-select-borderless:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .form-btn {
-  width: 80px;
+  width: 120px;
   height: 40px;
   border-radius: 10px;
   cursor: pointer;
@@ -425,14 +544,24 @@
   border: 1px solid #ef4444 !important;
 }
 
-.retry-btn {
-  width: 100px;
-  background: #727272;
+.log-again-btn {
+  width: 120px;
+  background: #2ecc71;
   color: #ffffff;
 }
 
-.retry-btn:hover {
-  background: #303030;
+.log-again-btn:hover {
+  background: #27ae60;
+}
+
+.try-again-btn {
+  width: 120px;
+  background: #e74c3c;
+  color: #ffffff;
+}
+
+.try-again-btn:hover {
+  background: #c0392b;
 }
 
 .switch-btn {

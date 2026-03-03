@@ -10,6 +10,7 @@ export default function TransferPage() {
   const navigate = useNavigate()
   const { state } = useLocation()
   const account = state?.account as Account | undefined
+  const [balance, setBalance] = useState<number>(account?.balance ?? 0)
   const [accounts, setAccounts] = useState<Account[]>([])
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function TransferPage() {
   }, [])
 
   return (
-    <main className="page">
+    <main className="transaction-page">
       <div className="transaction-header">
         <button type="button" aria-label="Back" className="back-btn" onClick={() => navigate(-1)}>
           <ChevronLeft size={28} />
@@ -46,13 +47,13 @@ export default function TransferPage() {
             <span className={`account-type account-${account.type.toLowerCase()}`}>{account.type}</span>
           </div>
           <div className="account-balance">
-            {account.balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+            {balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
           </div>
         </div>
       )}
 
       <div className="transaction-body">
-        <TransferForm accountId={accountId!} accounts={accounts} />
+        <TransferForm accountId={accountId!} accounts={accounts} onSuccess={setBalance} />
       </div>
     </main>
   )

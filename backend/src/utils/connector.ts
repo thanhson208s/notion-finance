@@ -40,6 +40,15 @@ export class Connector {
     return this.mapPageToAccount(response);
   }
 
+  async fetchCategory(categoryId: string): Promise<Category> {
+    const response = await this.notion.pages.retrieve({
+      page_id: categoryId
+    });
+    if (!("properties" in response))
+      throw new DatabaseError(`Category ${categoryId} not found`);
+    return this.mapPageToCategory(response);
+  }
+
   async fetchCategories(type: string | null): Promise<Category[]> {
     const pages = await this.queryAllPages({
       data_source_id: process.env.NOTION_CATEGORY_DATABASE_ID as string,
@@ -75,7 +84,7 @@ export class Connector {
     return pages.map(page => this.mapPageToTransaction(page));
   }
 
-  async addTransaction(fromAccountId: string | null, toAccountId: string | null, amount: number, categoryId: string, note: string, timestamp?: number): Promise<Transaction> {
+  async addTransaction(fromAccountId: string | null, toAccountId: string | null, amount: number, categoryId: string, note: string, timestamp?: number, linkedCardId?: string): Promise<Transaction> {
     const response = await this.notion.pages.create({
       parent: {
         data_source_id: process.env.NOTION_TRANSACTION_DATABASE_ID as string
@@ -122,6 +131,10 @@ export class Connector {
             { id: categoryId }
           ]
         },
+        "Linked card": {
+          type: 'relation',
+          relation: linkedCardId ? [{ id: linkedCardId }] : []
+        },
         "Note": {
           type: 'rich_text',
           rich_text: [
@@ -141,12 +154,12 @@ export class Connector {
     return this.mapPageToTransaction(response);
   }
 
-  async addExpense(accountId: string, amount: number, categoryId: string, note: string, timestamp?: number): Promise<Transaction> {
-    return await this.addTransaction(accountId, null, amount, categoryId, note, timestamp);
+  async addExpense(accountId: string, amount: number, categoryId: string, note: string, timestamp?: number, linkedCardId?: string): Promise<Transaction> {
+    return await this.addTransaction(accountId, null, amount, categoryId, note, timestamp, linkedCardId);
   }
 
-  async addIncome(accountId: string, amount: number, categoryId: string, note: string, timestamp?: number): Promise<Transaction> {
-    return await this.addTransaction(null, accountId, amount, categoryId, note, timestamp);
+  async addIncome(accountId: string, amount: number, categoryId: string, note: string, timestamp?: number, linkedCardId?: string): Promise<Transaction> {
+    return await this.addTransaction(null, accountId, amount, categoryId, note, timestamp, linkedCardId);
   }
 
   async addTransfer(fromAccountId: string, toAccountId: string, amount: number, timestamp?: number): Promise<Transaction> {

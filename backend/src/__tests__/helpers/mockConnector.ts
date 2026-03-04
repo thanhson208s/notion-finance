@@ -5,6 +5,7 @@ export function createMockConnector(overrides = {}): Connector {
   return {
     fetchAllAccounts: vi.fn(),
     fetchAccount: vi.fn(),
+    fetchCategory: vi.fn(),
     updateAccountBalance: vi.fn(),
     fetchCategories: vi.fn(),
     fetchTransactions: vi.fn(),

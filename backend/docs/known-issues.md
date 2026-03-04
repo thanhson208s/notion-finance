@@ -19,23 +19,10 @@ Last updated: 2026-03-04
 
 ---
 
-## BUG #2 — `linkedCardId` accepted in request but never stored {#bug-2}
+## ~~BUG #2~~ — `linkedCardId` accepted in request but never stored ✅ RESOLVED {#bug-2}
 
-**Severity**: P3 (becomes P2 when Cards feature is implemented)
-**Affected endpoints**: `POST /api/expense`, `POST /api/income`
-**Files**: `src/types/request.ts`, `src/handlers/transaction.handler.ts`, `src/utils/connector.ts`
-
-**Description**:
-`LogExpenseRequest` and `LogIncomeRequest` both include `linkedCardId?: string`.
-Neither `logExpense()` nor `logIncome()` reads `req.linkedCardId`.
-`connector.addTransaction()` does not accept a `linkedCardId` parameter.
-The Notion Transaction DB has a `"Linked card"` relation field that is never written.
-
-**Impact**: Currently cosmetic — Cards feature is not yet implemented. Once Cards are built, this omission will cause card-transaction linking to silently not work.
-
-**Fix**:
-1. Add `linkedCardId?: string` parameter to `addTransaction()` and upstream connector methods
-2. When provided, include `"Linked card": { relation: [{ id: linkedCardId }] }` in the Notion page properties
+**Resolved in**: v1.3.0
+**Fix**: Added `linkedCardId?: string` to `addTransaction()`, `addExpense()`, `addIncome()`. When provided, writes `"Linked card": { relation: [{ id: linkedCardId }] }` to the Notion Transaction page. Handlers `logExpense` and `logIncome` now forward `req.linkedCardId`.
 
 ---
 
@@ -53,24 +40,10 @@ The Notion Transaction DB has a `"Linked card"` relation field that is never wri
 
 ---
 
-## BUG #5 — Account and category IDs not validated before use {#bug-5}
+## ~~BUG #5~~ — Account and category IDs not validated before use ✅ RESOLVED {#bug-5}
 
-**Severity**: P2
-**Affected endpoints**: All POST handlers
-**Files**: `src/handlers/transaction.handler.ts`, `src/handlers/account.handler.ts`
-
-**Description**:
-If an invalid `accountId` or `categoryId` is passed, the code proceeds to call Notion. Notion's behavior varies:
-- For relation properties: Notion may silently create a relation pointing to a non-existent page
-- For direct page operations: Notion returns `object_not_found` (404), which the error handler maps to HTTP 404
-
-There is no explicit pre-flight existence check.
-
-**Impact**: Invalid IDs can create malformed transaction records in Notion without a clear API error.
-
-**Fix options**:
-- Option A: Accept Notion's 404 as the validation mechanism; improve the error message mapping
-- Option B: Fetch the account/category before use and throw `QueryError` with a clear message if not found
+**Resolved in**: v1.3.0
+**Fix**: Added `connector.fetchCategory(categoryId)` method (same pattern as `fetchAccount`). Called in `logExpense` and `logIncome` before writing the transaction. If the category page does not exist, Notion returns `object_not_found` which `main.ts` maps to HTTP 404 — no malformed records are created. Account IDs were already implicitly validated via the existing `fetchAccount` call.
 
 ---
 

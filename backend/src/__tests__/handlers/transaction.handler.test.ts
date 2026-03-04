@@ -3,6 +3,7 @@ import { logExpense, logIncome, transferBalance, listExpenses, listIncomes } fro
 import { createMockConnector } from '../helpers/mockConnector'
 import { QueryError } from '../../types/error'
 import { Transaction } from '../../types/transaction.type'
+import { Category } from '../../types/category.type'
 
 const makeEvent = (body?: unknown, query: Record<string, string> = {}) => ({
   method: 'POST',
@@ -19,6 +20,25 @@ const makeTx = (amount: number): Transaction => ({
   note: ''
 })
 
+const mockCategory: Category = { id: 'cat-1', name: 'Food', type: 'Expense', parentId: null }
+
+// Default overrides shared by most logExpense/logIncome tests
+const defaultExpenseSetup = (overrides = {}) => createMockConnector({
+  fetchAccount: vi.fn().mockResolvedValue({ balance: 200 }),
+  fetchCategory: vi.fn().mockResolvedValue(mockCategory),
+  addExpense: vi.fn().mockResolvedValue(makeTx(50)),
+  updateAccountBalance: vi.fn().mockResolvedValue({ balance: 150 }),
+  ...overrides
+})
+
+const defaultIncomeSetup = (overrides = {}) => createMockConnector({
+  fetchAccount: vi.fn().mockResolvedValue({ balance: 0 }),
+  fetchCategory: vi.fn().mockResolvedValue(mockCategory),
+  addIncome: vi.fn().mockResolvedValue(makeTx(100)),
+  updateAccountBalance: vi.fn().mockResolvedValue({ balance: 100 }),
+  ...overrides
+})
+
 describe('logExpense()', () => {
   it('throws QueryError when amount <= 0 (zero)', async () => {
     const connector = createMockConnector()
@@ -32,9 +52,17 @@ describe('logExpense()', () => {
       .rejects.toThrow(QueryError)
   })
 
+  it('validates categoryId before writing (BUG #5)', async () => {
+    const fetchCategory = vi.fn().mockResolvedValue(mockCategory)
+    const connector = defaultExpenseSetup({ fetchCategory })
+    await logExpense(makeEvent({ accountId: 'a', amount: 50, categoryId: 'cat-2', note: '' }), connector)
+    expect(fetchCategory).toHaveBeenCalledWith('cat-2')
+  })
+
   it('deducts amount from account balance', async () => {
     const connector = createMockConnector({
       fetchAccount: vi.fn().mockResolvedValue({ balance: 500 }),
+      fetchCategory: vi.fn().mockResolvedValue(mockCategory),
       addExpense: vi.fn().mockResolvedValue(makeTx(100)),
       updateAccountBalance: vi.fn().mockResolvedValue({ balance: 400 })
     })
@@ -43,31 +71,31 @@ describe('logExpense()', () => {
     expect((result.body as any).newBalance).toBe(400)
   })
 
-  it('calls addExpense with correct args', async () => {
+  it('calls addExpense with correct args (no linkedCardId)', async () => {
     const addExpense = vi.fn().mockResolvedValue(makeTx(50))
-    const connector = createMockConnector({
-      fetchAccount: vi.fn().mockResolvedValue({ balance: 200 }),
-      addExpense,
-      updateAccountBalance: vi.fn().mockResolvedValue({ balance: 150 })
-    })
+    const connector = defaultExpenseSetup({ addExpense })
     await logExpense(makeEvent({ accountId: 'acc-1', amount: 50, categoryId: 'cat-2', note: 'lunch' }), connector)
-    expect(addExpense).toHaveBeenCalledWith('acc-1', 50, 'cat-2', 'lunch', undefined)
+    expect(addExpense).toHaveBeenCalledWith('acc-1', 50, 'cat-2', 'lunch', undefined, undefined)
+  })
+
+  it('passes linkedCardId to addExpense when provided (BUG #2)', async () => {
+    const addExpense = vi.fn().mockResolvedValue(makeTx(50))
+    const connector = defaultExpenseSetup({ addExpense })
+    await logExpense(makeEvent({ accountId: 'acc-1', amount: 50, categoryId: 'cat-2', note: '', linkedCardId: 'card-1' }), connector)
+    expect(addExpense).toHaveBeenCalledWith('acc-1', 50, 'cat-2', '', undefined, 'card-1')
   })
 
   it('passes timestamp to addExpense when provided', async () => {
     const addExpense = vi.fn().mockResolvedValue(makeTx(50))
-    const connector = createMockConnector({
-      fetchAccount: vi.fn().mockResolvedValue({ balance: 200 }),
-      addExpense,
-      updateAccountBalance: vi.fn().mockResolvedValue({ balance: 150 })
-    })
+    const connector = defaultExpenseSetup({ addExpense })
     await logExpense(makeEvent({ accountId: 'acc-1', amount: 50, categoryId: 'cat-2', note: '', timestamp: 1700000000000 }), connector)
-    expect(addExpense).toHaveBeenCalledWith('acc-1', 50, 'cat-2', '', 1700000000000)
+    expect(addExpense).toHaveBeenCalledWith('acc-1', 50, 'cat-2', '', 1700000000000, undefined)
   })
 
   it('returns oldBalance, newBalance, amount, categoryId, note', async () => {
     const connector = createMockConnector({
       fetchAccount: vi.fn().mockResolvedValue({ balance: 300 }),
+      fetchCategory: vi.fn().mockResolvedValue(mockCategory),
       addExpense: vi.fn().mockResolvedValue(makeTx(75)),
       updateAccountBalance: vi.fn().mockResolvedValue({ balance: 225 })
     })
@@ -88,9 +116,17 @@ describe('logIncome()', () => {
       .rejects.toThrow(QueryError)
   })
 
+  it('validates categoryId before writing (BUG #5)', async () => {
+    const fetchCategory = vi.fn().mockResolvedValue(mockCategory)
+    const connector = defaultIncomeSetup({ fetchCategory })
+    await logIncome(makeEvent({ accountId: 'a', amount: 100, categoryId: 'sal', note: '' }), connector)
+    expect(fetchCategory).toHaveBeenCalledWith('sal')
+  })
+
   it('adds amount to account balance', async () => {
     const connector = createMockConnector({
       fetchAccount: vi.fn().mockResolvedValue({ balance: 100 }),
+      fetchCategory: vi.fn().mockResolvedValue(mockCategory),
       addIncome: vi.fn().mockResolvedValue(makeTx(200)),
       updateAccountBalance: vi.fn().mockResolvedValue({ balance: 300 })
     })
@@ -101,13 +137,16 @@ describe('logIncome()', () => {
 
   it('calls addIncome with correct args', async () => {
     const addIncome = vi.fn().mockResolvedValue(makeTx(100))
-    const connector = createMockConnector({
-      fetchAccount: vi.fn().mockResolvedValue({ balance: 0 }),
-      addIncome,
-      updateAccountBalance: vi.fn().mockResolvedValue({ balance: 100 })
-    })
+    const connector = defaultIncomeSetup({ addIncome })
     await logIncome(makeEvent({ accountId: 'acc-2', amount: 100, categoryId: 'sal', note: 'salary', timestamp: 1700000000000 }), connector)
-    expect(addIncome).toHaveBeenCalledWith('acc-2', 100, 'sal', 'salary', 1700000000000)
+    expect(addIncome).toHaveBeenCalledWith('acc-2', 100, 'sal', 'salary', 1700000000000, undefined)
+  })
+
+  it('passes linkedCardId to addIncome when provided (BUG #2)', async () => {
+    const addIncome = vi.fn().mockResolvedValue(makeTx(100))
+    const connector = defaultIncomeSetup({ addIncome })
+    await logIncome(makeEvent({ accountId: 'acc-2', amount: 100, categoryId: 'sal', note: '', linkedCardId: 'card-2' }), connector)
+    expect(addIncome).toHaveBeenCalledWith('acc-2', 100, 'sal', '', undefined, 'card-2')
   })
 })
 

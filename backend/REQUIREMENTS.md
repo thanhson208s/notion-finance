@@ -121,10 +121,10 @@ Full registry: [`docs/known-issues.md`](./docs/known-issues.md)
 | # | Severity | Summary |
 |---|---|---|
 | ~~BUG #1~~ | ~~P2~~ | ✅ Fixed — `timestamp` now forwarded to Notion |
-| BUG #2 | P3 | `linkedCardId` accepted in POST requests but never stored |
+| ~~BUG #2~~ | ~~P3~~ | ✅ Fixed — `linkedCardId` now stored in Notion `"Linked card"` relation |
 | ~~BUG #3~~ | ~~P2~~ | ✅ Fixed — `getQueryString()` now returns null correctly |
 | ~~BUG #4~~ | ~~P1~~ | ✅ Fixed — negative amount now returns HTTP 400 |
-| BUG #5 | P2 | Account/category IDs not validated before use |
+| ~~BUG #5~~ | ~~P2~~ | ✅ Fixed — categoryId validated via `fetchCategory` before use |
 | ~~BUG #6~~ | ~~P3~~ | ✅ Fixed — 69 unit tests added, Vitest configured |
 | ~~BUG #7~~ | ~~P2~~ | ✅ Fixed — `GET /api/expense` and `GET /api/income` now query Notion |
 

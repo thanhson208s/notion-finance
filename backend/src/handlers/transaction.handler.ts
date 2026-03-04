@@ -8,7 +8,8 @@ export const logExpense: RouteHandler<LogExpenseRequest, LogExpenseResponse> = a
   const req = event.body;
   if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
   const oldBalance = (await connector.fetchAccount(req.accountId)).balance;
-  const amount = (await connector.addExpense(req.accountId, req.amount, req.categoryId, req.note, req.timestamp)).amount;
+  await connector.fetchCategory(req.categoryId);
+  const amount = (await connector.addExpense(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId)).amount;
   const newBalance = (await connector.updateAccountBalance(req.accountId, oldBalance - amount)).balance;
 
   return ok({
@@ -34,7 +35,8 @@ export const logIncome: RouteHandler<LogIncomeRequest, LogIncomeResponse> = asyn
   const req = event.body;
   if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
   const oldBalance = (await connector.fetchAccount(req.accountId)).balance;
-  const amount = (await connector.addIncome(req.accountId, req.amount, req.categoryId, req.note, req.timestamp)).amount;
+  await connector.fetchCategory(req.categoryId);
+  const amount = (await connector.addIncome(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId)).amount;
   const newBalance = (await connector.updateAccountBalance(req.accountId, oldBalance + amount)).balance;
 
   return ok({

@@ -7,9 +7,19 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Known Issues (not yet fixed)
-- BUG #2: `linkedCardId` accepted in POST request bodies but never stored in Notion
-- BUG #5: Account and category IDs not validated before use
+---
+
+## [1.3.0] - 2026-03-04
+
+### Fixed
+
+- fix(connector): added `fetchCategory(categoryId)` for pre-flight existence check — prevents malformed Notion records when an invalid categoryId is passed (BUG #5)
+- fix(connector): added `linkedCardId?: string` parameter to `addTransaction()`, `addExpense()`, `addIncome()` — now writes `"Linked card"` relation to Notion when provided (BUG #2)
+- fix(handlers): `logExpense` and `logIncome` now validate `categoryId` via `fetchCategory` and forward `req.linkedCardId`
+
+### Tests
+
+- Added 4 new test cases covering BUG #5 (category validation) and BUG #2 (linkedCardId forwarding) — total: 73 tests
 
 ---
 

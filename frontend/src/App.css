@@ -42,7 +42,7 @@ body {
 
 .page {
   margin: 0;
-  margin-bottom: 64px;
+  margin-bottom: calc(64px + env(safe-area-inset-bottom));
 }
 
 /* ---------- RESPONSIVE ---------- */

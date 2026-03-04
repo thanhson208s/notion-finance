@@ -90,7 +90,7 @@ Same as above with `ToAccount is not empty` filter.
 ## Implemented: GET /api/reports
 
 **Handler**: `src/handlers/reports.handler.ts` → `getReports()`
-**Connector**: `connector.fetchTransactions('expense'|'income', startDate?, endDate?)` + `connector.fetchCategories(null)`
+**Connector**: `connector.fetchAllTransactions(startDate?, endDate?)` + `connector.fetchCategories(null)`
 
 ### Query Parameters
 
@@ -106,6 +106,18 @@ Same as above with `ToAccount is not empty` filter.
   "totalIncome": 0,
   "totalExpense": 0,
   "netSavings": 0,
+  "transactions": [
+    {
+      "id": "string",
+      "timestamp": 0,
+      "amount": 0,
+      "fromAccountId": "string | undefined",
+      "toAccountId": "string | undefined",
+      "categoryId": "string",
+      "note": "string",
+      "linkedCardId": "string | undefined"
+    }
+  ],
   "expenseCategoryBreakdown": [
     {
       "categoryId": "string",
@@ -125,11 +137,13 @@ Same as above with `ToAccount is not empty` filter.
 }
 ```
 
+- `transactions`: all transactions in the date range (expense, income, transfer, adjustment), sorted by `timestamp` descending
+- Category breakdowns are exclusive to expense/income — transfer and adjustment transactions are excluded from breakdowns
 - `parentId`: the category's own `id` when Notion returns `null` (top-level category)
 - Each breakdown includes **all categories of the matching type**, even those with `amount: 0` (no transactions in the date range)
 - Each breakdown is sorted by `amount` descending
 - `netSavings = totalIncome - totalExpense`
-- 3 parallel Notion calls: expenses, incomes, all categories
+- 2 parallel Notion calls: all transactions + all categories
 
 ---
 

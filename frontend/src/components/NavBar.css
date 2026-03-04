@@ -4,7 +4,8 @@
   left: 0;
   right: 0;
 
-  height: 64px;
+  height: calc(64px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
 
   display: flex;
   justify-content: space-around;

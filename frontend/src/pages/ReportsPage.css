@@ -7,18 +7,18 @@
 
 .reports-page {
   font-family: 'Manrope', sans-serif;
-  padding-top: 108px;
 }
 
 /* ── Fixed filter bar ── */
 
 .reports-filter-bar {
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;
   z-index: 20;
   padding-bottom: 8px;
+  padding-top: env(safe-area-inset-top);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
@@ -366,7 +366,7 @@
 
 .reports-see-all-wrapper {
   position: fixed;
-  bottom: calc(64px + 12px);
+  bottom: calc(64px + 12px + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   display: flex;

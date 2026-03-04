@@ -62,6 +62,19 @@ export class Connector {
     return pages.map(page => this.mapPageToCategory(page));
   }
 
+  async fetchAllTransactions(startDate?: string, endDate?: string): Promise<Transaction[]> {
+    const dateFilters = [
+      ...(startDate ? [{ property: "Timestamp", date: { on_or_after: startDate } }] : []),
+      ...(endDate   ? [{ property: "Timestamp", date: { on_or_before: endDate  } }] : [])
+    ];
+    const pages = await this.queryAllPages({
+      data_source_id: process.env.NOTION_TRANSACTION_DATABASE_ID as string,
+      filter: dateFilters.length > 0 ? { and: dateFilters } : undefined,
+      sorts: [{ property: "Timestamp", direction: "descending" }]
+    });
+    return pages.map(page => this.mapPageToTransaction(page));
+  }
+
   async fetchTransactions(type: 'expense' | 'income', startDate?: string, endDate?: string): Promise<Transaction[]> {
     const dateFilters = [
       ...(startDate ? [{ property: "Timestamp", date: { on_or_after: startDate } }] : []),

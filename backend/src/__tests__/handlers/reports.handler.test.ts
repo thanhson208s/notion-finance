@@ -1,8 +1,16 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getReports } from '../../handlers/reports.handler'
 import { createMockConnector } from '../helpers/mockConnector'
 import { Transaction } from '../../types/transaction.type'
 import { Category, CategoryType } from '../../types/category.type'
+
+const TRANSFER_ID   = 'transfer-cat-id'
+const ADJUSTMENT_ID = 'adjustment-cat-id'
+
+beforeEach(() => {
+  process.env.NOTION_TRANSFER_TRANSACTION_ID   = TRANSFER_ID
+  process.env.NOTION_ADJUSTMENT_TRANSACTION_ID = ADJUSTMENT_ID
+})
 
 const makeEvent = (query: Record<string, string> = {}) => ({
   method: 'GET',
@@ -11,20 +19,39 @@ const makeEvent = (query: Record<string, string> = {}) => ({
   body: undefined
 })
 
-const makeTx = (categoryId: string, amount: number): Transaction => ({
+const makeTx = (
+  categoryId: string,
+  amount: number,
+  fromAccountId?: string,
+  toAccountId?: string
+): Transaction => ({
   id: `tx-${categoryId}-${amount}`,
   timestamp: Date.now(),
   amount,
+  fromAccountId,
+  toAccountId,
   categoryId,
   note: ''
 })
+
+const makeExpenseTx = (categoryId: string, amount: number) =>
+  makeTx(categoryId, amount, 'acc-from', undefined)
+
+const makeIncomeTx = (categoryId: string, amount: number) =>
+  makeTx(categoryId, amount, undefined, 'acc-to')
+
+const makeTransferTx = (amount: number) =>
+  makeTx(TRANSFER_ID, amount, 'acc-from', 'acc-to')
+
+const makeAdjustmentTx = (amount: number) =>
+  makeTx(ADJUSTMENT_ID, amount, 'acc-from', undefined)
 
 const makeCat = (id: string, name: string, parentId: string | null = null, type: CategoryType = 'Expense'): Category => ({
   id, name, type, parentId
 })
 
 const defaultConnector = (overrides = {}) => createMockConnector({
-  fetchTransactions: vi.fn().mockResolvedValue([]),
+  fetchAllTransactions: vi.fn().mockResolvedValue([]),
   fetchCategories: vi.fn().mockResolvedValue([]),
   ...overrides
 })
@@ -38,6 +65,7 @@ describe('getReports()', () => {
       totalIncome: 0,
       totalExpense: 0,
       netSavings: 0,
+      transactions: [],
       expenseCategoryBreakdown: [],
       incomeCategoryBreakdown: []
     })
@@ -45,9 +73,11 @@ describe('getReports()', () => {
 
   it('computes totals and netSavings correctly', async () => {
     const connector = defaultConnector({
-      fetchTransactions: vi.fn()
-        .mockResolvedValueOnce([makeTx('cat-1', 100), makeTx('cat-1', 50)]) // expenses
-        .mockResolvedValueOnce([makeTx('cat-2', 200)])                        // incomes
+      fetchAllTransactions: vi.fn().mockResolvedValue([
+        makeExpenseTx('cat-1', 100),
+        makeExpenseTx('cat-1', 50),
+        makeIncomeTx('cat-2', 200)
+      ])
     })
     const result = await getReports(makeEvent(), connector)
     expect(result.body).toMatchObject({
@@ -60,9 +90,10 @@ describe('getReports()', () => {
   it('aggregates multiple transactions under the same category', async () => {
     const cat = makeCat('cat-1', 'Food')
     const connector = defaultConnector({
-      fetchTransactions: vi.fn()
-        .mockResolvedValueOnce([makeTx('cat-1', 30), makeTx('cat-1', 70)]) // expenses
-        .mockResolvedValueOnce([]),
+      fetchAllTransactions: vi.fn().mockResolvedValue([
+        makeExpenseTx('cat-1', 30),
+        makeExpenseTx('cat-1', 70)
+      ]),
       fetchCategories: vi.fn().mockResolvedValue([cat])
     })
     const result = await getReports(makeEvent(), connector)
@@ -74,9 +105,10 @@ describe('getReports()', () => {
   it('sorts categoryBreakdown descending by amount', async () => {
     const cats = [makeCat('cat-a', 'A'), makeCat('cat-b', 'B')]
     const connector = defaultConnector({
-      fetchTransactions: vi.fn()
-        .mockResolvedValueOnce([makeTx('cat-a', 10), makeTx('cat-b', 90)]) // expenses
-        .mockResolvedValueOnce([]),
+      fetchAllTransactions: vi.fn().mockResolvedValue([
+        makeExpenseTx('cat-a', 10),
+        makeExpenseTx('cat-b', 90)
+      ]),
       fetchCategories: vi.fn().mockResolvedValue(cats)
     })
     const result = await getReports(makeEvent(), connector)
@@ -85,19 +117,16 @@ describe('getReports()', () => {
     expect(breakdown[0].categoryId).toBe('cat-b')
   })
 
-  it('passes startDate and endDate to fetchTransactions', async () => {
-    const fetchTransactions = vi.fn().mockResolvedValue([])
-    const connector = defaultConnector({ fetchTransactions })
+  it('passes startDate and endDate to fetchAllTransactions with full datetime', async () => {
+    const fetchAllTransactions = vi.fn().mockResolvedValue([])
+    const connector = defaultConnector({ fetchAllTransactions })
     await getReports(makeEvent({ startDate: '2026-01-01', endDate: '2026-03-31' }), connector)
-    expect(fetchTransactions).toHaveBeenCalledWith('expense', '2026-01-01', '2026-03-31')
-    expect(fetchTransactions).toHaveBeenCalledWith('income', '2026-01-01', '2026-03-31')
+    expect(fetchAllTransactions).toHaveBeenCalledWith('2026-01-01T00:00:00', '2026-03-31T23:59:59')
   })
 
   it('uses categoryId as fallback name when category not found in map', async () => {
     const connector = defaultConnector({
-      fetchTransactions: vi.fn()
-        .mockResolvedValueOnce([makeTx('unknown-cat', 50)])
-        .mockResolvedValueOnce([]),
+      fetchAllTransactions: vi.fn().mockResolvedValue([makeExpenseTx('unknown-cat', 50)]),
       fetchCategories: vi.fn().mockResolvedValue([])
     })
     const result = await getReports(makeEvent(), connector)
@@ -106,11 +135,9 @@ describe('getReports()', () => {
   })
 
   it('uses categoryId as parentId fallback when category.parentId is null', async () => {
-    const cat = makeCat('cat-1', 'Food', null) // parentId is null
+    const cat = makeCat('cat-1', 'Food', null)
     const connector = defaultConnector({
-      fetchTransactions: vi.fn()
-        .mockResolvedValueOnce([makeTx('cat-1', 50)])
-        .mockResolvedValueOnce([]),
+      fetchAllTransactions: vi.fn().mockResolvedValue([makeExpenseTx('cat-1', 50)]),
       fetchCategories: vi.fn().mockResolvedValue([cat])
     })
     const result = await getReports(makeEvent(), connector)
@@ -121,9 +148,7 @@ describe('getReports()', () => {
   it('sets parentId from category when Notion returns a parent', async () => {
     const cat = makeCat('cat-child', 'Sub Food', 'cat-parent')
     const connector = defaultConnector({
-      fetchTransactions: vi.fn()
-        .mockResolvedValueOnce([makeTx('cat-child', 50)])
-        .mockResolvedValueOnce([]),
+      fetchAllTransactions: vi.fn().mockResolvedValue([makeExpenseTx('cat-child', 50)]),
       fetchCategories: vi.fn().mockResolvedValue([cat])
     })
     const result = await getReports(makeEvent(), connector)
@@ -134,7 +159,7 @@ describe('getReports()', () => {
   it('includes expense categories with no transactions as amount 0', async () => {
     const cat = makeCat('cat-no-tx', 'Unused')
     const connector = defaultConnector({
-      fetchTransactions: vi.fn().mockResolvedValue([]),
+      fetchAllTransactions: vi.fn().mockResolvedValue([]),
       fetchCategories: vi.fn().mockResolvedValue([cat])
     })
     const result = await getReports(makeEvent(), connector)
@@ -147,9 +172,10 @@ describe('getReports()', () => {
     const expCat = makeCat('cat-exp', 'Food')
     const incCat = makeCat('cat-inc', 'Salary', null, 'Income')
     const connector = defaultConnector({
-      fetchTransactions: vi.fn()
-        .mockResolvedValueOnce([makeTx('cat-exp', 100)]) // expenses
-        .mockResolvedValueOnce([makeTx('cat-inc', 200)]), // incomes
+      fetchAllTransactions: vi.fn().mockResolvedValue([
+        makeExpenseTx('cat-exp', 100),
+        makeIncomeTx('cat-inc', 200)
+      ]),
       fetchCategories: vi.fn().mockResolvedValue([expCat, incCat])
     })
     const result = await getReports(makeEvent(), connector)
@@ -158,5 +184,47 @@ describe('getReports()', () => {
     expect(body.expenseCategoryBreakdown[0].categoryId).toBe('cat-exp')
     expect(body.incomeCategoryBreakdown).toHaveLength(1)
     expect(body.incomeCategoryBreakdown[0].categoryId).toBe('cat-inc')
+  })
+
+  it('includes transfer transactions in transactions list but not in breakdowns', async () => {
+    const connector = defaultConnector({
+      fetchAllTransactions: vi.fn().mockResolvedValue([
+        makeExpenseTx('cat-1', 50),
+        makeTransferTx(200)
+      ]),
+      fetchCategories: vi.fn().mockResolvedValue([makeCat('cat-1', 'Food')])
+    })
+    const result = await getReports(makeEvent(), connector)
+    const body = result.body as any
+    expect(body.transactions).toHaveLength(2)
+    expect(body.expenseCategoryBreakdown.every((b: any) => b.categoryId !== TRANSFER_ID)).toBe(true)
+    expect(body.incomeCategoryBreakdown.every((b: any) => b.categoryId !== TRANSFER_ID)).toBe(true)
+  })
+
+  it('includes adjustment transactions in transactions list but not in breakdowns', async () => {
+    const connector = defaultConnector({
+      fetchAllTransactions: vi.fn().mockResolvedValue([
+        makeIncomeTx('cat-2', 100),
+        makeAdjustmentTx(30)
+      ]),
+      fetchCategories: vi.fn().mockResolvedValue([makeCat('cat-2', 'Salary', null, 'Income')])
+    })
+    const result = await getReports(makeEvent(), connector)
+    const body = result.body as any
+    expect(body.transactions).toHaveLength(2)
+    expect(body.expenseCategoryBreakdown.every((b: any) => b.categoryId !== ADJUSTMENT_ID)).toBe(true)
+    expect(body.incomeCategoryBreakdown.every((b: any) => b.categoryId !== ADJUSTMENT_ID)).toBe(true)
+  })
+
+  it('transactions list preserves order from fetchAllTransactions (date desc)', async () => {
+    const t1 = { ...makeExpenseTx('cat-1', 10), id: 'tx-1', timestamp: 3000 }
+    const t2 = { ...makeExpenseTx('cat-1', 20), id: 'tx-2', timestamp: 2000 }
+    const t3 = { ...makeIncomeTx('cat-2', 30),  id: 'tx-3', timestamp: 1000 }
+    const connector = defaultConnector({
+      fetchAllTransactions: vi.fn().mockResolvedValue([t1, t2, t3])
+    })
+    const result = await getReports(makeEvent(), connector)
+    const ids = (result.body as any).transactions.map((t: Transaction) => t.id)
+    expect(ids).toEqual(['tx-1', 'tx-2', 'tx-3'])
   })
 })

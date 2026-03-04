@@ -9,6 +9,16 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.5.0] - 2026-03-05
+
+### Changed
+
+- feat(reports): `GET /api/reports` now returns a `transactions` array containing all transactions in the date range (expense, income, transfer, adjustment), sorted by `timestamp` descending
+- refactor(reports): reduced Notion API calls from 3 to 2 by replacing separate expense/income fetches with a single `fetchAllTransactions` call; expense/income classification is done in-memory
+- feat(connector): added `fetchAllTransactions(startDate?, endDate?)` method to `Connector` class
+
+---
+
 ## [FE-0.2.0] - 2026-03-04
 
 ### Added (Frontend)

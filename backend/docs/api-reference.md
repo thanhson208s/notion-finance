@@ -313,7 +313,7 @@ Date params and response shape are identical.
 
 ### GET /api/reports
 
-**Status**: ✅ DONE (v1.4.0)
+**Status**: ✅ DONE (v1.5.0)
 
 Returns spending and income summary with category breakdown for a selected date range (F-09, F-10).
 
@@ -330,6 +330,18 @@ Returns spending and income summary with category breakdown for a selected date 
   "totalIncome": 0,
   "totalExpense": 0,
   "netSavings": 0,
+  "transactions": [
+    {
+      "id": "string",
+      "timestamp": 0,
+      "amount": 0,
+      "fromAccountId": "string | undefined",
+      "toAccountId": "string | undefined",
+      "categoryId": "string",
+      "note": "string",
+      "linkedCardId": "string | undefined"
+    }
+  ],
   "expenseCategoryBreakdown": [
     {
       "categoryId": "string",
@@ -351,6 +363,9 @@ Returns spending and income summary with category breakdown for a selected date 
 
 **Notes**:
 - `netSavings = totalIncome - totalExpense`
+- `transactions`: all transactions in the date range (expense, income, transfer, adjustment), sorted by `timestamp` descending
+- Category breakdowns are exclusive to expense/income — transfer and adjustment transactions are excluded
 - `parentId`: category's own `id` when Notion returns `null` (top-level category)
 - Each breakdown sorted by `amount` descending
+- 2 parallel Notion calls: all transactions + all categories
 - Handler: `src/handlers/reports.handler.ts` → `getReports()`

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
+import { API_BASE } from '../App'
 
 type AdjustmentResponse = {
   accountId: string,
@@ -36,7 +37,7 @@ export default function AdjustmentForm({accountId, onSuccess}: {
       setError(false);
       setStatus({status: 'loading'});
       try {
-        const response = await fetch("https://finance.gootube.online/api/adjustment", {
+        const response = await fetch(`${API_BASE}/adjustment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

@@ -7,7 +7,7 @@ import {
   ArrowLeftRight,
   Pencil
 } from "lucide-react"
-import { type Account, type AccountType } from '../App'
+import { type Account, type AccountType, API_BASE } from '../App'
 
 type GetAccountsResponse = {
   accounts: Account[]
@@ -35,6 +35,12 @@ export default function AccountsPage() {
     PayLater: "account-paylater",
     Prepaid: "account-prepaid",
     Gold: "account-gold",
+    Loan: "account-loan",
+    Fund: "account-fund",
+    Bond: "account-bond",
+    Stock: "account-stock",
+    Debt: "account-debt",
+    Crypto: "account-crypto",
   }
 
   const type2Priority: Record<AccountType, number> = {
@@ -46,6 +52,12 @@ export default function AccountsPage() {
     PayLater: 5,
     Prepaid: 6,
     Gold: 7,
+    Loan: 8,
+    Fund: 9,
+    Bond: 10,
+    Stock: 11,
+    Debt: 12,
+    Crypto: 13,
   }
 
   const type2Group: Record<AccountType, "asset" | "liability"> = {
@@ -55,8 +67,14 @@ export default function AccountsPage() {
     Savings: "asset",
     Prepaid: "asset",
     Gold: "asset",
+    Loan: "asset",
+    Fund: "asset",
+    Bond: "asset",
+    Stock: "asset",
     Credit: "liability",
     PayLater: "liability",
+    Debt: "liability",
+    Crypto: "liability",
   }
 
   useEffect(() => {
@@ -65,7 +83,7 @@ export default function AccountsPage() {
     (async() => {
       try {
         const response = await fetch(
-          "https://finance.gootube.online/api/accounts",
+          `${API_BASE}/accounts`,
           { signal: controller.signal }
         );
 

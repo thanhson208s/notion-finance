@@ -1,4 +1,5 @@
 import type { Category } from '../App'
+import { API_BASE } from '../App'
 import { useEffect, useState } from 'react'
 import { TrendingUp } from 'lucide-react'
 
@@ -44,9 +45,7 @@ export default function IncomeForm({accountId, onSuccess}: {
     (async() => {
       try {
         const response = await fetch(
-          "https://finance.gootube.online/api/categories?" + new URLSearchParams({
-            type: "Income"
-          }).toString(),
+          `${API_BASE}/categories?` + new URLSearchParams({ type: "Income" }).toString(),
           { signal: controller.signal }
         );
 
@@ -79,7 +78,7 @@ export default function IncomeForm({accountId, onSuccess}: {
     if (!errorAmount && !errorCategoryId) {
       setStatus({status: 'loading'});
       try {
-        const response = await fetch("https://finance.gootube.online/api/income", {
+        const response = await fetch(`${API_BASE}/income`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

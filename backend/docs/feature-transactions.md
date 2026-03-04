@@ -43,7 +43,7 @@ All four types write to the same Notion Transaction DB. They differ in how `From
    - Creates page in Transaction DB; timestamp defaults to `now()` if not provided
 4. `connector.updateAccountBalance(accountId, oldBalance - amount)`
 
-**Known issues**: 🐛 BUG #2 (linkedCardId ignored), 🐛 BUG #5 (no existence pre-check).
+**Resolved issues**: ~~🐛 BUG #2~~ (linkedCardId now stored — v1.3.0), ~~🐛 BUG #5~~ (category ID validated — v1.3.0).
 
 ---
 
@@ -130,7 +130,7 @@ Same as List Expenses, but uses `ToAccount is_not_empty` filter and passes `'inc
 **Validation**: `amount > 0`, `categoryId` selected
 
 **POST body sent**: `{ accountId, amount, categoryId, note }`
-(No `timestamp` or `linkedCardId` in current frontend — see BUG #2)
+(No `timestamp` or `linkedCardId` sent from current frontend — backend supports both fields but UI does not expose them)
 
 ### IncomePage / IncomeForm
 
@@ -158,8 +158,9 @@ Input is the **target balance** (not a delta). Same numeric input UX as ExpenseF
 
 ## Known Issues
 
-- 🐛 BUG #2: `linkedCardId` is accepted in POST request bodies but never stored in Notion. See [known-issues.md](./known-issues.md#bug-2).
-- 🐛 BUG #5: Account and category IDs are not validated for existence before use. See [known-issues.md](./known-issues.md#bug-5).
+- ~~🐛 BUG #2~~: `linkedCardId` now stored in Notion — resolved in v1.3.0. See [known-issues.md](./known-issues.md#bug-2).
+- ~~🐛 BUG #5~~: Category ID validation added — resolved in v1.3.0. See [known-issues.md](./known-issues.md#bug-5).
+- ⚠️ **Transfer non-atomic**: if the final balance update fails, `fromAccount` is decremented but `toAccount` is not credited (data integrity risk). No frontend recovery mechanism exists.
 
 ## Backlog
 

@@ -4,6 +4,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import TransferForm from '../components/TransferForm'
 import type { Account } from '../App'
+import { API_BASE } from '../App'
 
 export default function TransferPage() {
   const { accountId } = useParams()
@@ -17,7 +18,7 @@ export default function TransferPage() {
     const controller = new AbortController()
     ;(async () => {
       try {
-        const response = await fetch('https://finance.gootube.online/api/accounts', {
+        const response = await fetch(`${API_BASE}/accounts`, {
           signal: controller.signal,
         })
         if (!response.ok) throw new Error('Failed to fetch accounts')

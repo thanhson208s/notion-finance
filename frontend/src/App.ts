@@ -1,4 +1,6 @@
-export type AccountType = 
+export const API_BASE = import.meta.env.VITE_API_BASE as string
+
+export type AccountType =
   | "Cash"
   | "Bank"
   | "Credit"
@@ -7,6 +9,12 @@ export type AccountType =
   | "PayLater"
   | "Prepaid"
   | "Gold"
+  | "Loan"
+  | "Fund"
+  | "Bond"
+  | "Stock"
+  | "Debt"
+  | "Crypto"
 
 export type Account = {
   id: string

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Account, AccountType } from '../App'
+import { API_BASE } from '../App'
 import { BanknoteArrowDown, BanknoteArrowUp, ArrowUpDown, ArrowLeftRight } from 'lucide-react';
 
 type TransferResponse = {
@@ -72,7 +73,7 @@ export default function TransferForm({accountId, accounts, onSuccess}: {
     if (!errorAmount && !errorFromAccountId && !errorToAccountId) {
       setStatus({status: 'loading'});
       try {
-        const response = await fetch("https://finance.gootube.online/api/transfer", {
+        const response = await fetch(`${API_BASE}/transfer`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

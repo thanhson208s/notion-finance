@@ -66,8 +66,8 @@ Four Notion databases. Full schema with property names and types: [`docs/databas
 
 | # | Feature | Status |
 |---|---|---|
-| F-09 | Spending and income summary for a selected date range | ❌ Todo |
-| F-10 | Category breakdown report | ❌ Todo |
+| F-09 | Spending and income summary for a selected date range | ✅ Done |
+| F-10 | Category breakdown report | ✅ Done |
 | F-11 | Pagination for transaction list endpoints | ✅ Done |
 | F-12 | Account priority ranking based on recent transaction frequency | ❌ Todo |
 
@@ -92,7 +92,7 @@ Four Notion databases. Full schema with property names and types: [`docs/databas
 | **Timezone** | All timestamps stored in `Asia/Bangkok` (UTC+7) |
 | **Currency** | Primary currency: VND |
 | **Error handling** | All errors mapped to structured HTTP responses with `code` and `message` |
-| **Testing** | Unit tests configured with Vitest — 69 tests passing (v1.2.0) |
+| **Testing** | Unit tests configured with Vitest — 82 tests passing (v1.4.0) |
 
 ---
 
@@ -110,6 +110,7 @@ Full reference with request/response schemas and known caveats: [`docs/api-refer
 | GET | `/api/income` | F-08 | ✅ Done |
 | POST | `/api/transfer` | F-04 | ✅ Done |
 | POST | `/api/adjustment` | F-05 | ✅ Done |
+| GET | `/api/reports` | F-09, F-10 | ✅ Done |
 
 ---
 

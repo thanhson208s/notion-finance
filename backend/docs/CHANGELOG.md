@@ -9,6 +9,19 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.4.0] - 2026-03-04
+
+### Added
+
+- feat(reports): `GET /api/reports` endpoint — returns `totalIncome`, `totalExpense`, `netSavings`, `expenseCategoryBreakdown`, `incomeCategoryBreakdown` with optional `startDate`/`endDate` query params (F-09, F-10)
+- feat(reports): `CategoryBreakdown` and `GetReportsResponse` types in `src/types/response.ts`
+
+### Tests
+
+- Added 9 new test cases for `reports.handler.ts` — total: 82 tests
+
+---
+
 ## [1.3.0] - 2026-03-04
 
 ### Fixed

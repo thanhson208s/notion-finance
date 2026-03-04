@@ -6,6 +6,7 @@ import { Connector } from "../utils/connector";
 import { APIErrorCode, APIResponseError } from "@notionhq/client";
 import { QueryError, SchemaError } from "../types/error";
 import { getCategories } from "./category.handler";
+import { getReports } from "./reports.handler";
 
 const router = new Router(new Connector());
 router.register('GET', '/accounts', getAccounts);
@@ -16,6 +17,7 @@ router.register('POST', '/income', logIncome);
 router.register('GET', '/income', listIncomes);
 router.register('POST', '/transfer', transferBalance);
 router.register('POST', '/adjustment', adjustBalance);
+router.register('GET', '/reports', getReports);
 
 export const handler: LambdaFunctionURLHandlerWithIAMAuthorizer = async(event: LambdaFunctionURLEventWithIAMAuthorizer): Promise<LambdaFunctionURLResult> => {
   const method = event.requestContext.http.method;

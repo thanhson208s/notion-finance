@@ -13,6 +13,15 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.2.1] - 2026-03-04
+
+### Fixed
+
+- fix(connector): `fetchTransactions`, `fetchAllAccounts`, `fetchCategories` now fetch all pages via cursor loop — previously truncated at 100 results (F-11)
+- refactor(connector): extracted private `queryAllPages` helper to handle Notion cursor pagination in a single place
+
+---
+
 ## [1.2.0] - 2026-03-04
 
 ### Added

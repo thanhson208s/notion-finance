@@ -9,12 +9,10 @@ export class Connector {
   notion = new Client({ auth: process.env.NOTION_API_KEY })
 
   async fetchAllAccounts(): Promise<Account[]> {
-    const response = await this.notion.dataSources.query({
+    const pages = await this.queryAllPages({
       data_source_id: process.env.NOTION_ACCOUNT_DATABASE_ID as string
     });
-    return response.results
-      .filter(result => (result.object === "page" && "properties" in result))
-      .map(page => this.mapPageToAccount(page));
+    return pages.map(page => this.mapPageToAccount(page));
   }
 
   async fetchAccount(accountId: string): Promise<Account> {
@@ -42,24 +40,8 @@ export class Connector {
     return this.mapPageToAccount(response);
   }
 
-  async fetchExpenseCategories(): Promise<Category[]> {
-    const response = await this.notion.dataSources.query({
-      data_source_id: process.env.NOTION_CATEGORY_DATABASE_ID as string,
-      filter: {
-        property: "Type",
-        select: {
-          equals: "Expense"
-        }
-      }
-    });
-
-    return response.results
-      .filter(result => (result.object === "page" && "properties" in result))
-      .map(page => this.mapPageToCategory(page));
-  }
-
   async fetchCategories(type: string | null): Promise<Category[]> {
-    const response = await this.notion.dataSources.query({
+    const pages = await this.queryAllPages({
       data_source_id: process.env.NOTION_CATEGORY_DATABASE_ID as string,
       filter: type ? {
         property: "Type",
@@ -68,9 +50,7 @@ export class Connector {
         }
       } : undefined
     });
-    return response.results
-      .filter(result => (result.object === "page" && "properties" in result))
-      .map(page => this.mapPageToCategory(page));
+    return pages.map(page => this.mapPageToCategory(page));
   }
 
   async fetchTransactions(type: 'expense' | 'income', startDate?: string, endDate?: string): Promise<Transaction[]> {
@@ -78,13 +58,13 @@ export class Connector {
       ...(startDate ? [{ property: "Timestamp", date: { on_or_after: startDate } }] : []),
       ...(endDate ? [{ property: "Timestamp", date: { on_or_before: endDate } }] : [])
     ];
-    const response = await this.notion.dataSources.query({
+    const pages = await this.queryAllPages({
       data_source_id: process.env.NOTION_TRANSACTION_DATABASE_ID as string,
       filter: {
         and: [
           type === 'expense'
             ? { property: "FromAccount", relation: { is_not_empty: true } }
-            : { property: "ToAccount",   relation: { is_not_empty: true } },
+            : { property: "ToAccount", relation: { is_not_empty: true } },
           { property: "Category", relation: { does_not_contain: process.env.NOTION_TRANSFER_TRANSACTION_ID as string } },
           { property: "Category", relation: { does_not_contain: process.env.NOTION_ADJUSTMENT_TRANSACTION_ID as string } },
           ...dateFilters
@@ -92,9 +72,7 @@ export class Connector {
       },
       sorts: [{ property: "Timestamp", direction: "descending" }]
     });
-    return response.results
-      .filter(result => result.object === "page" && "properties" in result)
-      .map(page => this.mapPageToTransaction(page));
+    return pages.map(page => this.mapPageToTransaction(page));
   }
 
   async addTransaction(fromAccountId: string | null, toAccountId: string | null, amount: number, categoryId: string, note: string, timestamp?: number): Promise<Transaction> {
@@ -129,19 +107,19 @@ export class Connector {
         "FromAccount": {
           type: 'relation',
           relation: fromAccountId ? [
-             {id: fromAccountId}
+            { id: fromAccountId }
           ] : []
         },
         "ToAccount": {
           type: 'relation',
           relation: toAccountId ? [
-            {id: toAccountId}
+            { id: toAccountId }
           ] : []
         },
         "Category": {
           type: 'relation',
           relation: [
-            {id: categoryId}
+            { id: categoryId }
           ]
         },
         "Note": {
@@ -173,6 +151,26 @@ export class Connector {
 
   async addTransfer(fromAccountId: string, toAccountId: string, amount: number, timestamp?: number): Promise<Transaction> {
     return await this.addTransaction(fromAccountId, toAccountId, amount, process.env.NOTION_TRANSFER_TRANSACTION_ID as string, "", timestamp);
+  }
+
+  private async queryAllPages(
+    params: Parameters<typeof this.notion.dataSources.query>[0]
+  ): Promise<PageObjectResponse[]> {
+    const allPages: PageObjectResponse[] = []
+    let cursor: string | undefined = undefined
+    do {
+      const response = await this.notion.dataSources.query({
+        ...params,
+        start_cursor: cursor,
+        page_size: 100
+      })
+      const pages = response.results.filter(
+        (r): r is PageObjectResponse => r.object === 'page' && 'properties' in r
+      )
+      allPages.push(...pages)
+      cursor = response.has_more ? (response.next_cursor ?? undefined) : undefined
+    } while (cursor !== undefined)
+    return allPages
   }
 
   private mapPageToAccount(page: PageObjectResponse): Account {
@@ -235,7 +233,7 @@ export class Connector {
     const prop = this.getProperty(page, key);
     if (prop.type !== "title")
       throw new SchemaError(`Property ${key} is not a title`);
-    
+
     return prop.title[0].plain_text;
   }
 
@@ -270,7 +268,7 @@ export class Connector {
       if (!prop.rich_text)
         throw new SchemaError(`Property ${key} does not have a value`);
     }
-    
+
     return prop.rich_text[0]?.plain_text ?? null as any;
   }
 

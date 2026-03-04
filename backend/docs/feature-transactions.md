@@ -36,13 +36,14 @@ All four types write to the same Notion Transaction DB. They differ in how `From
 
 **Handler**: `src/handlers/transaction.handler.ts` → `logExpense()`
 
-1. `connector.fetchAccount(accountId)` → get `oldBalance`
-2. `connector.addExpense(accountId, amount, categoryId, note)`
-   - Calls `addTransaction(accountId, null, amount, categoryId, note)`
-   - Creates page in Transaction DB
-3. `connector.updateAccountBalance(accountId, oldBalance - amount)`
+1. Validate `amount > 0` — throws `QueryError` (HTTP 400) if not
+2. `connector.fetchAccount(accountId)` → get `oldBalance`
+3. `connector.addExpense(accountId, amount, categoryId, note, timestamp?)`
+   - Calls `addTransaction(accountId, null, amount, categoryId, note, timestamp?)`
+   - Creates page in Transaction DB; timestamp defaults to `now()` if not provided
+4. `connector.updateAccountBalance(accountId, oldBalance - amount)`
 
-**Known issues**: 🐛 BUG #1 (timestamp ignored), 🐛 BUG #2 (linkedCardId ignored), 🐛 BUG #4 (no amount validation), 🐛 BUG #5 (no existence pre-check).
+**Known issues**: 🐛 BUG #2 (linkedCardId ignored), 🐛 BUG #5 (no existence pre-check).
 
 ---
 
@@ -129,7 +130,7 @@ Same as List Expenses, but uses `ToAccount is_not_empty` filter and passes `'inc
 **Validation**: `amount > 0`, `categoryId` selected
 
 **POST body sent**: `{ accountId, amount, categoryId, note }`
-(No `timestamp` or `linkedCardId` — see BUG #1, BUG #2)
+(No `timestamp` or `linkedCardId` in current frontend — see BUG #2)
 
 ### IncomePage / IncomeForm
 
@@ -158,12 +159,10 @@ Input is the **target balance** (not a delta). Same numeric input UX as ExpenseF
 ## Known Issues
 
 - 🐛 BUG #2: `linkedCardId` is accepted in POST request bodies but never stored in Notion. See [known-issues.md](./known-issues.md#bug-2).
-- 🐛 BUG #4: No amount validation — negative values are accepted and will corrupt balances. See [known-issues.md](./known-issues.md#bug-4).
 - 🐛 BUG #5: Account and category IDs are not validated for existence before use. See [known-issues.md](./known-issues.md#bug-5).
 
 ## Backlog
 
 - Transaction history view per account (frontend)
 - Date range picker UI on Reports page (frontend)
-- Pagination for list endpoints (Notion cursor-based, 100 results/page limit)
 - Make transfer operation atomic (or add compensating transaction on failure)

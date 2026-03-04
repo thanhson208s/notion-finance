@@ -33,9 +33,7 @@ Categories classify transactions for reporting and budgeting. They form a two-le
 }
 ```
 
-> 🐛 **BUG #3**: `getQueryString(query, "type", false)` with `required=false` throws `null` instead of returning `null` when the `?type` query parameter is absent. This causes an unhandled `null` error (HTTP 500) when calling `GET /api/categories` without `?type`.
->
-> In practice, the frontend always provides `?type=Expense` or `?type=Income`, so this bug is not triggered in production. See [known-issues.md](./known-issues.md#bug-3).
+> ✅ **BUG #3 Fixed (v1.1.0)**: `getQueryString(query, "type", false)` now correctly returns `null` when the `?type` param is absent. `GET /api/categories` (no type filter) works and returns all categories.
 
 ---
 
@@ -67,6 +65,5 @@ These are **Notion page IDs** (not database IDs). If misconfigured, all transfer
 
 ## Backlog
 
-- Fix BUG #3 so `GET /api/categories` (no type filter) returns all categories correctly
 - Category management UI (create, edit, delete)
 - Budget allocation per category (see [feature-budget.md](./feature-budget.md))

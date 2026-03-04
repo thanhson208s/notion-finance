@@ -1,6 +1,6 @@
 # Feature: Reports
 
-**Status**: ❌ TODO (backend) / ⚠️ STUB (frontend — empty `ReportsPage` component)
+**Status**: ❌ TODO (backend — no `/api/reports` endpoint yet) / ⚠️ STUB (frontend — empty `ReportsPage` component)
 
 ---
 
@@ -12,41 +12,42 @@ Provide spending and income analysis for a user-selected date range. Users shoul
 
 ## Dependencies
 
-- Requires `GET /api/expense` to be implemented with real Notion queries
-- Requires `GET /api/income` to be implemented with real Notion queries
-- Stub routes already exist for both endpoints; they accept `startDate` / `endDate` params but return empty arrays. See [feature-transactions.md](./feature-transactions.md) and [api-reference.md](./api-reference.md).
+All backend dependencies are **already implemented**:
+
+| Dependency | Status |
+|---|---|
+| `GET /api/expense` with real Notion date-range query | ✅ Done (v1.1.0) |
+| `GET /api/income` with real Notion date-range query | ✅ Done (v1.1.0) |
+| Cursor-based pagination (fetch all pages from Notion) | ✅ Done (v1.2.1) |
+
+Both endpoints accept optional `startDate` / `endDate` params, apply Notion filters, exclude system categories (transfer/adjustment), and return computed `total`. The connector fetches all pages automatically via `queryAllPages` — no 100-result truncation.
 
 ---
 
-## Backend: Implement List Transactions
+## Implemented: List Transactions
 
-### GET /api/expense — Required Notion Query
+### GET /api/expense
 
-Filter the Transaction database:
+**Handler**: `src/handlers/transaction.handler.ts` → `listExpenses()`
+**Connector**: `connector.fetchTransactions('expense', startDate?, endDate?)`
+
+Notion filter applied:
 
 ```
 AND [
   FromAccount  is not empty
-  Category     is not NOTION_TRANSFER_TRANSACTION_ID
-  Category     is not NOTION_ADJUSTMENT_TRANSACTION_ID
-  Timestamp    on or after  startDate
-  Timestamp    on or before endDate
+  Category     does_not_contain NOTION_TRANSFER_TRANSACTION_ID
+  Category     does_not_contain NOTION_ADJUSTMENT_TRANSACTION_ID
+  Timestamp    on_or_after  startDate  (if provided)
+  Timestamp    on_or_before endDate    (if provided)
 ]
 ```
 
-Sort: `Timestamp` descending.
+Sort: `Timestamp` descending. `total` computed server-side.
 
-### GET /api/income — Required Notion Query
+### GET /api/income
 
-```
-AND [
-  ToAccount    is not empty
-  Category     is not NOTION_TRANSFER_TRANSACTION_ID
-  Category     is not NOTION_ADJUSTMENT_TRANSACTION_ID
-  Timestamp    on or after  startDate
-  Timestamp    on or before endDate
-]
-```
+Same as above with `ToAccount is not empty` filter.
 
 ### Response Shape (both endpoints)
 
@@ -68,14 +69,6 @@ AND [
 }
 ```
 
-`total` is computed server-side as the sum of all `amount` values in the result set.
-
-### Design Constraints
-
-- Notion API does not support server-side aggregation — the sum must be computed in Lambda
-- Pagination will be required for large date ranges (Notion limits queries to 100 pages per request; cursor-based pagination via `next_cursor` is needed)
-- Date params should be validated as ISO 8601 strings before constructing the Notion filter
-
 ---
 
 ## Frontend: ReportsPage
@@ -95,8 +88,8 @@ AND [
 
 ## Backlog Items
 
-1. Implement `GET /api/expense` with real Notion date-range query
-2. Implement `GET /api/income` with real Notion date-range query
-3. Add cursor-based pagination for list endpoints
+1. ~~Implement `GET /api/expense` with real Notion date-range query~~ ✅ Done (v1.1.0)
+2. ~~Implement `GET /api/income` with real Notion date-range query~~ ✅ Done (v1.1.0)
+3. ~~Add cursor-based pagination for list endpoints~~ ✅ Done (v1.2.1)
 4. Build `ReportsPage` frontend with date picker and summary cards
 5. Add category breakdown chart

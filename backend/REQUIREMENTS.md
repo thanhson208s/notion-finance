@@ -68,7 +68,7 @@ Four Notion databases. Full schema with property names and types: [`docs/databas
 |---|---|---|
 | F-09 | Spending and income summary for a selected date range | ❌ Todo |
 | F-10 | Category breakdown report | ❌ Todo |
-| F-11 | Pagination for transaction list endpoints | ❌ Todo |
+| F-11 | Pagination for transaction list endpoints | ✅ Done |
 | F-12 | Account priority ranking based on recent transaction frequency | ❌ Todo |
 
 ### Phase 3 — Extended Features (Backlog)
@@ -92,7 +92,7 @@ Four Notion databases. Full schema with property names and types: [`docs/databas
 | **Timezone** | All timestamps stored in `Asia/Bangkok` (UTC+7) |
 | **Currency** | Primary currency: VND |
 | **Error handling** | All errors mapped to structured HTTP responses with `code` and `message` |
-| **Testing** | Unit and integration tests required before production (⚠️ not yet configured) |
+| **Testing** | Unit tests configured with Vitest — 69 tests passing (v1.2.0) |
 
 ---
 
@@ -125,7 +125,7 @@ Full registry: [`docs/known-issues.md`](./docs/known-issues.md)
 | ~~BUG #3~~ | ~~P2~~ | ✅ Fixed — `getQueryString()` now returns null correctly |
 | ~~BUG #4~~ | ~~P1~~ | ✅ Fixed — negative amount now returns HTTP 400 |
 | BUG #5 | P2 | Account/category IDs not validated before use |
-| BUG #6 | P3 | Zero test coverage; `pnpm test` not configured |
+| ~~BUG #6~~ | ~~P3~~ | ✅ Fixed — 69 unit tests added, Vitest configured |
 | ~~BUG #7~~ | ~~P2~~ | ✅ Fixed — `GET /api/expense` and `GET /api/income` now query Notion |
 
 ---

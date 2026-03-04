@@ -115,9 +115,9 @@ Do **not** call `err()` from handlers. Handlers return `ok(data)` on success or 
 Per `CLAUDE.md` Standard AI Workflow:
 
 ```bash
-pnpm lint    # ESLint
-pnpm test    # Vitest (⚠️ not yet configured — see BUG #6)
-pnpm build   # serverless package
+npm run lint    # ESLint
+npm run test    # Vitest
+npm run build   # serverless package
 ```
 
 ---

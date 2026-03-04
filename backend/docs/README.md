@@ -15,7 +15,7 @@ Architecture: CloudFront → AWS Lambda (TypeScript) ↔ Notion API, with a Reac
 | Accounts feature | [feature-accounts.md](./feature-accounts.md) |
 | Transactions (Expense/Income/Transfer/Adjustment) | [feature-transactions.md](./feature-transactions.md) |
 | Categories feature | [feature-categories.md](./feature-categories.md) |
-| Reports (backlog) | [feature-reports.md](./feature-reports.md) |
+| Reports | [feature-reports.md](./feature-reports.md) |
 | Cards management (backlog) | [feature-cards.md](./feature-cards.md) |
 | Budget management (backlog) | [feature-budget.md](./feature-budget.md) |
 | Known bugs & issues | [known-issues.md](./known-issues.md) |
@@ -47,11 +47,11 @@ Architecture: CloudFront → AWS Lambda (TypeScript) ↔ Notion API, with a Reac
 | Get categories | ✅ DONE | ✅ DONE (embedded in forms) |
 | List expenses by date range | ✅ DONE | ❌ TODO |
 | List incomes by date range | ✅ DONE | ❌ TODO |
-| Reports page | ❌ TODO | ⚠️ STUB |
+| Reports (GET /api/reports) | ✅ DONE | ⚠️ STUB |
 | Cards management | ❌ TODO | ⚠️ STUB |
 | Budget management | ❌ TODO | ❌ TODO |
 | Vouchers / promotions | ❌ TODO | ⚠️ STUB |
-| Pagination (any endpoint) | ❌ TODO | ❌ TODO |
+| Pagination (list endpoints) | ✅ DONE | ❌ TODO |
 
 ---
 

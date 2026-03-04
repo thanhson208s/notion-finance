@@ -1,6 +1,6 @@
 # Feature: Reports
 
-**Status**: ❌ TODO (backend — no `/api/reports` endpoint yet) / ⚠️ STUB (frontend — empty `ReportsPage` component)
+**Status**: ✅ Done (backend — v1.4.0) / ⚠️ STUB (frontend — empty `ReportsPage` component)
 
 ---
 
@@ -86,10 +86,56 @@ Same as above with `ToAccount is not empty` filter.
 
 ---
 
+## Implemented: GET /api/reports
+
+**Handler**: `src/handlers/reports.handler.ts` → `getReports()`
+**Connector**: `connector.fetchTransactions('expense'|'income', startDate?, endDate?)` + `connector.fetchCategories(null)`
+
+### Query Parameters
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `startDate` | ISO 8601 string | No | Filter transactions on or after this date |
+| `endDate` | ISO 8601 string | No | Filter transactions on or before this date |
+
+### Response Shape
+
+```json
+{
+  "totalIncome": 0,
+  "totalExpense": 0,
+  "netSavings": 0,
+  "expenseCategoryBreakdown": [
+    {
+      "categoryId": "string",
+      "categoryName": "string",
+      "parentId": "string",
+      "amount": 0
+    }
+  ],
+  "incomeCategoryBreakdown": [
+    {
+      "categoryId": "string",
+      "categoryName": "string",
+      "parentId": "string",
+      "amount": 0
+    }
+  ]
+}
+```
+
+- `parentId`: the category's own `id` when Notion returns `null` (top-level category)
+- Each breakdown is sorted by `amount` descending
+- `netSavings = totalIncome - totalExpense`
+- 3 parallel Notion calls: expenses, incomes, all categories
+
+---
+
 ## Backlog Items
 
 1. ~~Implement `GET /api/expense` with real Notion date-range query~~ ✅ Done (v1.1.0)
 2. ~~Implement `GET /api/income` with real Notion date-range query~~ ✅ Done (v1.1.0)
 3. ~~Add cursor-based pagination for list endpoints~~ ✅ Done (v1.2.1)
-4. Build `ReportsPage` frontend with date picker and summary cards
-5. Add category breakdown chart
+4. ~~Implement `GET /api/reports` backend endpoint~~ ✅ Done (v1.4.0)
+5. Build `ReportsPage` frontend with date picker and summary cards
+6. Add category breakdown chart

@@ -58,3 +58,18 @@ export type AdjustBalanceResponse = {
   delta: number,
   note: string
 }
+
+export type CategoryBreakdown = {
+  categoryId: string
+  categoryName: string
+  parentId: string
+  amount: number
+}
+
+export type GetReportsResponse = {
+  totalIncome: number
+  totalExpense: number
+  netSavings: number
+  expenseCategoryBreakdown: CategoryBreakdown[]
+  incomeCategoryBreakdown: CategoryBreakdown[]
+}

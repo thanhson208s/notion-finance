@@ -106,7 +106,7 @@ Returns all categories, optionally filtered by type.
 **Notes**:
 - `parentId: null` = top-level category
 - `parentId: string` = subcategory (child of that ID)
-- 🐛 BUG #3: calling this endpoint **without** `?type` query param throws a `null` error (HTTP 500). Frontend always provides `?type`, so this is not triggered in production. See [known-issues.md](./known-issues.md#bug-3).
+- Calling without `?type` returns all categories (no filter applied)
 
 ---
 
@@ -120,11 +120,11 @@ Logs an expense and deducts the amount from the specified account.
 ```json
 {
   "accountId": "string (required)",
-  "amount": "number (required, should be positive — 🐛 BUG #4: not validated)",
+  "amount": "number (required, must be positive)",
   "categoryId": "string (required)",
   "note": "string (required, may be empty)",
-  "timestamp": "number (optional — 🐛 BUG #1: ignored, always uses current time)",
-  "linkedCardId": "string (optional — 🐛 BUG #2: accepted but not stored)"
+  "timestamp": "number (optional, Unix ms)",
+  "linkedCardId": "string (optional)"
 }
 ```
 
@@ -157,11 +157,11 @@ Logs income and adds the amount to the specified account.
 ```json
 {
   "accountId": "string (required)",
-  "amount": "number (required, should be positive — 🐛 BUG #4: not validated)",
+  "amount": "number (required, must be positive)",
   "categoryId": "string (required)",
   "note": "string (required, may be empty)",
-  "timestamp": "number (optional — 🐛 BUG #1: ignored)",
-  "linkedCardId": "string (optional — 🐛 BUG #2: accepted but not stored)"
+  "timestamp": "number (optional, Unix ms)",
+  "linkedCardId": "string (optional)"
 }
 ```
 
@@ -192,8 +192,8 @@ Transfers an amount from one account to another.
 {
   "fromAccountId": "string (required)",
   "toAccountId": "string (required)",
-  "amount": "number (required, should be positive — 🐛 BUG #4: not validated)",
-  "timestamp": "number (optional — 🐛 BUG #1: ignored)"
+  "amount": "number (required, must be positive)",
+  "timestamp": "number (optional, Unix ms)"
 }
 ```
 
@@ -232,7 +232,7 @@ Sets an account's balance to a target value, creating an audit transaction for t
   "accountId": "string (required)",
   "balance": "number (required — this is the TARGET balance, not a delta)",
   "note": "string (required)",
-  "timestamp": "number (optional — 🐛 BUG #1: ignored)"
+  "timestamp": "number (optional, Unix ms)"
 }
 ```
 
@@ -298,7 +298,7 @@ Omitting both params returns all expense transactions (no date filter).
 - Results sorted by `timestamp` descending
 - `total` = server-side sum of `amount` across all results
 - Excludes transfer and adjustment transactions (filtered by category)
-- No pagination — returns all matching records (see backlog for cursor support)
+- Full pagination via Notion cursor — returns all matching records
 
 ---
 
@@ -308,3 +308,49 @@ Omitting both params returns all expense transactions (no date filter).
 
 Same structure as `GET /api/expense`. Filters by `ToAccount is not empty` instead of `FromAccount`.
 Date params and response shape are identical.
+
+---
+
+### GET /api/reports
+
+**Status**: ✅ DONE (v1.4.0)
+
+Returns spending and income summary with category breakdown for a selected date range (F-09, F-10).
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `startDate` | `string` (ISO 8601) | No | Filter transactions on or after this date |
+| `endDate` | `string` (ISO 8601) | No | Filter transactions on or before this date |
+
+**Response 200**:
+```json
+{
+  "totalIncome": 0,
+  "totalExpense": 0,
+  "netSavings": 0,
+  "expenseCategoryBreakdown": [
+    {
+      "categoryId": "string",
+      "categoryName": "string",
+      "parentId": "string",
+      "amount": 0
+    }
+  ],
+  "incomeCategoryBreakdown": [
+    {
+      "categoryId": "string",
+      "categoryName": "string",
+      "parentId": "string",
+      "amount": 0
+    }
+  ]
+}
+```
+
+**Notes**:
+- `netSavings = totalIncome - totalExpense`
+- `parentId`: category's own `id` when Notion returns `null` (top-level category)
+- Each breakdown sorted by `amount` descending
+- Handler: `src/handlers/reports.handler.ts` → `getReports()`

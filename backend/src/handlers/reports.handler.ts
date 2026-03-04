@@ -4,8 +4,8 @@ import { RouteHandler } from "../utils/router";
 import { Category } from "../types/category.type";
 import { Transaction } from "../types/transaction.type";
 
-function buildBreakdown(transactions: Transaction[], categoryMap: Map<string, Category>): CategoryBreakdown[] {
-  const totals = new Map<string, number>();
+function buildBreakdown(transactions: Transaction[], allCategories: Category[], categoryMap: Map<string, Category>): CategoryBreakdown[] {
+  const totals = new Map<string, number>(allCategories.map(c => [c.id, 0]));
   for (const t of transactions) {
     totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + t.amount);
   }
@@ -34,6 +34,9 @@ export const getReports: RouteHandler<undefined, GetReportsResponse> = async (ev
 
   const categoryMap = new Map(categories.map(c => [c.id, c]));
 
+  const expenseCategories = categories.filter(c => c.type === 'Expense');
+  const incomeCategories  = categories.filter(c => c.type === 'Income');
+
   const totalExpense = expenses.reduce((sum, t) => sum + t.amount, 0);
   const totalIncome  = incomes.reduce((sum, t) => sum + t.amount, 0);
   const netSavings   = totalIncome - totalExpense;
@@ -42,7 +45,7 @@ export const getReports: RouteHandler<undefined, GetReportsResponse> = async (ev
     totalIncome,
     totalExpense,
     netSavings,
-    expenseCategoryBreakdown: buildBreakdown(expenses, categoryMap),
-    incomeCategoryBreakdown:  buildBreakdown(incomes,  categoryMap)
+    expenseCategoryBreakdown: buildBreakdown(expenses, expenseCategories, categoryMap),
+    incomeCategoryBreakdown:  buildBreakdown(incomes,  incomeCategories,  categoryMap)
   } satisfies GetReportsResponse);
 }

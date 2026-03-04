@@ -47,7 +47,7 @@ Architecture: CloudFront → AWS Lambda (TypeScript) ↔ Notion API, with a Reac
 | Get categories | ✅ DONE | ✅ DONE (embedded in forms) |
 | List expenses by date range | ✅ DONE | ❌ TODO |
 | List incomes by date range | ✅ DONE | ❌ TODO |
-| Reports (GET /api/reports) | ✅ DONE | ⚠️ STUB |
+| Reports (GET /api/reports) | ✅ DONE | ✅ DONE |
 | Cards management | ❌ TODO | ⚠️ STUB |
 | Budget management | ❌ TODO | ❌ TODO |
 | Vouchers / promotions | ❌ TODO | ⚠️ STUB |

@@ -1,5 +1,5 @@
 :root {
-  --bg: #0f172a;
+  --bg: #121212;
   --card: #1e293b;
   --text: #e2e8f0;
   --muted: #8b93a7;
@@ -14,7 +14,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #121212;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

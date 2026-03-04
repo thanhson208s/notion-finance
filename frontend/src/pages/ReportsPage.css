@@ -1,0 +1,401 @@
+/* ════════════════════════════════
+   REPORTS PAGE
+   Style reference: templates/screen.png + templates/code.html
+   ════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+.reports-page {
+  font-family: 'Manrope', sans-serif;
+  padding-top: 108px;
+}
+
+/* ── Fixed filter bar ── */
+
+.reports-filter-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding-bottom: 8px;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+/* ── Date pills ── */
+
+.reports-date-pills {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.reports-date-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.reports-pill {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(30, 41, 59, 0.9);
+  color: #94a3b8;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s, color 0.18s;
+}
+
+.reports-pill--active {
+  background: #195de6;
+  color: #fff;
+}
+
+/* ── Custom date inputs ── */
+
+.reports-date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 24px;
+}
+
+.reports-date-input {
+  flex: 1;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 0px;
+  color: var(--text);
+  font-size: 16px;
+  color-scheme: dark;
+  justify-content: center;
+  transition: border-color 0.18s, opacity 0.18s;
+}
+
+.reports-date-input:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.reports-date-input--invalid {
+  border-color: var(--red);
+}
+
+.reports-date-sep {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ── State indicators ── */
+
+.reports-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 24px;
+}
+
+.reports-hint {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.reports-error-msg {
+  color: var(--red);
+  font-size: 14px;
+}
+
+/* ── Summary (no card border — flat on background) ── */
+
+.reports-summary {
+  padding: 8px 24px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.reports-summary-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.reports-summary-amount {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.reports-summary-amount--neg {
+  color: var(--red);
+}
+
+.reports-summary-sub {
+  display: flex;
+  gap: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.reports-summary-income {
+  color: #10b981;
+  font-size: 14px;
+}
+
+.reports-summary-expense {
+  color: #ef4444;
+  font-size: 14px;
+}
+
+/* ── Tab toggle ── */
+
+.reports-tabs {
+  display: flex;
+  align-items: center;
+  margin: 12px 24px;
+  height: 44px;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.reports-tab {
+  flex: 1;
+  height: 100%;
+  border: none;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+
+.reports-tab--active {
+  background: #334155;
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Donut chart ── */
+
+.reports-donut-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 8px 32px 16px;
+}
+
+.reports-donut-svg {
+  width: 192px;
+  height: 192px;
+}
+
+.donut-center-label {
+  fill: #64748b;
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.donut-center-amount {
+  fill: #f1f5f9;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.donut-center-pct {
+  fill: #10b981;
+  font-size: 8px;
+  font-weight: 600;
+}
+
+/* ── Empty state ── */
+
+.reports-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 40px 24px;
+}
+
+/* ── Category list ── */
+
+.reports-category-list {
+  padding: 4px 24px 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reports-group {
+  transition: opacity 0.2s;
+}
+
+.reports-group--dimmed {
+  opacity: 0.4;
+}
+
+/* Parent row: [body] [chevron] */
+
+.reports-parent-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.reports-parent-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reports-parent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reports-parent-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.reports-parent-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* ── Progress bars ── */
+
+.reports-bar-track {
+  height: 8px;
+  background: #1e293b;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.reports-bar-track--child {
+  height: 6px;
+}
+
+.reports-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.45s ease;
+}
+
+/* ── Chevron ── */
+
+.reports-chevron {
+  color: #475569;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.reports-chevron--sm {
+  color: #475569;
+}
+
+/* ── Children block ── */
+
+.reports-children-block {
+  margin-left: 8px;
+  margin-top: 8px;
+  padding-left: 24px;
+  border-left: 2px solid rgba(25, 93, 230, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reports-child-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reports-child-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.reports-child-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reports-child-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.reports-child-amount {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* ── See all transactions ── */
+
+.reports-see-all-wrapper {
+  position: fixed;
+  bottom: calc(64px + 12px);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.reports-see-all {
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 9px 16px 9px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+
+  background: rgba(30, 41, 59, 0.4);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.reports-see-all-chevron {
+  color: #64748b;
+  margin-left: 2px;
+}

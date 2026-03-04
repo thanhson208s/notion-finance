@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { getReports } from '../../handlers/reports.handler'
 import { createMockConnector } from '../helpers/mockConnector'
 import { Transaction } from '../../types/transaction.type'
-import { Category } from '../../types/category.type'
+import { Category, CategoryType } from '../../types/category.type'
 
 const makeEvent = (query: Record<string, string> = {}) => ({
   method: 'GET',
@@ -19,8 +19,8 @@ const makeTx = (categoryId: string, amount: number): Transaction => ({
   note: ''
 })
 
-const makeCat = (id: string, name: string, parentId: string | null = null): Category => ({
-  id, name, type: 'Expense', parentId
+const makeCat = (id: string, name: string, parentId: string | null = null, type: CategoryType = 'Expense'): Category => ({
+  id, name, type, parentId
 })
 
 const defaultConnector = (overrides = {}) => createMockConnector({
@@ -131,9 +131,21 @@ describe('getReports()', () => {
     expect(breakdown[0].parentId).toBe('cat-parent')
   })
 
+  it('includes expense categories with no transactions as amount 0', async () => {
+    const cat = makeCat('cat-no-tx', 'Unused')
+    const connector = defaultConnector({
+      fetchTransactions: vi.fn().mockResolvedValue([]),
+      fetchCategories: vi.fn().mockResolvedValue([cat])
+    })
+    const result = await getReports(makeEvent(), connector)
+    const breakdown = (result.body as any).expenseCategoryBreakdown
+    expect(breakdown).toHaveLength(1)
+    expect(breakdown[0]).toMatchObject({ categoryId: 'cat-no-tx', amount: 0 })
+  })
+
   it('builds separate breakdown for income and expense', async () => {
     const expCat = makeCat('cat-exp', 'Food')
-    const incCat = makeCat('cat-inc', 'Salary')
+    const incCat = makeCat('cat-inc', 'Salary', null, 'Income')
     const connector = defaultConnector({
       fetchTransactions: vi.fn()
         .mockResolvedValueOnce([makeTx('cat-exp', 100)]) // expenses

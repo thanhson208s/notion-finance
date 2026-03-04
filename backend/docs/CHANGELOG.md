@@ -9,6 +9,18 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.2.0] - 2026-03-04
+
+### Added (Frontend)
+
+- feat(reports): implemented `ReportsPage` at `/reports` — date range selector (last month / this month / custom), net savings summary card, expense/income tab toggle, SVG donut chart, collapsible category list with progress bars
+- feat(reports): pure SVG donut chart with multi-segment rendering and click-to-highlight interaction
+- fix(accounts): added missing `AccountType` values — `Loan`, `Fund`, `Bond`, `Stock`, `Debt`, `Crypto` — with correct asset/liability classification and CSS badge colors
+- refactor(api): replaced hardcoded API URLs with `API_BASE` from `VITE_API_BASE` env variable across all pages and components
+- chore(cleanup): removed unused `Header.tsx` and `Header.css` components
+
+---
+
 ## [1.4.0] - 2026-03-04
 
 ### Added

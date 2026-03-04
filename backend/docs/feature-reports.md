@@ -1,6 +1,6 @@
 # Feature: Reports
 
-**Status**: ✅ Done (backend — v1.4.0) / ⚠️ STUB (frontend — empty `ReportsPage` component)
+**Status**: ✅ Done (backend — v1.4.0) / ✅ Done (frontend — v0.2.0)
 
 ---
 
@@ -73,16 +73,17 @@ Same as above with `ToAccount is not empty` filter.
 
 ## Frontend: ReportsPage
 
-**File**: `src/pages/ReportsPage.tsx`
+**File**: `src/pages/ReportsPage.tsx` + `src/pages/ReportsPage.css`
 **Route**: `/reports`
-**Current state**: Empty stub (`<main className="page"></main>`)
 
-### Proposed UI
+### Implemented UI
 
-- **Date range selector**: start date / end date pickers (default: current month)
-- **Summary cards**: Total Income · Total Expense · Net Savings
-- **Category breakdown**: bar or pie chart by expense category
-- **Account filter**: view spending by account (optional)
+- **Date range pills**: Last month / This month (default) / Custom range (native `<input type="date">`)
+- **Net Savings summary card**: shows `netSavings`, `totalIncome`, `totalExpense`
+- **Tab toggle**: Expense | Income — switches which breakdown is displayed
+- **Donut chart**: pure SVG, multi-segment, click segment or category row to highlight
+- **Category list**: parent categories with group total (parent + children sum), expandable to show sub-categories with individual amounts and progress bars
+- **Color palette**: 10-color assignment by index, consistent within each tab view
 
 ---
 
@@ -125,6 +126,7 @@ Same as above with `ToAccount is not empty` filter.
 ```
 
 - `parentId`: the category's own `id` when Notion returns `null` (top-level category)
+- Each breakdown includes **all categories of the matching type**, even those with `amount: 0` (no transactions in the date range)
 - Each breakdown is sorted by `amount` descending
 - `netSavings = totalIncome - totalExpense`
 - 3 parallel Notion calls: expenses, incomes, all categories

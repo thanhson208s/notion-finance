@@ -1,12 +1,14 @@
 import { LogExpenseRequest, LogIncomeRequest, TransferBalanceRequest } from "../types/request";
 import { ListIncomesResponse, LogIncomeResponse, ListExpensesResponse, LogExpenseResponse, TransferBalanceResponse } from "../types/response";
+import { QueryError } from "../types/error";
 import { getQueryString, ok } from "../utils/helper";
 import { RouteHandler } from "../utils/router";
 
 export const logExpense: RouteHandler<LogExpenseRequest, LogExpenseResponse> = async(event, connector) => {
   const req = event.body;
+  if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
   const oldBalance = (await connector.fetchAccount(req.accountId)).balance;
-  const amount = (await connector.addExpense(req.accountId, req.amount, req.categoryId, req.note)).amount;
+  const amount = (await connector.addExpense(req.accountId, req.amount, req.categoryId, req.note, req.timestamp)).amount;
   const newBalance = (await connector.updateAccountBalance(req.accountId, oldBalance - amount)).balance;
 
   return ok({
@@ -20,19 +22,19 @@ export const logExpense: RouteHandler<LogExpenseRequest, LogExpenseResponse> = a
 }
 
 export const listExpenses: RouteHandler<undefined, ListExpensesResponse> = async(event, connector) => {
-  const startDate = getQueryString(event.query, "startDate", true);
-  const endDate = getQueryString(event.query, "endDate", true);
+  const startDate = getQueryString(event.query, "startDate", false) ?? undefined;
+  const endDate = getQueryString(event.query, "endDate", false) ?? undefined;
+  const transactions = await connector.fetchTransactions('expense', startDate, endDate);
+  const total = transactions.reduce((sum, t) => sum + t.amount, 0);
 
-  return ok({
-    transactions: [],
-    total: 0
-  } satisfies ListExpensesResponse);
+  return ok({ transactions, total } satisfies ListExpensesResponse);
 }
 
 export const logIncome: RouteHandler<LogIncomeRequest, LogIncomeResponse> = async(event, connector) => {
   const req = event.body;
+  if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
   const oldBalance = (await connector.fetchAccount(req.accountId)).balance;
-  const amount = (await connector.addIncome(req.accountId, req.amount, req.categoryId, req.note)).amount;
+  const amount = (await connector.addIncome(req.accountId, req.amount, req.categoryId, req.note, req.timestamp)).amount;
   const newBalance = (await connector.updateAccountBalance(req.accountId, oldBalance + amount)).balance;
 
   return ok({
@@ -46,23 +48,23 @@ export const logIncome: RouteHandler<LogIncomeRequest, LogIncomeResponse> = asyn
 }
 
 export const listIncomes: RouteHandler<undefined, ListIncomesResponse> = async(event, connector) => {
-  const startDate = getQueryString(event.query, "startDate", true);
-  const endDate = getQueryString(event.query, "endDate", true);
+  const startDate = getQueryString(event.query, "startDate", false) ?? undefined;
+  const endDate = getQueryString(event.query, "endDate", false) ?? undefined;
+  const transactions = await connector.fetchTransactions('income', startDate, endDate);
+  const total = transactions.reduce((sum, t) => sum + t.amount, 0);
 
-  return ok({
-    transactions: [],
-    total: 0
-  } satisfies ListIncomesResponse);
+  return ok({ transactions, total } satisfies ListIncomesResponse);
 }
 
 export const transferBalance: RouteHandler<TransferBalanceRequest, TransferBalanceResponse> = async(event, connector) => {
   const req = event.body;
+  if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
   const oldFromAccountBalance = (await connector.fetchAccount(req.fromAccountId)).balance;
   const oldToAccountBalance = (await connector.fetchAccount(req.toAccountId)).balance;
-  const amount = (await connector.addTransfer(req.fromAccountId, req.toAccountId, req.amount)).amount;
+  const amount = (await connector.addTransfer(req.fromAccountId, req.toAccountId, req.amount, req.timestamp)).amount;
   const newFromAccountBalance = (await connector.updateAccountBalance(req.fromAccountId, oldFromAccountBalance - req.amount)).balance;
   const newToAccountBalance = (await connector.updateAccountBalance(req.toAccountId, oldToAccountBalance + req.amount)).balance;
-  
+
   return ok({
     fromAccountId: req.fromAccountId,
     toAccountId: req.toAccountId,

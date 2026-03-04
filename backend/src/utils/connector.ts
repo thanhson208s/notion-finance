@@ -73,7 +73,31 @@ export class Connector {
       .map(page => this.mapPageToCategory(page));
   }
 
-  async addTransaction(fromAccountId: string | null, toAccountId: string | null, amount: number, categoryId: string, note: string): Promise<Transaction> {
+  async fetchTransactions(type: 'expense' | 'income', startDate?: string, endDate?: string): Promise<Transaction[]> {
+    const dateFilters = [
+      ...(startDate ? [{ property: "Timestamp", date: { on_or_after: startDate } }] : []),
+      ...(endDate ? [{ property: "Timestamp", date: { on_or_before: endDate } }] : [])
+    ];
+    const response = await this.notion.dataSources.query({
+      data_source_id: process.env.NOTION_TRANSACTION_DATABASE_ID as string,
+      filter: {
+        and: [
+          type === 'expense'
+            ? { property: "FromAccount", relation: { is_not_empty: true } }
+            : { property: "ToAccount",   relation: { is_not_empty: true } },
+          { property: "Category", relation: { does_not_contain: process.env.NOTION_TRANSFER_TRANSACTION_ID as string } },
+          { property: "Category", relation: { does_not_contain: process.env.NOTION_ADJUSTMENT_TRANSACTION_ID as string } },
+          ...dateFilters
+        ]
+      },
+      sorts: [{ property: "Timestamp", direction: "descending" }]
+    });
+    return response.results
+      .filter(result => result.object === "page" && "properties" in result)
+      .map(page => this.mapPageToTransaction(page));
+  }
+
+  async addTransaction(fromAccountId: string | null, toAccountId: string | null, amount: number, categoryId: string, note: string, timestamp?: number): Promise<Transaction> {
     const response = await this.notion.pages.create({
       parent: {
         data_source_id: process.env.NOTION_TRANSACTION_DATABASE_ID as string
@@ -93,7 +117,9 @@ export class Connector {
         "Timestamp": {
           type: 'date',
           date: {
-            start: moment().tz('Asia/Bangkok').format()
+            start: timestamp
+              ? moment(timestamp).tz('Asia/Bangkok').format()
+              : moment().tz('Asia/Bangkok').format()
           }
         },
         "Amount": {
@@ -137,16 +163,16 @@ export class Connector {
     return this.mapPageToTransaction(response);
   }
 
-  async addExpense(accountId: string, amount: number, categoryId: string, note: string): Promise<Transaction> {
-    return await this.addTransaction(accountId, null, amount, categoryId, note);
+  async addExpense(accountId: string, amount: number, categoryId: string, note: string, timestamp?: number): Promise<Transaction> {
+    return await this.addTransaction(accountId, null, amount, categoryId, note, timestamp);
   }
 
-  async addIncome(accountId: string, amount: number, categoryId: string, note: string): Promise<Transaction> {
-    return await this.addTransaction(null, accountId, amount, categoryId, note);
+  async addIncome(accountId: string, amount: number, categoryId: string, note: string, timestamp?: number): Promise<Transaction> {
+    return await this.addTransaction(null, accountId, amount, categoryId, note, timestamp);
   }
-  
-  async addTransfer(fromAccountId: string, toAccountId: string, amount: number): Promise<Transaction> {
-    return await this.addTransaction(fromAccountId, toAccountId, amount, process.env.NOTION_TRANSFER_TRANSACTION_ID as string, "");
+
+  async addTransfer(fromAccountId: string, toAccountId: string, amount: number, timestamp?: number): Promise<Transaction> {
+    return await this.addTransaction(fromAccountId, toAccountId, amount, process.env.NOTION_TRANSFER_TRANSACTION_ID as string, "", timestamp);
   }
 
   private mapPageToAccount(page: PageObjectResponse): Account {

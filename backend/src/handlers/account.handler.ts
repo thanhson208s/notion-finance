@@ -26,7 +26,8 @@ export const adjustBalance: RouteHandler<AdjustBalanceRequest, AdjustBalanceResp
     oldBalance < req.balance ? req.accountId : null,
     Math.abs(oldBalance - req.balance),
     process.env.NOTION_ADJUSTMENT_TRANSACTION_ID as string,
-    req.note
+    req.note,
+    req.timestamp
   )).amount;
   const newBalance = (await connector.updateAccountBalance(req.accountId, req.balance)).balance;
 

@@ -44,7 +44,7 @@ export function getQueryString<T extends boolean>(query: Partial<Record<string, 
   if (!(k in query)) {
     if (required)
       throw new QueryError(`Parameter ${k} is missing`);
-    else throw null as any;
+    else return null as any;
   }
   return String(query[k]);
 }
@@ -53,7 +53,7 @@ export function getQueryBool<T extends boolean>(query: Partial<Record<string, st
   if (!(k in query)) {
     if (required)
       throw new QueryError(`Parameter ${k} is missing`);
-    else throw null as any
+    else return null as any
   }
   return Boolean(query[k]);
 }

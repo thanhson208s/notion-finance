@@ -74,24 +74,10 @@ There is no explicit pre-flight existence check.
 
 ---
 
-## BUG #6 — Zero test coverage {#bug-6}
+## ~~BUG #6~~ — Zero test coverage ✅ RESOLVED {#bug-6}
 
-**Severity**: P3
-**Files**: Entire `src/` directory
-
-**Description**:
-No unit tests, integration tests, or mock tests exist.
-`CLAUDE.md` references `pnpm test` in the pre-task checklist and the Standard AI Workflow, but no test runner is configured in `package.json`.
-
-**Impact**: Breaking changes can be introduced undetected. `CLAUDE.md` compliance is not achievable.
-
-**Fix**:
-1. Add `vitest` (recommended for esbuild-based projects) to `devDependencies`
-2. Configure `pnpm test` script
-3. Start with unit tests for:
-   - `helper.ts` — `getQueryString`, `getQueryInt`, `getQueryBool`
-   - `connector.ts` — property mapper methods with mock `PageObjectResponse`
-   - Handler business logic — with a mock `Connector` instance
+**Resolved in**: v1.2.0
+**Fix**: Added `vitest` to `devDependencies`. Added `"test": "vitest run"` and `"test:watch": "vitest"` scripts to `package.json`. Created 69 unit tests across 6 test files covering `helper.ts`, `router.ts`, `account.type.ts`, and all three handler modules. All tests pass.
 
 ---
 

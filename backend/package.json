@@ -1,12 +1,14 @@
 {
   "name": "backend",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "build": "serverless package",
     "deploy": "serverless deploy",
-    "remove": "serverless remove"
+    "remove": "serverless remove",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +24,7 @@
     "dotenv": "^17.3.1",
     "esbuild": "^0.27.3",
     "serverless": "^4.32.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
   }
 }

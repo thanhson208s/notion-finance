@@ -10,7 +10,21 @@ Versions follow [Semantic Versioning](https://semver.org/).
 ### Known Issues (not yet fixed)
 - BUG #2: `linkedCardId` accepted in POST request bodies but never stored in Notion
 - BUG #5: Account and category IDs not validated before use
-- BUG #6: Zero test coverage; `pnpm test` not configured
+
+---
+
+## [1.2.0] - 2026-03-04
+
+### Added
+
+- feat(tests): added Vitest test suite with 69 unit tests across 6 test files (BUG #6)
+  - `src/__tests__/utils/helper.test.ts` — covers `ok`, `err`, `getQueryInt`, `getQueryFloat`, `getQueryString`, `getQueryBool`
+  - `src/__tests__/utils/router.test.ts` — covers `normalizePath`, `normalizeQuery`, route registration and resolution
+  - `src/__tests__/types/account.type.test.ts` — covers `isAssetType()` for all 14 `AccountType` values
+  - `src/__tests__/handlers/account.handler.test.ts` — covers `getAccounts`, `adjustBalance`
+  - `src/__tests__/handlers/transaction.handler.test.ts` — covers all 5 transaction handlers
+  - `src/__tests__/handlers/category.handler.test.ts` — covers `getCategories`
+- chore(package): added `"test": "vitest run"` and `"test:watch": "vitest"` scripts
 
 ---
 

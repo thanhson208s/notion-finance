@@ -78,9 +78,9 @@ Every task follows this flow:
 2. Read `REQUIREMENTS.md` and related `./docs/feature-*.md`.
 3. Only modify code within the scope described in documentation.
 4. Run minimum checks after changes:
-   - `pnpm lint`
-   - `pnpm test`
-   - `pnpm build`
+   - `npm run lint`
+   - `npm run test`
+   - `npm run build`
 5. If code changed, update version/changelog before commit with format in `CHANGELOG.md` like this template:
 
 ```markdown

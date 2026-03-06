@@ -1,6 +1,6 @@
 # AGENTS Playbook — Personal Finance App - Front End
 
-This document guides AI agents working in this repo. All business logic, features, and code conventions are defined in `REQUIREMENTS.md` and `../backend/docs`.
+This document guides AI agents working in this repo. All business logic, features, and code conventions are defined in `REQUIREMENTS.md` and `./docs`.
 
 ## 1) Mandatory Objectives
 
@@ -15,7 +15,7 @@ This document guides AI agents working in this repo. All business logic, feature
 When information conflicts, follow this priority order:
 
 1. `REQUIREMENTS.md`
-2. `../backend/docs/feature-*.md` (detailed feature docs per module)
+2. `./docs/feature-*.md` (detailed feature docs per module)
 4. Current code in `src/`
 
 When conflicts are found between docs and code:
@@ -75,7 +75,7 @@ When conflicts are found between docs and code:
 Every task follows this flow:
 
 1. Identify affected components/pages in `src/`.
-2. Read `REQUIREMENTS.md` and related `../backend/docs/feature-*.md`.
+2. Read `REQUIREMENTS.md` and related `./docs/feature-*.md`.
 3. Only modify code within the scope described in documentation.
 4. Run minimum checks after changes:
    - `npm run lint`

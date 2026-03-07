@@ -17,7 +17,7 @@ export type AccountType =
 export type CardSummary = {
   id: string
   name: string
-  imageUrl: string | null
+  imageUrl: string
 }
 
 export type Account = {

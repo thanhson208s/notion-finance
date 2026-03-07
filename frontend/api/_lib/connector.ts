@@ -38,13 +38,10 @@ export class Connector {
       data_source_id: process.env.NOTION_ACCOUNT_DATABASE_ID as string
     });
     const accounts = pages.map(page => this.mapPageToAccount(page));
-
     const allCardIds = [...new Set(accounts.flatMap(a => a.linkedCardIds))];
     if (allCardIds.length === 0) return accounts;
-
     const allCards = await this.fetchAllCards();
     const cardMap = new Map(allCards.map(c => [c.id, c]));
-
     return accounts.map(a => ({
       ...a,
       cards: a.linkedCardIds.map(id => cardMap.get(id)).filter((c): c is CardSummary => c !== undefined)
@@ -52,6 +49,7 @@ export class Connector {
   }
 
   async fetchAllCards(): Promise<CardSummary[]> {
+    console.log(process.env.NOTION_CARD_DATABASE_ID);
     const pages = await this.queryAllPages({
       data_source_id: process.env.NOTION_CARD_DATABASE_ID as string
     });
@@ -244,7 +242,7 @@ export class Connector {
     const name = this.getTitleProperty(page, "Name");
     const type = this.getSelectProperty(page, "Type", true);
     const balance = this.getNumberProperty(page, "Balance", true);
-    const linkedCardIds = this.getRelationIds(page, "Linked cards");
+    const linkedCardIds = this.getRelationsProperty(page, "Linked cards");
 
     return {
       id: page.id, name, type: type as AccountType, balance,
@@ -254,7 +252,7 @@ export class Connector {
 
   private mapPageToCardSummary(page: PageObjectResponse): CardSummary {
     const name = this.getTitleProperty(page, "Name");
-    const imageUrl = this.getUrlProperty(page, "Image");
+    const imageUrl = this.getFileProperty(page, "Image", true);
     return { id: page.id, name, imageUrl } satisfies CardSummary;
   }
 
@@ -360,25 +358,39 @@ export class Connector {
     if (prop.type !== 'relation')
       throw new SchemaError(`Property ${key} is not a relation`);
     if (required) {
-      if (!prop.relation)
+      if (!prop.relation || prop.relation.length === 0)
         throw new SchemaError(`Property ${key} does not have a value`);
     }
 
     return prop.relation[0]?.id ?? null;
   }
 
-  private getRelationIds(page: PageObjectResponse, key: string): string[] {
+  private getRelationsProperty(page: PageObjectResponse, key: string): string[] {
     const prop = this.getProperty(page, key);
     if (prop.type !== 'relation')
       throw new SchemaError(`Property ${key} is not a relation`);
-    return prop.relation.map(r => r.id);
+    
+    return prop.relation ? prop.relation.map(r => r.id) : [];
   }
 
-  private getUrlProperty(page: PageObjectResponse, key: string): string | null {
+  private getFileProperty(page: PageObjectResponse, key: string, required: true): string;
+  private getFileProperty(page: PageObjectResponse, key: string, required: false): string | null;
+  private getFileProperty(page: PageObjectResponse, key: string, required: boolean) {
     const prop = this.getProperty(page, key);
-    if (prop.type !== 'url')
-      throw new SchemaError(`Property ${key} is not a url`);
-    return prop.url;
+    if (prop.type !== 'files')
+      throw new SchemaError(`Property ${key} is not a file`);
+    if (required) {
+      if (!prop.files || prop.files.length === 0)
+        throw new SchemaError(`Property ${key} does not have a value`);
+    }
+
+    if (prop.files[0]) {
+      const file = prop.files[0];
+      if (file.type === 'external')
+        return file.external.url;
+      else return file.file.url;
+    }
+    return null;
   }
 
   private getDateProperty(page: PageObjectResponse, key: string, required: true): number;

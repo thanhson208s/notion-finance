@@ -14,7 +14,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - feat(accounts): `GET /api/accounts` now returns `linkedCardIds: string[]` and `cards: CardSummary[]` per account — cards fetched from Card DB in a single extra Notion call (2 total)
-- feat(connector): added `fetchAllCards()`, `mapPageToCardSummary()`, `getRelationIds()`, `getUrlProperty()` to `Connector`
+- feat(connector): added `fetchAllCards()`, `mapPageToCardSummary()`, `getRelationsProperty()`, `getFileProperty()` to `Connector`
 - feat(types): added `CardSummary` type and `linkedCardIds`/`cards` fields to `Account` type in `account.type.ts`
 
 ---

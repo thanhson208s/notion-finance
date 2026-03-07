@@ -7,7 +7,7 @@ const makeEvent = (query: Record<string, string> = {}) => ({
   method: 'GET',
   path: '/api/categories',
   query,
-  body: undefined as any
+  body: undefined
 })
 
 const mockCategories: Category[] = [
@@ -35,7 +35,7 @@ describe('getCategories()', () => {
       fetchCategories: vi.fn().mockResolvedValue(mockCategories)
     })
     const result = await getCategories(makeEvent(), connector)
-    expect((result.body as any).categories).toEqual(mockCategories)
+    expect((result.body).categories).toEqual(mockCategories)
   })
 
   it('returns empty array when connector returns empty', async () => {
@@ -43,6 +43,6 @@ describe('getCategories()', () => {
       fetchCategories: vi.fn().mockResolvedValue([])
     })
     const result = await getCategories(makeEvent(), connector)
-    expect((result.body as any).categories).toEqual([])
+    expect((result.body).categories).toEqual([])
   })
 })

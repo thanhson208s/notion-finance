@@ -14,11 +14,19 @@ export type AccountType =
   | "Stock"
   | "PayLater";
 
+export type CardSummary = {
+  id: string
+  name: string
+  imageUrl: string | null
+}
+
 export type Account = {
   id: string
   name: string
   type: AccountType
   balance: number
+  linkedCardIds: string[]
+  cards: CardSummary[]
 }
 
 export function isAssetType(type: AccountType) {

@@ -3,17 +3,17 @@ import { getAccounts, adjustBalance } from '../../_handlers/account.handler'
 import { createMockConnector } from '../helpers/mockConnector'
 import { Account } from '../../_lib/types/account.type'
 
-const makeEvent = (body?: unknown) => ({
+const makeEvent = <T>(body?: T) => ({
   method: 'GET',
   path: '/api/accounts',
   query: {},
-  body: body as any
+  body: body as T
 })
 
 describe('getAccounts()', () => {
   it('returns accounts array from connector', async () => {
     const accounts: Account[] = [
-      { id: '1', name: 'Cash', type: 'Cash', balance: 100 }
+      { id: '1', name: 'Cash', type: 'Cash', balance: 100, linkedCardIds: [], cards: [] }
     ]
     const connector = createMockConnector({
       fetchAllAccounts: vi.fn().mockResolvedValue(accounts)
@@ -24,38 +24,38 @@ describe('getAccounts()', () => {
 
   it('computes total as sum of all balances', async () => {
     const accounts: Account[] = [
-      { id: '1', name: 'Cash', type: 'Cash', balance: 100 },
-      { id: '2', name: 'Credit', type: 'Credit', balance: 50 }
+      { id: '1', name: 'Cash', type: 'Cash', balance: 100, linkedCardIds: [], cards: [] },
+      { id: '2', name: 'Credit', type: 'Credit', balance: 50, linkedCardIds: [], cards: [] }
     ]
     const connector = createMockConnector({
       fetchAllAccounts: vi.fn().mockResolvedValue(accounts)
     })
     const result = await getAccounts(makeEvent(), connector)
-    expect((result.body as any).total).toBe(150)
+    expect((result.body).total).toBe(150)
   })
 
   it('computes totalOfAssets for asset-type accounts only', async () => {
     const accounts: Account[] = [
-      { id: '1', name: 'Cash', type: 'Cash', balance: 200 },
-      { id: '2', name: 'Credit', type: 'Credit', balance: 50 }
+      { id: '1', name: 'Cash', type: 'Cash', balance: 200, linkedCardIds: [], cards: [] },
+      { id: '2', name: 'Credit', type: 'Credit', balance: 50, linkedCardIds: [], cards: [] }
     ]
     const connector = createMockConnector({
       fetchAllAccounts: vi.fn().mockResolvedValue(accounts)
     })
     const result = await getAccounts(makeEvent(), connector)
-    expect((result.body as any).totalOfAssets).toBe(200)
+    expect((result.body).totalOfAssets).toBe(200)
   })
 
   it('computes totalOfLiabilities for non-asset-type accounts only', async () => {
     const accounts: Account[] = [
-      { id: '1', name: 'Cash', type: 'Cash', balance: 200 },
-      { id: '2', name: 'Debt', type: 'Debt', balance: 75 }
+      { id: '1', name: 'Cash', type: 'Cash', balance: 200, linkedCardIds: [], cards: [] },
+      { id: '2', name: 'Debt', type: 'Debt', balance: 75, linkedCardIds: [], cards: [] }
     ]
     const connector = createMockConnector({
       fetchAllAccounts: vi.fn().mockResolvedValue(accounts)
     })
     const result = await getAccounts(makeEvent(), connector)
-    expect((result.body as any).totalOfLiabilities).toBe(75)
+    expect((result.body).totalOfLiabilities).toBe(75)
   })
 
   it('returns zero totals when account list is empty', async () => {
@@ -63,9 +63,9 @@ describe('getAccounts()', () => {
       fetchAllAccounts: vi.fn().mockResolvedValue([])
     })
     const result = await getAccounts(makeEvent(), connector)
-    expect((result.body as any).total).toBe(0)
-    expect((result.body as any).totalOfAssets).toBe(0)
-    expect((result.body as any).totalOfLiabilities).toBe(0)
+    expect((result.body).total).toBe(0)
+    expect((result.body).totalOfAssets).toBe(0)
+    expect((result.body).totalOfLiabilities).toBe(0)
   })
 })
 
@@ -81,7 +81,7 @@ describe('adjustBalance()', () => {
       updateAccountBalance: vi.fn().mockResolvedValue({ balance: 150 })
     })
     const result = await adjustBalance(makeEvent({ accountId: 'acc-1', balance: 150, note: 'adj', timestamp: undefined }), connector)
-    expect((result.body as any).newBalance).toBe(150)
+    expect((result.body).newBalance).toBe(150)
   })
 
   it('creates adjustment transaction with correct args when decreasing (oldBalance > target)', async () => {

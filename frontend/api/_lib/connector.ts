@@ -1,5 +1,5 @@
 import { Client, PageObjectResponse } from "@notionhq/client";
-import { Account, AccountType } from "./types/account.type";
+import { Account, AccountType, CardSummary } from "./types/account.type";
 import { Category, CategoryType } from "./types/category.type";
 import { Transaction } from "./types/transaction.type";
 import { DatabaseError, SchemaError } from "./types/error";
@@ -37,7 +37,25 @@ export class Connector {
     const pages = await this.queryAllPages({
       data_source_id: process.env.NOTION_ACCOUNT_DATABASE_ID as string
     });
-    return pages.map(page => this.mapPageToAccount(page));
+    const accounts = pages.map(page => this.mapPageToAccount(page));
+
+    const allCardIds = [...new Set(accounts.flatMap(a => a.linkedCardIds))];
+    if (allCardIds.length === 0) return accounts;
+
+    const allCards = await this.fetchAllCards();
+    const cardMap = new Map(allCards.map(c => [c.id, c]));
+
+    return accounts.map(a => ({
+      ...a,
+      cards: a.linkedCardIds.map(id => cardMap.get(id)).filter((c): c is CardSummary => c !== undefined)
+    }));
+  }
+
+  async fetchAllCards(): Promise<CardSummary[]> {
+    const pages = await this.queryAllPages({
+      data_source_id: process.env.NOTION_CARD_DATABASE_ID as string
+    });
+    return pages.map(page => this.mapPageToCardSummary(page));
   }
 
   async fetchAccount(accountId: string): Promise<Account> {
@@ -226,10 +244,18 @@ export class Connector {
     const name = this.getTitleProperty(page, "Name");
     const type = this.getSelectProperty(page, "Type", true);
     const balance = this.getNumberProperty(page, "Balance", true);
+    const linkedCardIds = this.getRelationIds(page, "Linked cards");
 
     return {
-      id: page.id, name, type: type as AccountType, balance
+      id: page.id, name, type: type as AccountType, balance,
+      linkedCardIds, cards: []
     } satisfies Account;
+  }
+
+  private mapPageToCardSummary(page: PageObjectResponse): CardSummary {
+    const name = this.getTitleProperty(page, "Name");
+    const imageUrl = this.getUrlProperty(page, "Image");
+    return { id: page.id, name, imageUrl } satisfies CardSummary;
   }
 
   private mapPageToCategory(page: PageObjectResponse): Category {
@@ -339,6 +365,20 @@ export class Connector {
     }
 
     return prop.relation[0]?.id ?? null;
+  }
+
+  private getRelationIds(page: PageObjectResponse, key: string): string[] {
+    const prop = this.getProperty(page, key);
+    if (prop.type !== 'relation')
+      throw new SchemaError(`Property ${key} is not a relation`);
+    return prop.relation.map(r => r.id);
+  }
+
+  private getUrlProperty(page: PageObjectResponse, key: string): string | null {
+    const prop = this.getProperty(page, key);
+    if (prop.type !== 'url')
+      throw new SchemaError(`Property ${key} is not a url`);
+    return prop.url;
   }
 
   private getDateProperty(page: PageObjectResponse, key: string, required: true): number;

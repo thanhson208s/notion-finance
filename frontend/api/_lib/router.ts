@@ -1,14 +1,14 @@
 import { err } from "./helper"
 import { Connector } from "./connector"
 
-export type RouteHandler<Req = undefined, _Res = unknown> = (
+export type RouteHandler<Req = undefined, Res = unknown> = (
   event: {
     method: string
     path: string
     query: Partial<Record<string, string>>
     body: Req
   }, connector: Connector
-) => Promise<{ statusCode: number, body: unknown}>
+) => Promise<{ statusCode: number, body: Res}>
 
 export type RouteKey = `${string} ${string}`
 

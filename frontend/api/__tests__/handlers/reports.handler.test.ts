@@ -97,7 +97,7 @@ describe('getReports()', () => {
       fetchCategories: vi.fn().mockResolvedValue([cat])
     })
     const result = await getReports(makeEvent(), connector)
-    const breakdown = (result.body as any).expenseCategoryBreakdown
+    const breakdown = (result.body).expenseCategoryBreakdown
     expect(breakdown).toHaveLength(1)
     expect(breakdown[0]).toMatchObject({ categoryId: 'cat-1', categoryName: 'Food', amount: 100 })
   })
@@ -112,7 +112,7 @@ describe('getReports()', () => {
       fetchCategories: vi.fn().mockResolvedValue(cats)
     })
     const result = await getReports(makeEvent(), connector)
-    const breakdown = (result.body as any).expenseCategoryBreakdown
+    const breakdown = (result.body).expenseCategoryBreakdown
     expect(breakdown[0].amount).toBeGreaterThan(breakdown[1].amount)
     expect(breakdown[0].categoryId).toBe('cat-b')
   })
@@ -130,7 +130,7 @@ describe('getReports()', () => {
       fetchCategories: vi.fn().mockResolvedValue([])
     })
     const result = await getReports(makeEvent(), connector)
-    const breakdown = (result.body as any).expenseCategoryBreakdown
+    const breakdown = (result.body).expenseCategoryBreakdown
     expect(breakdown[0].categoryName).toBe('unknown-cat')
   })
 
@@ -141,7 +141,7 @@ describe('getReports()', () => {
       fetchCategories: vi.fn().mockResolvedValue([cat])
     })
     const result = await getReports(makeEvent(), connector)
-    const breakdown = (result.body as any).expenseCategoryBreakdown
+    const breakdown = (result.body).expenseCategoryBreakdown
     expect(breakdown[0].parentId).toBe('cat-1')
   })
 
@@ -152,7 +152,7 @@ describe('getReports()', () => {
       fetchCategories: vi.fn().mockResolvedValue([cat])
     })
     const result = await getReports(makeEvent(), connector)
-    const breakdown = (result.body as any).expenseCategoryBreakdown
+    const breakdown = (result.body).expenseCategoryBreakdown
     expect(breakdown[0].parentId).toBe('cat-parent')
   })
 
@@ -163,7 +163,7 @@ describe('getReports()', () => {
       fetchCategories: vi.fn().mockResolvedValue([cat])
     })
     const result = await getReports(makeEvent(), connector)
-    const breakdown = (result.body as any).expenseCategoryBreakdown
+    const breakdown = (result.body).expenseCategoryBreakdown
     expect(breakdown).toHaveLength(1)
     expect(breakdown[0]).toMatchObject({ categoryId: 'cat-no-tx', amount: 0 })
   })
@@ -179,7 +179,7 @@ describe('getReports()', () => {
       fetchCategories: vi.fn().mockResolvedValue([expCat, incCat])
     })
     const result = await getReports(makeEvent(), connector)
-    const body = result.body as any
+    const body = result.body
     expect(body.expenseCategoryBreakdown).toHaveLength(1)
     expect(body.expenseCategoryBreakdown[0].categoryId).toBe('cat-exp')
     expect(body.incomeCategoryBreakdown).toHaveLength(1)
@@ -195,10 +195,10 @@ describe('getReports()', () => {
       fetchCategories: vi.fn().mockResolvedValue([makeCat('cat-1', 'Food')])
     })
     const result = await getReports(makeEvent(), connector)
-    const body = result.body as any
+    const body = result.body
     expect(body.transactions).toHaveLength(2)
-    expect(body.expenseCategoryBreakdown.every((b: any) => b.categoryId !== TRANSFER_ID)).toBe(true)
-    expect(body.incomeCategoryBreakdown.every((b: any) => b.categoryId !== TRANSFER_ID)).toBe(true)
+    expect(body.expenseCategoryBreakdown.every((b) => b.categoryId !== TRANSFER_ID)).toBe(true)
+    expect(body.incomeCategoryBreakdown.every((b) => b.categoryId !== TRANSFER_ID)).toBe(true)
   })
 
   it('includes adjustment transactions in transactions list but not in breakdowns', async () => {
@@ -210,10 +210,10 @@ describe('getReports()', () => {
       fetchCategories: vi.fn().mockResolvedValue([makeCat('cat-2', 'Salary', null, 'Income')])
     })
     const result = await getReports(makeEvent(), connector)
-    const body = result.body as any
+    const body = result.body
     expect(body.transactions).toHaveLength(2)
-    expect(body.expenseCategoryBreakdown.every((b: any) => b.categoryId !== ADJUSTMENT_ID)).toBe(true)
-    expect(body.incomeCategoryBreakdown.every((b: any) => b.categoryId !== ADJUSTMENT_ID)).toBe(true)
+    expect(body.expenseCategoryBreakdown.every((b) => b.categoryId !== ADJUSTMENT_ID)).toBe(true)
+    expect(body.incomeCategoryBreakdown.every((b) => b.categoryId !== ADJUSTMENT_ID)).toBe(true)
   })
 
   it('transactions list preserves order from fetchAllTransactions (date desc)', async () => {
@@ -224,7 +224,7 @@ describe('getReports()', () => {
       fetchAllTransactions: vi.fn().mockResolvedValue([t1, t2, t3])
     })
     const result = await getReports(makeEvent(), connector)
-    const ids = (result.body as any).transactions.map((t: Transaction) => t.id)
+    const ids = (result.body).transactions.map((t: Transaction) => t.id)
     expect(ids).toEqual(['tx-1', 'tx-2', 'tx-3'])
   })
 })

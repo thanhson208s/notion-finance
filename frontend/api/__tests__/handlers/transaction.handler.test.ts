@@ -5,11 +5,11 @@ import { QueryError } from '../../_lib/types/error'
 import { Transaction } from '../../_lib/types/transaction.type'
 import { Category } from '../../_lib/types/category.type'
 
-const makeEvent = (body?: unknown, query: Record<string, string> = {}) => ({
+const makeEvent = <T>(body?: T, query: Record<string, string> = {}) => ({
   method: 'POST',
   path: '/api/expense',
   query,
-  body: body as any
+  body: body as T
 })
 
 const makeTx = (amount: number): Transaction => ({
@@ -67,8 +67,8 @@ describe('logExpense()', () => {
       updateAccountBalance: vi.fn().mockResolvedValue({ balance: 400 })
     })
     const result = await logExpense(makeEvent({ accountId: 'a', amount: 100, categoryId: 'c', note: '' }), connector)
-    expect((connector.updateAccountBalance as any)).toHaveBeenCalledWith('a', 400)
-    expect((result.body as any).newBalance).toBe(400)
+    expect((connector.updateAccountBalance)).toHaveBeenCalledWith('a', 400)
+    expect((result.body).newBalance).toBe(400)
   })
 
   it('calls addExpense with correct args (no linkedCardId)', async () => {
@@ -100,7 +100,7 @@ describe('logExpense()', () => {
       updateAccountBalance: vi.fn().mockResolvedValue({ balance: 225 })
     })
     const result = await logExpense(makeEvent({ accountId: 'a', amount: 75, categoryId: 'cat-1', note: 'coffee' }), connector)
-    const body = result.body as any
+    const body = result.body
     expect(body.oldBalance).toBe(300)
     expect(body.newBalance).toBe(225)
     expect(body.amount).toBe(75)
@@ -131,8 +131,8 @@ describe('logIncome()', () => {
       updateAccountBalance: vi.fn().mockResolvedValue({ balance: 300 })
     })
     const result = await logIncome(makeEvent({ accountId: 'a', amount: 200, categoryId: 'c', note: '' }), connector)
-    expect((connector.updateAccountBalance as any)).toHaveBeenCalledWith('a', 300)
-    expect((result.body as any).newBalance).toBe(300)
+    expect((connector.updateAccountBalance)).toHaveBeenCalledWith('a', 300)
+    expect((result.body).newBalance).toBe(300)
   })
 
   it('calls addIncome with correct args', async () => {
@@ -171,8 +171,8 @@ describe('transferBalance()', () => {
     const result = await transferBalance(makeEvent({ fromAccountId: 'from', toAccountId: 'to', amount: 100 }), connector)
     expect(updateAccountBalance).toHaveBeenCalledWith('from', 900)
     expect(updateAccountBalance).toHaveBeenCalledWith('to', 1100)
-    expect((result.body as any).newFromAccountBalance).toBe(900)
-    expect((result.body as any).newToAccountBalance).toBe(1100)
+    expect((result.body).newFromAccountBalance).toBe(900)
+    expect((result.body).newToAccountBalance).toBe(1100)
   })
 
   it('passes timestamp to addTransfer when provided', async () => {
@@ -201,7 +201,7 @@ describe('listExpenses()', () => {
       fetchTransactions: vi.fn().mockResolvedValue(txs)
     })
     const result = await listExpenses(makeEvent(undefined, {}), connector)
-    expect((result.body as any).total).toBe(175)
+    expect((result.body).total).toBe(175)
   })
 
   it('passes undefined for missing date params', async () => {

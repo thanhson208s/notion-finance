@@ -17,7 +17,7 @@ The backend only queries and updates records — it never creates or modifies sc
 | `Name` | Title | `string` | Display name of the account |
 | `Balance` | Number | `number` | Current balance in VND |
 | `Type` | Select | `AccountType` | See enum below |
-| `linkedCards` | Relation | _(not used)_ | Relation to Card database |
+| `Linked cards` | Relation | `string[]` | Relation to Card database — all linked card IDs returned in `GET /api/accounts` |
 
 ### AccountType Enum
 
@@ -69,7 +69,7 @@ These are Category **page IDs** (not database IDs) that must be created in the C
 | `ToAccount` | Relation | `string \| null` | Relation to Account DB; set for income/transfer |
 | `Category` | Relation | `string` | Relation to Category DB; required |
 | `Note` | Rich Text | `string` | User-provided description |
-| `Linked card` | Relation | `string \| null` | Relation to Card DB; accepted in API but never written (🐛 BUG #2) |
+| `Linked card` | Relation | `string \| null` | Relation to Card DB; written to Notion when `linkedCardId` provided in request (~~🐛 BUG #2~~ resolved in v1.3.0) |
 
 > **Note**: The property key is `"Linked card"` — with a space and lowercase `c`.
 
@@ -87,13 +87,14 @@ These are Category **page IDs** (not database IDs) that must be created in the C
 
 ## 4. Card Database
 
-**ENV**: _(no dedicated env var — feature not yet implemented)_
+**ENV**: `NOTION_CARD_DATABASE_ID`
 
 | Notion Property | Notion Type | TypeScript Type | Notes |
 |---|---|---|---|
 | `Name` | Title | `string` | Card display name |
-| `annualFee` | Number | `number` | Annual fee in VND |
-| `linkedAccount` | Relation | `string` | Relation to Account DB |
+| `annualFee` | Number | `number \| null` | Annual fee in VND |
+| `linkedAccount` | Relation | `string \| null` | Relation to Account DB |
+| `Image` | URL | `string \| null` | Vercel Blob public URL of the card image |
 
-**Status**: Schema defined in Notion UI. No backend handler implemented.
+**Status**: Card data is fetched and embedded in `GET /api/accounts` response (as `cards[]` per account).
 See [feature-cards.md](./feature-cards.md).

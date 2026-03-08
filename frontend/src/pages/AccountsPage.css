@@ -30,7 +30,7 @@
 /* ---------- LIST ---------- */
 
 .account-list {
-  padding: 16px;
+  padding: 16px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -401,7 +401,7 @@
 .form-row textarea {
   width: 100%;
   font-size: 20px;
-  background: #0f172a;
+  background: transparent;
   border: 1px solid #334155;
   border-radius: 8px;
   padding: 8px 12px;
@@ -486,7 +486,7 @@
   width: 180px;
   height: 50px;
   border-radius: 999px;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -494,24 +494,20 @@
   gap: 10px;
 }
 
-/* .submit-btn-expense:hover { background: white; } */
-
 .submit-btn-income {
-  background: linear-gradient(90deg, #109915, #30c537);
+  background: linear-gradient(90deg, #0e7e12, #30c537);
   color: white;
   border: 1px solid transparent;
   width: 180px;
   height: 50px;
   border-radius: 999px;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
 }
-
-/* .submit-btn-income:hover { background: white; } */
 
 .submit-btn-adjustment {
   background: #4b5563;

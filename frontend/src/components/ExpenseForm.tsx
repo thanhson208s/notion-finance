@@ -8,9 +8,9 @@ function EmptyCard() {
     <div className="card-empty">
       <svg width="100%" height="100%" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="158" height="98" rx="8" ry="8"
-          fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="6 4" />
-        <line x1="20" y1="20" x2="140" y2="80" stroke="currentColor" strokeWidth="2" />
-        <line x1="140" y1="20" x2="20" y2="80" stroke="currentColor" strokeWidth="2" />
+          fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="6 4" />
+        <line x1="20" y1="20" x2="140" y2="80" stroke="currentColor" strokeWidth="1" />
+        <line x1="140" y1="20" x2="20" y2="80" stroke="currentColor" strokeWidth="1" />
       </svg>
     </div>
   )
@@ -231,7 +231,7 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess}: 
 
       <div className="card-select-section">
         <div className="card-mini" onClick={() => cards.length > 0 && accountType !== 'Credit' && setCardIndex(prevIndex)}>
-          {(prevIndex < 0 ? <EmptyCard /> : <img src={cards[prevIndex].imageUrl} alt={cards[prevIndex].name} className="card-img" />)}
+          {cards.length > 0 && accountType !== 'Credit' && (prevIndex < 0 ? <EmptyCard /> : <img src={cards[prevIndex].imageUrl} alt={cards[prevIndex].name} className="card-img" />)}
         </div>
         <div className="card-main">
           <div className="card-slot">
@@ -240,13 +240,13 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess}: 
           <span className="card-name-label">{cardIndex < 0 ? 'None' : cards[cardIndex].name}</span>
         </div>
         <div className="card-mini" onClick={() => cards.length > 0 && accountType !== 'Credit' && setCardIndex(nextIndex)}>
-          {(nextIndex < 0 ? <EmptyCard /> : <img src={cards[nextIndex].imageUrl} alt={cards[nextIndex].name} className="card-img" />)}
+          {cards.length > 0 && accountType !== 'Credit' && (nextIndex < 0 ? <EmptyCard /> : <img src={cards[nextIndex].imageUrl} alt={cards[nextIndex].name} className="card-img" />)}
         </div>
       </div>
 
       <div className="form-buttons">
         <button type="button" className="form-btn submit-btn-expense" onClick={submit}>
-          <TrendingDown size={36} />
+          <TrendingDown size={24} />
           <span>Expense</span>
         </button>
       </div>

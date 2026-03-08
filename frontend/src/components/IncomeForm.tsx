@@ -8,9 +8,9 @@ function EmptyCard() {
     <div className="card-empty">
       <svg width="100%" height="100%" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="158" height="98" rx="8" ry="8"
-          fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="6 4" />
-        <line x1="20" y1="20" x2="140" y2="80" stroke="currentColor" strokeWidth="2" />
-        <line x1="140" y1="20" x2="20" y2="80" stroke="currentColor" strokeWidth="2" />
+          fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="6 4" />
+        <line x1="20" y1="20" x2="140" y2="80" stroke="currentColor" strokeWidth="1" />
+        <line x1="140" y1="20" x2="20" y2="80" stroke="currentColor" strokeWidth="1" />
       </svg>
     </div>
   )
@@ -246,7 +246,7 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess}: {
 
       <div className="form-buttons">
         <button type="button" className="form-btn submit-btn-income" onClick={submit}>
-          <TrendingUp size={36} />
+          <TrendingUp size={24} />
           <span>Income</span>
         </button>
       </div>

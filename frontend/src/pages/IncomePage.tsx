@@ -34,7 +34,7 @@ export default function IncomePage() {
       )}
 
       <div className="transaction-body">
-        <IncomeForm accountId={accountId!} onSuccess={setBalance} />
+        <IncomeForm accountId={accountId!} cards={account?.cards ?? []} accountType={account?.type} onSuccess={setBalance} />
       </div>
     </main>
   )

@@ -121,23 +121,33 @@
 }
 
 .account-cash {
-  background: #16a34a;
+  border: 1px solid #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+  color: #22c55e;
 }
 
 .account-bank {
-  background: #2563eb;
+  border: 1px solid #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
 }
 
 .account-credit {
-  background: #dc2626;
+  border: 1px solid #dc2626;
+  box-shadow: 0 0 10px rgb(167, 32, 32, 0.4);
+  color: #dc2626
 }
 
 .account-ewallet {
-  background: #7c3aed;
+  border: 1px solid #a855f7;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+  color: #a855f7;
 }
 
 .account-savings {
-  background: #059669;
+  border: 1px solid #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  color: #10b981;
 }
 
 .account-paylater {
@@ -149,7 +159,9 @@
 }
 
 .account-gold {
-  background: #e6b033;
+  border: 1px solid #fbbf24;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
 }
 
 .account-loan {
@@ -342,7 +354,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  
+  flex: 1;
 }
 
 .form-row {
@@ -409,6 +421,7 @@
   align-items: center;
   justify-content: center;
   margin-top: 2px;
+  flex: 1;
 }
 
 /* ---------- EXPENSE / INCOME FORM LAYOUT ---------- */
@@ -460,42 +473,53 @@
   color: #ef4444;
 }
 
+.form-note {
+  margin-top: 10px;
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
 .submit-btn-expense {
-  background: #dc2626;
+  background: linear-gradient(90deg, #b53114, #e86037);
   color: white;
-  border: none;
-  width: 160px;
-  height: 48px;
-  font-size: 18px;
+  border: 1px solid transparent;
+  width: 180px;
+  height: 50px;
+  border-radius: 999px;
+  font-size: 24px;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.submit-btn-expense:hover { background: #b91c1c; }
+/* .submit-btn-expense:hover { background: white; } */
 
 .submit-btn-income {
-  background: #16a34a;
+  background: linear-gradient(90deg, #109915, #30c537);
   color: white;
-  border: none;
-  width: 160px;
-  height: 48px;
-  font-size: 18px;
+  border: 1px solid transparent;
+  width: 180px;
+  height: 50px;
+  border-radius: 999px;
+  font-size: 24px;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.submit-btn-income:hover { background: #15803d; }
+/* .submit-btn-income:hover { background: white; } */
 
 .submit-btn-adjustment {
   background: #4b5563;
   color: white;
   border: none;
-  width: 160px;
+  width: 120px;
   height: 48px;
+  border-radius: 10px;
   font-size: 18px;
   display: flex;
   align-items: center;
@@ -509,8 +533,9 @@
   background: #2563eb;
   color: white;
   border: none;
-  width: 160px;
+  width: 120px;
   height: 48px;
+  border-radius: 10px;
   font-size: 18px;
   display: flex;
   align-items: center;
@@ -531,15 +556,8 @@
 }
 
 .form-btn {
-  width: 120px;
-  height: 40px;
-  border-radius: 10px;
   cursor: pointer;
   transition: all 0.18s ease;
-  border: 1px solid transparent;
-  
-  font-size: 16px;
-  font-weight: 500;
 }
 
 .submit-btn {

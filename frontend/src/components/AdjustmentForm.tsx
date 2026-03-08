@@ -127,7 +127,7 @@ export default function AdjustmentForm({accountId, onSuccess}: {
       </div>
 
       <div className="form-row">
-        <textarea
+        <textarea className="form-note"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}

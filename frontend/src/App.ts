@@ -16,11 +16,19 @@ export type AccountType =
   | "Debt"
   | "Crypto"
 
+export type CardSummary = {
+  id: string
+  name: string
+  imageUrl: string
+}
+
 export type Account = {
   id: string
   name: string
   type: AccountType
   balance: number
+  linkedCardIds: string[]
+  cards: CardSummary[]
 }
 
 export type CategoryType = 'Income' | 'Expense' | 'Financial'

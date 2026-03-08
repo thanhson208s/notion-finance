@@ -1,7 +1,20 @@
-import type { Category } from '../App'
+import type { Category, CardSummary, AccountType } from '../App'
 import { API_BASE } from '../App'
 import { useEffect, useState } from 'react'
 import { TrendingUp } from 'lucide-react'
+
+function EmptyCard() {
+  return (
+    <div className="card-empty">
+      <svg width="100%" height="100%" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="158" height="98" rx="8" ry="8"
+          fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="6 4" />
+        <line x1="20" y1="20" x2="140" y2="80" stroke="currentColor" strokeWidth="2" />
+        <line x1="140" y1="20" x2="20" y2="80" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    </div>
+  )
+}
 
 type LogIncomeResponse = {
   accountId: string,
@@ -25,8 +38,10 @@ type LogExpenseStatus = {
   data: LogIncomeError
 } | { status: 'idle' } | { status: 'loading' };
 
-export default function IncomeForm({accountId, onSuccess}: {
+export default function IncomeForm({accountId, cards, accountType, onSuccess}: {
   accountId: string
+  cards: CardSummary[]
+  accountType?: AccountType
   onSuccess?: (newBalance: number) => void
 }) {
   const [ status, setStatus ] = useState<LogExpenseStatus>({status: 'idle'});
@@ -38,6 +53,9 @@ export default function IncomeForm({accountId, onSuccess}: {
     amount?: boolean,
     categoryId?: boolean
   }>({});
+  const [ cardIndex, setCardIndex ] = useState<number>(() =>
+    accountType === 'Credit' && cards.length > 0 ? 0 : -1
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -77,6 +95,7 @@ export default function IncomeForm({accountId, onSuccess}: {
 
     if (!errorAmount && !errorCategoryId) {
       setStatus({status: 'loading'});
+      const selectedCardId = cardIndex >= 0 ? cards[cardIndex].id : undefined;
       try {
         const response = await fetch(`${API_BASE}/income`, {
           method: 'POST',
@@ -84,7 +103,7 @@ export default function IncomeForm({accountId, onSuccess}: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            accountId, amount, categoryId, note
+            accountId, amount, categoryId, note, linkedCardId: selectedCardId
           })
         });
 
@@ -124,6 +143,7 @@ export default function IncomeForm({accountId, onSuccess}: {
             setAmount(0);
             setCategoryId("");
             setNote("");
+            setCardIndex(accountType === 'Credit' && cards.length > 0 ? 0 : -1);
           }}
         >
           Log again
@@ -144,6 +164,7 @@ export default function IncomeForm({accountId, onSuccess}: {
             setAmount(0);
             setCategoryId("");
             setNote("");
+            setCardIndex(accountType === 'Credit' && cards.length > 0 ? 0 : -1);
           }}
         >
           Try again
@@ -151,6 +172,9 @@ export default function IncomeForm({accountId, onSuccess}: {
       </div>
     )
   }
+
+  const prevIndex = cardIndex === -1 ? cards.length - 1 : cardIndex - 1
+  const nextIndex = cardIndex === cards.length - 1 ? -1 : cardIndex + 1
 
   return (
     <form className="form-main">
@@ -197,7 +221,7 @@ export default function IncomeForm({accountId, onSuccess}: {
       </div>
 
       <div className="form-row">
-        <textarea
+        <textarea className="form-note"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -205,9 +229,25 @@ export default function IncomeForm({accountId, onSuccess}: {
         />
       </div>
 
+      <div className="card-select-section">
+        <div className="card-mini" onClick={() => cards.length > 0 && accountType !== 'Credit' && setCardIndex(prevIndex)}>
+          {cards.length > 0 && accountType !== 'Credit' && (prevIndex < 0 ? <EmptyCard /> : <img src={cards[prevIndex].imageUrl} alt={cards[prevIndex].name} className="card-img" />)}
+        </div>
+        <div className="card-main">
+          <div className="card-slot">
+            {cardIndex < 0 ? <EmptyCard /> : <img src={cards[cardIndex].imageUrl} alt={cards[cardIndex].name} className="card-img" />}
+          </div>
+          <span className="card-name-label">{cardIndex < 0 ? 'None' : cards[cardIndex].name}</span>
+        </div>
+        <div className="card-mini" onClick={() => cards.length > 0 && accountType !== 'Credit' && setCardIndex(nextIndex)}>
+          {cards.length > 0 && accountType !== 'Credit' && (nextIndex < 0 ? <EmptyCard /> : <img src={cards[nextIndex].imageUrl} alt={cards[nextIndex].name} className="card-img" />)}
+        </div>
+      </div>
+
       <div className="form-buttons">
         <button type="button" className="form-btn submit-btn-income" onClick={submit}>
-          <TrendingUp size={20} /> Income
+          <TrendingUp size={36} />
+          <span>Income</span>
         </button>
       </div>
     </form>

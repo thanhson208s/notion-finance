@@ -34,7 +34,7 @@ export default function ExpensePage() {
       )}
 
       <div className="transaction-body">
-        <ExpenseForm accountId={accountId!} onSuccess={setBalance} />
+        <ExpenseForm accountId={accountId!} cards={account?.cards ?? []} accountType={account?.type} onSuccess={setBalance} />
       </div>
     </main>
   )

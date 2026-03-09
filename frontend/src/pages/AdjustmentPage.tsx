@@ -1,9 +1,21 @@
 import './TransactionPage.css'
 import { useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, CalendarDays } from 'lucide-react'
 import AdjustmentForm from '../components/AdjustmentForm'
 import type { Account } from '../App'
+
+const toDatetimeLocal = (ms: number) => {
+  const d = new Date(ms)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+const formatDateDisplay = (ms: number) =>
+  new Date(ms).toLocaleString('vi-VN', {
+    month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  })
 
 export default function AdjustmentPage() {
   const { accountId } = useParams()
@@ -11,6 +23,7 @@ export default function AdjustmentPage() {
   const { state } = useLocation()
   const account = state?.account as Account | undefined
   const [balance, setBalance] = useState<number>(account?.balance ?? 0)
+  const [timestamp, setTimestamp] = useState<number>(() => Date.now())
 
   return (
     <main className="transaction-page">
@@ -19,6 +32,17 @@ export default function AdjustmentPage() {
           <ChevronLeft size={28} />
         </button>
         <h1 className="transaction-title">Adjustment</h1>
+
+        <label className="header-datetime">
+          <span className="datetime-label">{formatDateDisplay(timestamp)}</span>
+          <CalendarDays size={20} />
+          <input
+            type="datetime-local"
+            className="datetime-input-hidden"
+            value={toDatetimeLocal(timestamp)}
+            onChange={(e) => setTimestamp(e.target.value ? new Date(e.target.value).getTime() : Date.now())}
+          />
+        </label>
       </div>
 
       {account && (
@@ -34,7 +58,7 @@ export default function AdjustmentPage() {
       )}
 
       <div className="transaction-body">
-        <AdjustmentForm accountId={accountId!} onSuccess={setBalance} />
+        <AdjustmentForm accountId={accountId!} onSuccess={setBalance} timestamp={timestamp} />
       </div>
     </main>
   )

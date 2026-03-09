@@ -23,9 +23,10 @@ type AdjustmentStatus = {
   data: AdjustmentError
 } | { status: 'idle' } | { status: 'loading' }
 
-export default function AdjustmentForm({accountId, onSuccess}: {
+export default function AdjustmentForm({accountId, onSuccess, timestamp}: {
   accountId: string
   onSuccess?: (newBalance: number) => void
+  timestamp?: number
 }) {
   const [ status, setStatus] = useState<AdjustmentStatus>({status: 'idle'});
   const [ balance, setBalance ] = useState<number>(0);
@@ -43,7 +44,7 @@ export default function AdjustmentForm({accountId, onSuccess}: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            accountId, balance, note
+            accountId, balance, note, timestamp
           })
         });
 

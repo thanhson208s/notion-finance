@@ -1,7 +1,7 @@
 import type { Category, CardSummary, AccountType } from '../App'
 import { API_BASE } from '../App'
 import { useEffect, useState } from 'react'
-import { TrendingDown } from 'lucide-react'
+import { TrendingDown, Check, X, Loader2 } from 'lucide-react'
 
 function EmptyCard() {
   return (
@@ -38,11 +38,12 @@ type LogExpenseStatus = {
   data: LogExpenseError
 } | { status: 'idle' } | { status: 'loading' };
 
-export default function ExpenseForm({accountId, cards, accountType, onSuccess}: {
+export default function ExpenseForm({accountId, cards, accountType, onSuccess, timestamp}: {
   accountId: string
   cards: CardSummary[]
   accountType?: AccountType
   onSuccess?: (newBalance: number) => void
+  timestamp?: number
 }) {
   const [ status, setStatus ] = useState<LogExpenseStatus>({status: 'idle'});
   const [ categories, setCategories ] = useState<Category[]>([]);
@@ -84,6 +85,10 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess}: 
     };
   }, []);
 
+  const resetToIdle = () => {
+    if (status.status !== 'loading') setStatus({status: 'idle'});
+  }
+
   const submit = async () => {
     const errorAmount = !amount || amount <= 0;
     const errorCategoryId = !categoryId || categoryId === "";
@@ -103,7 +108,7 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess}: 
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            accountId, amount, categoryId, note, linkedCardId: selectedCardId
+            accountId, amount, categoryId, note, linkedCardId: selectedCardId, timestamp
           })
         });
 
@@ -123,56 +128,7 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess}: 
     }
   }
 
-  if (status.status === 'loading') {
-    return (
-      <div className='submit-state'>
-        <div className='circle-loading'></div>
-      </div>
-    )
-  }
-
-  if (status.status === 'success') {
-    return (
-      <div className='submit-state'>
-        <div className='circle-state circle-success'>✓</div>
-
-        <button
-          className='form-btn log-again-btn'
-          onClick={() => {
-            setStatus({status: "idle"});
-            setAmount(0);
-            setCategoryId("");
-            setNote("");
-            setCardIndex(accountType === 'Credit' && cards.length > 0 ? 0 : -1);
-          }}
-        >
-          Log again
-        </button>
-      </div>
-    )
-  }
-
-  if (status.status === 'error') {
-    return (
-      <div className='submit-state'>
-        <div className='circle-state circle-error'>✕</div>
-
-        <button
-          className='form-btn try-again-btn'
-          onClick={() => {
-            setStatus({status: "idle"});
-            setAmount(0);
-            setCategoryId("");
-            setNote("");
-            setCardIndex(accountType === 'Credit' && cards.length > 0 ? 0 : -1);
-          }}
-        >
-          Try again
-        </button>
-      </div>
-    )
-  }
-
+  const loading = status.status === 'loading';
   const prevIndex = cardIndex === -1 ? cards.length - 1 : cardIndex - 1
   const nextIndex = cardIndex === cards.length - 1 ? -1 : cardIndex + 1
 
@@ -184,11 +140,13 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess}: 
           value={amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
           onChange={() => {}}
           onKeyDown={(e) => {
-            if (e.code === 'Backspace') { setAmount(Math.floor(amount / 10)); setErrors(p => ({...p, amount: false})) }
-            else if (e.code.match(/^Digit[0-9]$/g)) { setAmount(amount * 10 + parseInt(e.code.slice(-1))); setErrors(p => ({...p, amount: false})) }
+            if (loading) return;
+            if (e.code === 'Backspace') { setAmount(Math.floor(amount / 10)); setErrors(p => ({...p, amount: false})); resetToIdle(); }
+            else if (e.code.match(/^Digit[0-9]$/g)) { setAmount(amount * 10 + parseInt(e.code.slice(-1))); setErrors(p => ({...p, amount: false})); resetToIdle(); }
           }}
           placeholder='0 ₫'
           inputMode="numeric"
+          disabled={loading}
           className={`amount-input-big${errors.amount ? ' amount-error' : ''}`}
         />
       </div>
@@ -197,7 +155,8 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess}: 
         <select
           title="Category"
           value={categories.find(category => category.id === categoryId)?.id ?? ""}
-          onChange={(e) => { setCategoryId(e.target.value); setErrors(p => ({...p, categoryId: false})) }}
+          onChange={(e) => { setCategoryId(e.target.value); setErrors(p => ({...p, categoryId: false})); resetToIdle(); }}
+          disabled={loading}
           className={`category-select-borderless${errors.categoryId ? ' category-error' : ''}`}
         >
           <option value="">— Category —</option>
@@ -224,13 +183,14 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess}: 
         <textarea className="form-note"
           rows={3}
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={(e) => { setNote(e.target.value); resetToIdle(); }}
+          disabled={loading}
           placeholder='Note...'
         />
       </div>
 
-      <div className="card-select-section">
-        <div className="card-mini" onClick={() => cards.length > 0 && accountType !== 'Credit' && setCardIndex(prevIndex)}>
+      <div className={`card-select-section${loading ? ' disabled' : ''}`}>
+        <div className="card-mini" onClick={() => { if (cards.length > 0 && accountType !== 'Credit') { setCardIndex(prevIndex); resetToIdle(); } }}>
           {cards.length > 0 && accountType !== 'Credit' && (prevIndex < 0 ? <EmptyCard /> : <img src={cards[prevIndex].imageUrl} alt={cards[prevIndex].name} className="card-img" />)}
         </div>
         <div className="card-main">
@@ -239,15 +199,25 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess}: 
           </div>
           <span className="card-name-label">{cardIndex < 0 ? 'None' : cards[cardIndex].name}</span>
         </div>
-        <div className="card-mini" onClick={() => cards.length > 0 && accountType !== 'Credit' && setCardIndex(nextIndex)}>
+        <div className="card-mini" onClick={() => { if (cards.length > 0 && accountType !== 'Credit') { setCardIndex(nextIndex); resetToIdle(); } }}>
           {cards.length > 0 && accountType !== 'Credit' && (nextIndex < 0 ? <EmptyCard /> : <img src={cards[nextIndex].imageUrl} alt={cards[nextIndex].name} className="card-img" />)}
         </div>
       </div>
 
       <div className="form-buttons">
-        <button type="button" className="form-btn submit-btn-expense" onClick={submit}>
-          <TrendingDown size={24} />
-          <span>Expense</span>
+        <button type="button" className="form-btn submit-btn-expense" onClick={submit} disabled={loading}>
+          <span key={status.status} className="submit-btn-content">
+            {status.status === 'loading' && <Loader2 size={20} className="icon-spin" />}
+            {status.status === 'success' && <Check size={20} />}
+            {status.status === 'error'   && <X size={20} />}
+            {status.status === 'idle'    && <TrendingDown size={20} />}
+            <span>
+              {status.status === 'loading' ? 'Processing...' :
+               status.status === 'success' ? 'Success' :
+               status.status === 'error'   ? 'Error' :
+               'Expense'}
+            </span>
+          </span>
         </button>
       </div>
     </form>

@@ -26,10 +26,11 @@ type TransferStatus = {
   data: TransferError
 } | { status: 'idle' } | { status: 'loading' }
 
-export default function TransferForm({accountId, accounts, onSuccess}: {
+export default function TransferForm({accountId, accounts, onSuccess, timestamp}: {
   accountId: string,
   accounts: Account[]
   onSuccess?: (newBalance: number) => void
+  timestamp?: number
 }) {
   const [ status, setStatus ] = useState<TransferStatus>({status: "idle"});
   const [ fromAccountId, setFromAccountId ] = useState<string>(accountId);
@@ -79,7 +80,7 @@ export default function TransferForm({accountId, accounts, onSuccess}: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            amount, fromAccountId, toAccountId
+            amount, fromAccountId, toAccountId, timestamp
           })
         });
 

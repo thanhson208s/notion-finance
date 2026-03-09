@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { API_BASE } from '../App'
-import type { Account, Category } from '../App'
+import type { Account, AccountType, Category } from '../App'
 
 type Totals = { total: number; totalOfAssets: number; totalOfLiabilities: number }
 
@@ -12,6 +12,14 @@ type AppContextValue = {
   categories: Category[]
   categoriesLoading: boolean
   refetchAccounts: () => void
+  updateAccountBalance: (accountId: string, newBalance: number) => void
+}
+
+const type2Group: Record<AccountType, 'asset' | 'liability'> = {
+  Cash: 'asset', Bank: 'asset', eWallet: 'asset', Savings: 'asset',
+  Prepaid: 'asset', Gold: 'asset', Loan: 'asset', Fund: 'asset',
+  Bond: 'asset', Stock: 'asset',
+  Credit: 'liability', PayLater: 'liability', Debt: 'liability', Crypto: 'liability',
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -60,8 +68,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const refetchAccounts = useCallback(() => fetchAccounts(), [fetchAccounts])
 
+  const updateAccountBalance = useCallback((accountId: string, newBalance: number) => {
+    setAccounts(prev => {
+      const account = prev.find(a => a.id === accountId)
+      if (!account) return prev
+      const delta = newBalance - account.balance
+      const isAsset = type2Group[account.type] === 'asset'
+      setTotals(t => ({
+        total: t.total + delta,
+        totalOfAssets: isAsset ? t.totalOfAssets + delta : t.totalOfAssets,
+        totalOfLiabilities: !isAsset ? t.totalOfLiabilities + delta : t.totalOfLiabilities,
+      }))
+      return prev.map(a => a.id === accountId ? { ...a, balance: newBalance } : a)
+    })
+  }, [])
+
   return (
-    <AppContext.Provider value={{ accounts, totals, accountsLoading, categories, categoriesLoading, refetchAccounts }}>
+    <AppContext.Provider value={{ accounts, totals, accountsLoading, categories, categoriesLoading, refetchAccounts, updateAccountBalance }}>
       {children}
     </AppContext.Provider>
   )

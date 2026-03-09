@@ -4,6 +4,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, CalendarDays } from 'lucide-react'
 import IncomeForm from '../components/IncomeForm'
 import type { Account } from '../App'
+import { useAppContext } from '../contexts/AppContext'
 
 const toDatetimeLocal = (ms: number) => {
   const d = new Date(ms)
@@ -24,6 +25,12 @@ export default function IncomePage() {
   const account = state?.account as Account | undefined
   const [balance, setBalance] = useState<number>(account?.balance ?? 0)
   const [timestamp, setTimestamp] = useState<number>(() => Date.now())
+  const { updateAccountBalance } = useAppContext()
+
+  const handleSuccess = (newBalance: number) => {
+    setBalance(newBalance)
+    if (accountId) updateAccountBalance(accountId, newBalance)
+  }
 
   return (
     <main className="transaction-page">
@@ -58,7 +65,7 @@ export default function IncomePage() {
       )}
 
       <div className="transaction-body">
-        <IncomeForm accountId={accountId!} cards={account?.cards ?? []} accountType={account?.type} onSuccess={setBalance} timestamp={timestamp} />
+        <IncomeForm accountId={accountId!} cards={account?.cards ?? []} accountType={account?.type} onSuccess={handleSuccess} timestamp={timestamp} />
       </div>
     </main>
   )

@@ -9,6 +9,14 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.6.1] - 2026-03-09
+
+### Changed
+
+- feat(app-context): add `updateAccountBalance` mutator so transaction pages update global account balances and totals in-place after success, without requiring a full refetch
+
+---
+
 ## [FE-0.6.0] - 2026-03-09
 
 ### Changed

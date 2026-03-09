@@ -24,8 +24,13 @@ export default function TransferPage() {
   const { state } = useLocation()
   const account = state?.account as Account | undefined
   const [balance, setBalance] = useState<number>(account?.balance ?? 0)
-  const { accounts } = useAppContext()
+  const { accounts, updateAccountBalance } = useAppContext()
   const [timestamp, setTimestamp] = useState<number>(() => Date.now())
+
+  const handleTransferSuccess = (fromId: string, fromBalance: number, toId: string, toBalance: number) => {
+    updateAccountBalance(fromId, fromBalance)
+    updateAccountBalance(toId, toBalance)
+  }
 
   return (
     <main className="transaction-page">
@@ -60,7 +65,7 @@ export default function TransferPage() {
       )}
 
       <div className="transaction-body">
-        <TransferForm accountId={accountId!} accounts={accounts} onSuccess={setBalance} timestamp={timestamp} />
+        <TransferForm accountId={accountId!} accounts={accounts} onSuccess={setBalance} onTransferSuccess={handleTransferSuccess} timestamp={timestamp} />
       </div>
     </main>
   )

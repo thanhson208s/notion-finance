@@ -5,7 +5,7 @@ import { BanknoteArrowDown, BanknoteArrowUp, ArrowUpDown, ArrowLeftRight } from 
 
 type TransferResponse = {
   fromAccountId: string,
-  toAccountId: number,
+  toAccountId: string,
   amount: number,
   oldFromAccountBalance: number,
   newFromAccountBalance: number,
@@ -26,10 +26,11 @@ type TransferStatus = {
   data: TransferError
 } | { status: 'idle' } | { status: 'loading' }
 
-export default function TransferForm({accountId, accounts, onSuccess, timestamp}: {
+export default function TransferForm({accountId, accounts, onSuccess, onTransferSuccess, timestamp}: {
   accountId: string,
   accounts: Account[]
   onSuccess?: (newBalance: number) => void
+  onTransferSuccess?: (fromId: string, fromBalance: number, toId: string, toBalance: number) => void
   timestamp?: number
 }) {
   const [ status, setStatus ] = useState<TransferStatus>({status: "idle"});
@@ -92,6 +93,7 @@ export default function TransferForm({accountId, accounts, onSuccess, timestamp}
         const data = await response.json() as TransferResponse;
         setStatus({status: 'success', data});
         onSuccess?.(data.fromAccountId === accountId ? data.newFromAccountBalance : data.newToAccountBalance);
+        onTransferSuccess?.(data.fromAccountId, data.newFromAccountBalance, data.toAccountId, data.newToAccountBalance);
       } catch(e) {
         if (e instanceof Error)
           console.log(e.message);

@@ -399,3 +399,153 @@
   color: #64748b;
   margin-left: 2px;
 }
+
+/* ── Transaction history view ── */
+
+.tx-filters {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 12px 24px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tx-select {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(30, 41, 59, 0.9);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.tx-select:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.tx-sort-group {
+  display: flex;
+  flex-direction: row;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.tx-sort-btn {
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.tx-sort-btn--active {
+  color: #fff;
+}
+
+.tx-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px 96px;
+}
+
+.tx-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tx-icon {
+  width: 36px;
+  align-self: stretch;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+
+.tx-mid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tx-account {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tx-category {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.tx-note {
+  font-size: 11px;
+  font-style: italic;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tx-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.tx-date {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tx-time {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.tx-amount {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tx-amount--income {
+  color: #10b981;
+}
+
+.tx-amount--expense {
+  color: var(--red);
+}
+
+.tx-amount--transfer,
+.tx-amount--adjustment {
+  color: #64748b;
+}

@@ -84,6 +84,7 @@ Same as above with `ToAccount is not empty` filter.
 - **Donut chart**: pure SVG, multi-segment, click segment or category row to highlight
 - **Category list**: parent categories with group total (parent + children sum), expandable to show sub-categories with individual amounts and progress bars
 - **Color palette**: 10-color assignment by index, consistent within each tab view
+- **Transaction history toggle**: floating pill button ("See all transactions" / "See financial report") at bottom toggles between the report view and a full transaction list. The transaction list supports filtering by type (Income/Expense/Transfer/Adjustment), by top-level category, and sorting by date or amount. Account names are resolved from `data.accounts` (no separate fetch). Resets to report view when the date range changes.
 
 ---
 
@@ -118,6 +119,16 @@ Same as above with `ToAccount is not empty` filter.
       "linkedCardId": "string | undefined"
     }
   ],
+  "accounts": [
+    {
+      "id": "string",
+      "name": "string",
+      "type": "string",
+      "balance": 0,
+      "linkedCardIds": [],
+      "cards": [{ "id": "string", "name": "string", "imageUrl": "string" }]
+    }
+  ],
   "expenseCategoryBreakdown": [
     {
       "categoryId": "string",
@@ -138,12 +149,13 @@ Same as above with `ToAccount is not empty` filter.
 ```
 
 - `transactions`: all transactions in the date range (expense, income, transfer, adjustment), sorted by `timestamp` descending
+- `accounts`: list of all accounts (id, name, type, balance, cards) — used by the frontend to resolve account names in the transaction history view
 - Category breakdowns are exclusive to expense/income — transfer and adjustment transactions are excluded from breakdowns
 - `parentId`: the category's own `id` when Notion returns `null` (top-level category)
 - Each breakdown includes **all categories of the matching type**, even those with `amount: 0` (no transactions in the date range)
 - Each breakdown is sorted by `amount` descending
 - `netSavings = totalIncome - totalExpense`
-- 2 parallel Notion calls: all transactions + all categories
+- 3 parallel Notion calls: all transactions + all categories + all accounts
 
 ---
 

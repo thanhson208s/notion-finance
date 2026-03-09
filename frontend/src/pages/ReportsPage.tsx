@@ -1,12 +1,31 @@
 import './ReportsPage.css'
-import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronRight, TrendingDown, TrendingUp, ListOrdered } from 'lucide-react'
-import { API_BASE } from '../App'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  ArrowDownWideNarrow, ArrowLeftRight, ArrowUpDown, ArrowUpNarrowWide,
+  BarChart2, Briefcase, Calendar, CalendarCheck,
+  Car, Clapperboard, ChevronDown, ChevronRight,
+  Coins, Gift, Home, ListOrdered, Palette, PawPrint,
+  Percent, TrendingDown, TrendingUp, Undo2, UtensilsCrossed
+} from 'lucide-react'
+import { type Account, API_BASE } from '../App'
 
 // --- Types ---
 
 type DateRangePreset = 'last-month' | 'this-month' | 'custom'
 type Tab = 'expense' | 'income'
+type TxType = 'Income' | 'Expense' | 'Transfer' | 'Adjustment'
+type SortKey = 'date' | 'amount'
+
+type Transaction = {
+  id: string
+  timestamp: number
+  amount: number
+  fromAccountId?: string
+  toAccountId?: string
+  categoryId: string
+  note: string
+  linkedCardId?: string
+}
 
 type CategoryItem = {
   categoryId: string
@@ -19,6 +38,8 @@ type ReportsData = {
   totalIncome: number
   totalExpense: number
   netSavings: number
+  transactions: Transaction[]
+  accounts: Account[]
   expenseCategoryBreakdown: CategoryItem[]
   incomeCategoryBreakdown: CategoryItem[]
 }
@@ -123,6 +144,95 @@ function fmtShort(n: number): string {
   return n.toLocaleString('vi-VN')
 }
 
+function getTxType(
+  tx: Transaction,
+  expenseCatIds: Set<string>,
+  incomeCatIds: Set<string>
+): TxType {
+  if (tx.fromAccountId && tx.toAccountId) return 'Transfer'
+  if (tx.fromAccountId && !tx.toAccountId && expenseCatIds.has(tx.categoryId)) return 'Expense'
+  if (!tx.fromAccountId && tx.toAccountId && incomeCatIds.has(tx.categoryId)) return 'Income'
+  return 'Adjustment'
+}
+
+function getAccountLabel(
+  accountId: string | undefined,
+  linkedCardId: string | undefined,
+  accounts: Account[]
+): string {
+  if (!accountId) return '—'
+  const account = accounts.find(a => a.id === accountId)
+  if (!account) return accountId
+  if (linkedCardId) {
+    const card = account.cards.find(c => c.id === linkedCardId)
+    if (card) return `${account.name} · ${card.name}`
+  }
+  return account.name
+}
+
+function getCategoryLabel(
+  tx: Transaction,
+  catMap: Map<string, CategoryItem>
+): { catName: string; subName: string | null } {
+  const cat = catMap.get(tx.categoryId)
+  if (!cat) return { catName: tx.categoryId, subName: null }
+  if (cat.parentId === cat.categoryId) return { catName: cat.categoryName, subName: null }
+  const parent = catMap.get(cat.parentId)
+  return { catName: parent?.categoryName ?? cat.categoryName, subName: cat.categoryName }
+}
+
+function fmtTxDate(timestamp: number): { date: string; time: string } {
+  const d = new Date(timestamp)
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = String(d.getFullYear()).slice(-2)
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return { date: `${day}/${month}/${year}`, time: `${hours}:${minutes}` }
+}
+
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  'Food':           <UtensilsCrossed size={18} />,
+  'Entertainment':  <Clapperboard size={18} />,
+  'Hobbies':        <Palette size={18} />,
+  'Transportation': <Car size={18} />,
+  'Pet':            <PawPrint size={18} />,
+  'Household':      <Home size={18} />,
+  'Gift':           <Gift size={18} />,
+  'Salary':         <Briefcase size={18} />,
+  'Interest':       <Percent size={18} />,
+  'Cashback':       <Coins size={18} />,
+  'Refund':         <Undo2 size={18} />,
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'Food':           '#f97316',
+  'Entertainment':  '#a855f7',
+  'Hobbies':        '#ec4899',
+  'Transportation': '#3b82f6',
+  'Pet':            '#10b981',
+  'Household':      '#14b8a6',
+  'Gift':           '#f43f5e',
+  'Salary':         '#22c55e',
+  'Interest':       '#60a5fa',
+  'Cashback':       '#fbbf24',
+  'Refund':         '#94a3b8',
+}
+
+const TYPE_COLORS: Record<TxType, string> = {
+  'Income':     '#10b981',
+  'Expense':    '#ef4444',
+  'Transfer':   '#3b82f6',
+  'Adjustment': '#64748b',
+}
+
+function getCategoryConfig(catName: string): { icon: React.ReactNode; color: string } | null {
+  const icon = CATEGORY_ICONS[catName]
+  const color = CATEGORY_COLORS[catName]
+  if (!icon || !color) return null
+  return { icon, color }
+}
+
 // --- Component ---
 
 export default function ReportsPage() {
@@ -135,6 +245,13 @@ export default function ReportsPage() {
   const [fetchError, setFetchError] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+
+  // Transaction view state
+  const [showTxView, setShowTxView] = useState(false)
+  const [txTypeFilter, setTxTypeFilter] = useState<TxType>('Expense')
+  const [txCategoryFilter, setTxCategoryFilter] = useState('all')
+  const [txSort, setTxSort] = useState<SortKey>('date')
+  const [txAmountDir, setTxAmountDir] = useState<'desc' | 'asc'>('desc')
 
   const isCustom = dateRange === 'custom'
   const dateInvalid = isCustom && !!customStart && !!customEnd && customEnd < customStart
@@ -149,6 +266,11 @@ export default function ReportsPage() {
     setFetchError(false)
     setSelectedGroup(null)
     setExpanded(null)
+    setShowTxView(false)
+    setTxTypeFilter('Expense')
+    setTxCategoryFilter('all')
+    setTxSort('date')
+    setTxAmountDir('desc')
 
     const { startDate, endDate } = getDateParams(dateRange, customStart, customEnd)
     const params = new URLSearchParams()
@@ -204,6 +326,63 @@ export default function ReportsPage() {
     : (tab === 'expense' ? 'TOTAL EXPENSE' : 'TOTAL INCOME')
   const centerPct = sel && total > 0 ? Math.round(sel.groupTotal / total * 100) : null
 
+  // --- Transaction view memos ---
+
+  const catMap = useMemo(() => {
+    const map = new Map<string, CategoryItem>()
+    ;[...(data?.expenseCategoryBreakdown ?? []), ...(data?.incomeCategoryBreakdown ?? [])].forEach(c => {
+      map.set(c.categoryId, c)
+    })
+    return map
+  }, [data])
+
+  const expenseCatIds = useMemo(() => {
+    return new Set((data?.expenseCategoryBreakdown ?? []).map(c => c.categoryId))
+  }, [data])
+
+  const incomeCatIds = useMemo(() => {
+    return new Set((data?.incomeCategoryBreakdown ?? []).map(c => c.categoryId))
+  }, [data])
+
+  const categoryOptions = useMemo(() => {
+    if (txTypeFilter === 'Transfer' || txTypeFilter === 'Adjustment') return []
+    const source = txTypeFilter === 'Expense'
+      ? (data?.expenseCategoryBreakdown ?? [])
+      : (data?.incomeCategoryBreakdown ?? [])
+    return source.filter(c => c.parentId === c.categoryId)
+  }, [txTypeFilter, data])
+
+  const filteredTxs = useMemo(() => {
+    if (!data) return []
+    const accounts = data.accounts
+    let txs = data.transactions.filter(tx => {
+      const type = getTxType(tx, expenseCatIds, incomeCatIds)
+      if (type !== txTypeFilter) return false
+      if (txCategoryFilter !== 'all') {
+        const cat = catMap.get(tx.categoryId)
+        const parentId = cat?.parentId ?? tx.categoryId
+        if (parentId !== txCategoryFilter && tx.categoryId !== txCategoryFilter) return false
+      }
+      return true
+    })
+    if (txSort === 'date') {
+      txs = [...txs].sort((a, b) => b.timestamp - a.timestamp)
+    } else {
+      txs = [...txs].sort((a, b) => txAmountDir === 'desc' ? b.amount - a.amount : a.amount - b.amount)
+    }
+    return txs.map(tx => ({ tx, type: getTxType(tx, expenseCatIds, incomeCatIds), accounts }))
+  }, [data, txTypeFilter, txCategoryFilter, txSort, txAmountDir, expenseCatIds, incomeCatIds, catMap])
+
+  const txIcon = (catName: string, type: TxType): { icon: React.ReactNode; color: string } => {
+    const cat = getCategoryConfig(catName)
+    if (cat) return cat
+    const color = TYPE_COLORS[type]
+    if (type === 'Income') return { icon: <TrendingUp size={18} />, color }
+    if (type === 'Expense') return { icon: <TrendingDown size={18} />, color }
+    if (type === 'Transfer') return { icon: <ArrowLeftRight size={16} />, color }
+    return { icon: <BarChart2 size={16} />, color }
+  }
+
   return (
     <main className="page reports-page">
 
@@ -255,190 +434,294 @@ export default function ReportsPage() {
       {/* ── Content ── */}
       {!loading && !fetchError && data && (
         <>
-          {/* Summary card */}
-          <div className="reports-summary">
-            <div className="reports-summary-label">NET SAVINGS</div>
-            <div className={`reports-summary-amount${data.netSavings < 0 ? ' reports-summary-amount--neg' : ''}`}>
-              {fmtVND(data.netSavings)}
-            </div>
-            <div className="reports-summary-sub">
-              <span className="reports-summary-income">↑ {fmtVND(data.totalIncome)}</span>
-              <span className="reports-summary-expense">↓ {fmtVND(data.totalExpense)}</span>
-            </div>
-          </div>
-
-          {/* Tab toggle */}
-          <div className="reports-tabs">
-            <button
-              className={`reports-tab${tab === 'expense' ? ' reports-tab--active' : ''}`}
-              onClick={() => { setTab('expense'); setSelectedGroup(null); setExpanded(null) }}
-            >
-              <TrendingDown size={15} />
-              Expense
-            </button>
-            <button
-              className={`reports-tab${tab === 'income' ? ' reports-tab--active' : ''}`}
-              onClick={() => { setTab('income'); setSelectedGroup(null); setExpanded(null) }}
-            >
-              <TrendingUp size={15} />
-              Income
-            </button>
-          </div>
-
-          {/* Donut chart */}
-          {groups.length > 0 ? (
-            <div className="reports-donut-wrapper">
-              <svg viewBox="0 0 140 140" className="reports-donut-svg">
-                {/* Outer ring */}
-                <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={SW_RING} />
-                {/* Inner track */}
-                <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth={SW} />
-
-                {/* Segments */}
-                <g transform={`rotate(-90 ${CX} ${CY})`}>
-                  {(() => {
-                    let offset = 0
-                    if (showSubDonut) {
-                      const segTotal = expandedGroup!.groupTotal
-                      return expandedGroup!.children.map((child, i) => {
-                        if (child.amount <= 0 || segTotal <= 0) return null
-                        const pct = child.amount / segTotal
-                        const dashLen = pct * C
-                        const dashOff = -offset * C
-                        offset += pct
-                        return (
-                          <circle key={child.categoryId}
-                            cx={CX} cy={CY} r={R}
-                            fill="none"
-                            stroke={COLORS[i % COLORS.length]}
-                            strokeWidth={SW}
-                            strokeDasharray={`${dashLen} ${C}`}
-                            strokeDashoffset={dashOff}
-                            style={{ transition: 'opacity 0.2s' }}
-                          />
-                        )
-                      })
-                    }
-                    return groups.map(g => {
-                      if (g.groupTotal <= 0 || total <= 0) return null
-                      const pct = g.groupTotal / total
-                      const dashLen = pct * C
-                      const dashOff = -offset * C
-                      offset += pct
-                      return (
-                        <circle key={g.parent.categoryId}
-                          cx={CX} cy={CY} r={R}
-                          fill="none"
-                          stroke={colorMap[g.parent.categoryId]}
-                          strokeWidth={SW}
-                          strokeDasharray={`${dashLen} ${C}`}
-                          strokeDashoffset={dashOff}
-                          opacity={selectedGroup && selectedGroup !== g.parent.categoryId ? 0.3 : 1}
-                          style={{ transition: 'opacity 0.2s' }}
-                        />
-                      )
-                    })
-                  })()}
-                </g>
-
-                {/* Center label */}
-                <text x={CX} y={centerPct !== null ? 50 : 60}
-                  textAnchor="middle" dominantBaseline="middle" className="donut-center-label">
-                  {centerLabel}
-                </text>
-
-                {/* Center amount */}
-                <text x={CX} y={centerPct !== null ? 70 : 80}
-                  textAnchor="middle" dominantBaseline="middle" className="donut-center-amount">
-                  {fmtShort(centerAmount)}
-                </text>
-
-                {/* Center pct */}
-                {centerPct !== null && (
-                  <text x={CX} y={88}
-                    textAnchor="middle" dominantBaseline="middle" className="donut-center-pct">
-                    {centerPct}%
-                  </text>
-                )}
-              </svg>
-            </div>
-          ) : (
-            <div className="reports-empty">No transactions for this period</div>
-          )}
-
-          {/* Category list */}
-          <div className="reports-category-list">
-            {groups.map(g => {
-              const color = colorMap[g.parent.categoryId]
-              const isExpanded = expanded === g.parent.categoryId
-              const isSelected = selectedGroup === g.parent.categoryId
-              const isDimmed = selectedGroup !== null && !isSelected && !isExpanded
-              const barPct = total > 0 ? (g.groupTotal / total) * 100 : 0
-
-              return (
-                <div key={g.parent.categoryId}
-                  className={`reports-group${isDimmed ? ' reports-group--dimmed' : ''}`}
+          {showTxView ? (
+            /* ── Transaction history view ── */
+            <>
+              {/* Filters */}
+              <div className="tx-filters">
+                <select
+                  title="Type"
+                  className="tx-select"
+                  value={txTypeFilter}
+                  onChange={e => {
+                    setTxTypeFilter(e.target.value as TxType)
+                    setTxCategoryFilter('all')
+                  }}
                 >
-                  {/* Parent row: [content (name+amount+bar)] [chevron] */}
-                  <div className="reports-parent-row" onClick={() => {
-                    if (g.children.length > 0) {
-                      toggleSelect(g.parent.categoryId)
-                      toggleExpand(g.parent.categoryId)
-                    } else {
-                      navigateToTransactions(g.parent.categoryId)
-                    }
-                  }}>
-                    <div className="reports-parent-body">
-                      <div className="reports-parent-header">
-                        <span className="reports-parent-name">{g.parent.categoryName}</span>
-                        <span className="reports-parent-amount">{fmtVND(g.groupTotal)}</span>
-                      </div>
-                      <div className="reports-bar-track">
-                        <div className="reports-bar-fill" style={{ width: `${barPct}%`, background: color }} />
-                      </div>
-                    </div>
-                    {isExpanded
-                      ? <ChevronDown size={16} className="reports-chevron" />
-                      : <ChevronRight size={16} className="reports-chevron" />
-                    }
-                  </div>
+                  <option value="Expense">Expense</option>
+                  <option value="Income">Income</option>
+                  <option value="Transfer">Transfer</option>
+                  <option value="Adjustment">Adjustment</option>
+                </select>
 
-                  {/* Children block */}
-                  {isExpanded && g.children.length > 0 && (
-                    <div className="reports-children-block">
-                      {g.children.map(child => {
-                        const childPct = total > 0 ? (child.amount / total) * 100 : 0
-                        return (
-                          <div key={child.categoryId} className="reports-child-row"
-                            onClick={() => navigateToTransactions(child.categoryId)}
-                          >
-                            <div className="reports-child-body">
-                              <div className="reports-child-header">
-                                <span className="reports-child-name">{child.categoryName}</span>
-                                <span className="reports-child-amount">{fmtVND(child.amount)}</span>
-                              </div>
-                              <div className="reports-bar-track reports-bar-track--child">
-                                <div className="reports-bar-fill" style={{ width: `${childPct}%`, background: color }} />
-                              </div>
-                            </div>
-                            <ChevronRight size={14} className="reports-chevron reports-chevron--sm" />
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
+                <select
+                  title="Category"
+                  className="tx-select"
+                  value={txCategoryFilter}
+                  disabled={categoryOptions.length === 0}
+                  onChange={e => setTxCategoryFilter(e.target.value)}
+                >
+                  <option value="all">All</option>
+                  {categoryOptions.map(c => (
+                    <option key={c.categoryId} value={c.categoryId}>{c.categoryName}</option>
+                  ))}
+                </select>
+
+                <div className="tx-sort-group">
+                  <button
+                    title="Sort by date"
+                    className={`tx-sort-btn${txSort === 'date' ? ' tx-sort-btn--active' : ''}`}
+                    onClick={() => setTxSort('date')}
+                  >
+                    {txSort === 'date' ? <CalendarCheck size={15} /> : <Calendar size={15} />}
+                  </button>
+                  <button
+                    title="Sort by amount"
+                    className={`tx-sort-btn${txSort === 'amount' ? ' tx-sort-btn--active' : ''}`}
+                    onClick={() => {
+                      if (txSort === 'amount') {
+                        setTxAmountDir(d => d === 'desc' ? 'asc' : 'desc')
+                      } else {
+                        setTxSort('amount')
+                        setTxAmountDir('desc')
+                      }
+                    }}
+                  >
+                    {txSort === 'amount'
+                      ? (txAmountDir === 'desc' ? <ArrowDownWideNarrow size={15} /> : <ArrowUpNarrowWide size={15} />)
+                      : <ArrowUpDown size={15} />
+                    }
+                  </button>
                 </div>
-              )
-            })}
-          </div>
+              </div>
+
+              {/* Transaction list */}
+              <div className="tx-list">
+                {filteredTxs.length === 0 && (
+                  <div className="reports-empty">No transactions for this filter</div>
+                )}
+                {filteredTxs.map(({ tx, type, accounts }) => {
+                  const accountId = tx.fromAccountId ?? tx.toAccountId
+                  const accountLabel = getAccountLabel(accountId, tx.linkedCardId, accounts)
+                  const { catName, subName } = getCategoryLabel(tx, catMap)
+                  const { date, time } = fmtTxDate(tx.timestamp)
+                  const { icon, color } = txIcon(catName, type)
+                  const typeLower = type.toLowerCase()
+                  return (
+                    <div key={tx.id} className="tx-row">
+                      <div className="tx-icon" style={{ color }}>
+                        {icon}
+                      </div>
+                      <div className="tx-mid">
+                        <span className="tx-account">{accountLabel}</span>
+                        <span className="tx-category">
+                          {catName}{subName ? ` › ${subName}` : ''}
+                        </span>
+                        {tx.note && <span className="tx-note">{tx.note}</span>}
+                      </div>
+                      <div className="tx-right">
+                        <span className="tx-date">{date}</span>
+                        <span className="tx-time">{time}</span>
+                        <span className={`tx-amount tx-amount--${typeLower}`}>
+                          {fmtVND(tx.amount)}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          ) : (
+            /* ── Report view ── */
+            <>
+              {/* Summary card */}
+              <div className="reports-summary">
+                <div className="reports-summary-label">NET SAVINGS</div>
+                <div className={`reports-summary-amount${data.netSavings < 0 ? ' reports-summary-amount--neg' : ''}`}>
+                  {fmtVND(data.netSavings)}
+                </div>
+                <div className="reports-summary-sub">
+                  <span className="reports-summary-income">↑ {fmtVND(data.totalIncome)}</span>
+                  <span className="reports-summary-expense">↓ {fmtVND(data.totalExpense)}</span>
+                </div>
+              </div>
+
+              {/* Tab toggle */}
+              <div className="reports-tabs">
+                <button
+                  className={`reports-tab${tab === 'expense' ? ' reports-tab--active' : ''}`}
+                  onClick={() => { setTab('expense'); setSelectedGroup(null); setExpanded(null) }}
+                >
+                  <TrendingDown size={15} />
+                  Expense
+                </button>
+                <button
+                  className={`reports-tab${tab === 'income' ? ' reports-tab--active' : ''}`}
+                  onClick={() => { setTab('income'); setSelectedGroup(null); setExpanded(null) }}
+                >
+                  <TrendingUp size={15} />
+                  Income
+                </button>
+              </div>
+
+              {/* Donut chart */}
+              {groups.length > 0 ? (
+                <div className="reports-donut-wrapper">
+                  <svg viewBox="0 0 140 140" className="reports-donut-svg">
+                    {/* Outer ring */}
+                    <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={SW_RING} />
+                    {/* Inner track */}
+                    <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth={SW} />
+
+                    {/* Segments */}
+                    <g transform={`rotate(-90 ${CX} ${CY})`}>
+                      {(() => {
+                        let offset = 0
+                        if (showSubDonut) {
+                          const segTotal = expandedGroup!.groupTotal
+                          return expandedGroup!.children.map((child, i) => {
+                            if (child.amount <= 0 || segTotal <= 0) return null
+                            const pct = child.amount / segTotal
+                            const dashLen = pct * C
+                            const dashOff = -offset * C
+                            offset += pct
+                            return (
+                              <circle key={child.categoryId}
+                                cx={CX} cy={CY} r={R}
+                                fill="none"
+                                stroke={COLORS[i % COLORS.length]}
+                                strokeWidth={SW}
+                                strokeDasharray={`${dashLen} ${C}`}
+                                strokeDashoffset={dashOff}
+                                style={{ transition: 'opacity 0.2s' }}
+                              />
+                            )
+                          })
+                        }
+                        return groups.map(g => {
+                          if (g.groupTotal <= 0 || total <= 0) return null
+                          const pct = g.groupTotal / total
+                          const dashLen = pct * C
+                          const dashOff = -offset * C
+                          offset += pct
+                          return (
+                            <circle key={g.parent.categoryId}
+                              cx={CX} cy={CY} r={R}
+                              fill="none"
+                              stroke={colorMap[g.parent.categoryId]}
+                              strokeWidth={SW}
+                              strokeDasharray={`${dashLen} ${C}`}
+                              strokeDashoffset={dashOff}
+                              opacity={selectedGroup && selectedGroup !== g.parent.categoryId ? 0.3 : 1}
+                              style={{ transition: 'opacity 0.2s' }}
+                            />
+                          )
+                        })
+                      })()}
+                    </g>
+
+                    {/* Center label */}
+                    <text x={CX} y={centerPct !== null ? 50 : 60}
+                      textAnchor="middle" dominantBaseline="middle" className="donut-center-label">
+                      {centerLabel}
+                    </text>
+
+                    {/* Center amount */}
+                    <text x={CX} y={centerPct !== null ? 70 : 80}
+                      textAnchor="middle" dominantBaseline="middle" className="donut-center-amount">
+                      {fmtShort(centerAmount)}
+                    </text>
+
+                    {/* Center pct */}
+                    {centerPct !== null && (
+                      <text x={CX} y={88}
+                        textAnchor="middle" dominantBaseline="middle" className="donut-center-pct">
+                        {centerPct}%
+                      </text>
+                    )}
+                  </svg>
+                </div>
+              ) : (
+                <div className="reports-empty">No transactions for this period</div>
+              )}
+
+              {/* Category list */}
+              <div className="reports-category-list">
+                {groups.map(g => {
+                  const color = colorMap[g.parent.categoryId]
+                  const isExpanded = expanded === g.parent.categoryId
+                  const isSelected = selectedGroup === g.parent.categoryId
+                  const isDimmed = selectedGroup !== null && !isSelected && !isExpanded
+                  const barPct = total > 0 ? (g.groupTotal / total) * 100 : 0
+
+                  return (
+                    <div key={g.parent.categoryId}
+                      className={`reports-group${isDimmed ? ' reports-group--dimmed' : ''}`}
+                    >
+                      {/* Parent row: [content (name+amount+bar)] [chevron] */}
+                      <div className="reports-parent-row" onClick={() => {
+                        if (g.children.length > 0) {
+                          toggleSelect(g.parent.categoryId)
+                          toggleExpand(g.parent.categoryId)
+                        } else {
+                          navigateToTransactions(g.parent.categoryId)
+                        }
+                      }}>
+                        <div className="reports-parent-body">
+                          <div className="reports-parent-header">
+                            <span className="reports-parent-name">{g.parent.categoryName}</span>
+                            <span className="reports-parent-amount">{fmtVND(g.groupTotal)}</span>
+                          </div>
+                          <div className="reports-bar-track">
+                            <div className="reports-bar-fill" style={{ width: `${barPct}%`, background: color }} />
+                          </div>
+                        </div>
+                        {isExpanded
+                          ? <ChevronDown size={16} className="reports-chevron" />
+                          : <ChevronRight size={16} className="reports-chevron" />
+                        }
+                      </div>
+
+                      {/* Children block */}
+                      {isExpanded && g.children.length > 0 && (
+                        <div className="reports-children-block">
+                          {g.children.map(child => {
+                            const childPct = total > 0 ? (child.amount / total) * 100 : 0
+                            return (
+                              <div key={child.categoryId} className="reports-child-row"
+                                onClick={() => navigateToTransactions(child.categoryId)}
+                              >
+                                <div className="reports-child-body">
+                                  <div className="reports-child-header">
+                                    <span className="reports-child-name">{child.categoryName}</span>
+                                    <span className="reports-child-amount">{fmtVND(child.amount)}</span>
+                                  </div>
+                                  <div className="reports-bar-track reports-bar-track--child">
+                                    <div className="reports-bar-fill" style={{ width: `${childPct}%`, background: color }} />
+                                  </div>
+                                </div>
+                                <ChevronRight size={14} className="reports-chevron reports-chevron--sm" />
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
         </>
       )}
-      {/* ── See all transactions ── */}
+
+      {/* ── See all / See report toggle ── */}
       <div className="reports-see-all-wrapper">
-        <button className="reports-see-all">
-          <ListOrdered size={16} />
-          See all transactions
-          <ChevronRight size={16} className="reports-see-all-chevron" />
+        <button className="reports-see-all" onClick={() => setShowTxView(p => !p)}>
+          {showTxView
+            ? <><BarChart2 size={16} /> See financial report <ChevronRight size={16} className="reports-see-all-chevron" /></>
+            : <><ListOrdered size={16} /> See all transactions <ChevronRight size={16} className="reports-see-all-chevron" /></>
+          }
         </button>
       </div>
 

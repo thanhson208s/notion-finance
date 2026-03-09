@@ -9,6 +9,17 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.5.0] - 2026-03-09
+
+### Changed
+
+- feat(reports): `GET /api/reports` now includes `accounts: Account[]` in response — fetched in parallel with transactions and categories
+- feat(reports-ui): add transaction history toggle to `ReportsPage` — floating pill button switches between financial report and full transaction list
+- feat(reports-ui): transaction list supports type filter (Income/Expense/Transfer/Adjustment), top-level category filter, and sort by date or amount
+- feat(reports-ui): account names resolved from `data.accounts` (no extra fetch required)
+
+---
+
 ## [FE-0.4.0] - 2026-03-07
 
 ### Changed

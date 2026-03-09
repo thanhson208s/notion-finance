@@ -48,12 +48,17 @@
 }
 
 .account-select {
-  background: #1e293b;
-  color: #e2e8f0;
-  border: 1px solid #334155;
-  padding: 10px 10px;
-  border-radius: 8px;
-  font-size: 18px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(30, 41, 59, 0.9);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
 }
 
 .account-checkbox {
@@ -61,7 +66,6 @@
   align-items: center;
   gap: 6px;
   font-size: 18px;
-  margin-left: 20px;
 }
 
 .account-checkbox input {
@@ -293,9 +297,9 @@
 /* The switch - the box around the slider */
 .checkbox-wrapper .switch {
   --width-of-switch: 3.5em;
-  --height-of-switch: 1.6em;
+  --height-of-switch: 1.85em;
   /* size of sliding icon -- sun and moon */
-  --size-of-icon: 1.2em;
+  --size-of-icon: 1.35em;
   /* it is like a inline-padding of switch */
   --slider-offset: 0.3em;
   position: relative;

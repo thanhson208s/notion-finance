@@ -216,6 +216,18 @@ describe('getReports()', () => {
     expect(body.incomeCategoryBreakdown.every((b) => b.categoryId !== ADJUSTMENT_ID)).toBe(true)
   })
 
+  it('excludes adjustment transactions even when env ID has no hyphens but Notion returns hyphenated ID', async () => {
+    process.env.NOTION_ADJUSTMENT_TRANSACTION_ID = '2d9c3752e48a805e8e9cf0339708aa31'
+    const hyphenatedId = '2d9c3752-e48a-805e-8e9c-f0339708aa31'
+    const adjustmentIncomeTx = makeTx(hyphenatedId, 500, undefined, 'acc-to')
+    const connector = defaultConnector({
+      fetchAllTransactions: vi.fn().mockResolvedValue([adjustmentIncomeTx])
+    })
+    const result = await getReports(makeEvent(), connector)
+    expect(result.body.totalIncome).toBe(0)
+    expect(result.body.incomeCategoryBreakdown).toHaveLength(0)
+  })
+
   it('transactions list preserves order from fetchAllTransactions (date desc)', async () => {
     const t1 = { ...makeExpenseTx('cat-1', 10), id: 'tx-1', timestamp: 3000 }
     const t2 = { ...makeExpenseTx('cat-1', 20), id: 'tx-2', timestamp: 2000 }

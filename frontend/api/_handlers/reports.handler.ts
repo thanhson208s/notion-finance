@@ -42,8 +42,9 @@ export const getReports: RouteHandler<undefined, GetReportsResponse> = async (ev
   const expenseCategories = categories.filter(c => c.type === 'Expense');
   const incomeCategories  = categories.filter(c => c.type === 'Income');
 
+  const normalize = (id: string) => id.replace(/-/g, '')
   const isSystemCategory = (t: Transaction) =>
-    t.categoryId === TRANSFER_ID || t.categoryId === ADJUSTMENT_ID;
+    normalize(t.categoryId) === normalize(TRANSFER_ID) || normalize(t.categoryId) === normalize(ADJUSTMENT_ID);
 
   const expenses = allTransactions.filter(t =>  t.fromAccountId && !t.toAccountId && !isSystemCategory(t));
   const incomes  = allTransactions.filter(t => !t.fromAccountId &&  t.toAccountId && !isSystemCategory(t));

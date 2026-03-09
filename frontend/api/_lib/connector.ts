@@ -1,5 +1,5 @@
 import { Client, PageObjectResponse } from "@notionhq/client";
-import { Account, AccountType, CardSummary } from "./types/account.type";
+import { Account, AccountType, CardSummary, computePriorityScore } from "./types/account.type";
 import { Category, CategoryType } from "./types/category.type";
 import { Transaction } from "./types/transaction.type";
 import { DatabaseError, SchemaError } from "./types/error";
@@ -78,6 +78,26 @@ export class Connector {
 
     if (!("properties" in response))
       throw new DatabaseError(`Account ${accountId} not update`);
+    return this.mapPageToAccount(response);
+  }
+
+  async updateAccountAfterTransaction(
+    accountId: string,
+    balance: number,
+    totalTransactions: number,
+    lastTransactionDate: number
+  ): Promise<Account> {
+    const response = await this.notion.pages.update({
+      page_id: accountId,
+      properties: {
+        'Balance': { type: 'number', number: balance },
+        'Total Transactions': { type: 'number', number: totalTransactions },
+        'Last Transaction Date': { type: 'date', date: { start: new Date(lastTransactionDate).toISOString() } }
+      }
+    });
+
+    if (!("properties" in response))
+      throw new DatabaseError(`Account ${accountId} not updated`);
     return this.mapPageToAccount(response);
   }
 
@@ -242,10 +262,14 @@ export class Connector {
     const name = this.getTitleProperty(page, "Name");
     const type = this.getSelectProperty(page, "Type", true);
     const balance = this.getNumberProperty(page, "Balance", true);
+    const totalTransactions = this.getNumberProperty(page, "Total Transactions", false);
+    const lastTransactionDate = this.getDateProperty(page, "Last Transaction Date", false);
+    const priorityScore = computePriorityScore(totalTransactions, lastTransactionDate);
     const linkedCardIds = this.getRelationsProperty(page, "Linked cards");
 
     return {
       id: page.id, name, type: type as AccountType, balance,
+      totalTransactions, lastTransactionDate, priorityScore,
       linkedCardIds, cards: []
     } satisfies Account;
   }

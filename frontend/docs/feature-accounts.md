@@ -34,6 +34,36 @@ Accounts represent financial containers: cash wallets, bank accounts, credit car
 > **Design note**: `Loan` is an asset (money you have lent out; you are owed it).
 > `Crypto` is classified as a liability in the current implementation.
 
+### Account Ranking (Priority Score)
+
+Each account returned by `GET /api/accounts` includes a computed `priorityScore` field. This allows the frontend to sort accounts by usage frequency and recency.
+
+**Notion columns** (must exist in the Account database):
+- `Total Transactions` — number, nullable. Incremented on every expense/income write.
+- `Last Transaction Date` — date, nullable. Set to the transaction timestamp on every expense/income write.
+
+**Formula** (`api/_lib/types/account.type.ts → computePriorityScore()`):
+
+```
+priority_score = 0.4 * log(1 + total_transactions) + 0.6 * 0.5^(days_since / 30)
+```
+
+| Parameter | Value |
+|---|---|
+| `weight_frequency` | 0.4 |
+| `weight_recency` | 0.6 |
+| `decay_half_life_days` | 30 days |
+
+**Edge cases:**
+- `total_transactions = null` → treated as 0
+- `last_transaction_date = null` → recency term omitted; score = `0.4 * log(1 + freq)` only
+- Both null → `priority_score = 0` (unused account — appears last when sorted)
+
+**Design notes:**
+- `updateAccountAfterTransaction()` updates Balance, Total Transactions, and Last Transaction Date atomically in a single Notion `pages.update()` call.
+- Only expense and income transactions increment the stats. Transfers and adjustments use `updateAccountBalance()` and do **not** affect ranking.
+- `lastTransactionDate` is set to the request `timestamp` (when the transaction happened), not the API call time.
+
 ### POST /api/adjustment
 
 **Handler**: `src/handlers/account.handler.ts` → `adjustBalance()`

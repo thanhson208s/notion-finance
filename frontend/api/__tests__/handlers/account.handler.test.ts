@@ -13,7 +13,7 @@ const makeEvent = <T>(body?: T) => ({
 describe('getAccounts()', () => {
   it('returns accounts array from connector', async () => {
     const accounts: Account[] = [
-      { id: '1', name: 'Cash', type: 'Cash', balance: 100, linkedCardIds: [], cards: [] }
+      { id: '1', name: 'Cash', type: 'Cash', balance: 100, totalTransactions: null, lastTransactionDate: null, priorityScore: 0, linkedCardIds: [], cards: [] }
     ]
     const connector = createMockConnector({
       fetchAllAccounts: vi.fn().mockResolvedValue(accounts)
@@ -24,8 +24,8 @@ describe('getAccounts()', () => {
 
   it('computes total as sum of all balances', async () => {
     const accounts: Account[] = [
-      { id: '1', name: 'Cash', type: 'Cash', balance: 100, linkedCardIds: [], cards: [] },
-      { id: '2', name: 'Credit', type: 'Credit', balance: 50, linkedCardIds: [], cards: [] }
+      { id: '1', name: 'Cash', type: 'Cash', balance: 100, totalTransactions: null, lastTransactionDate: null, priorityScore: 0, linkedCardIds: [], cards: [] },
+      { id: '2', name: 'Credit', type: 'Credit', balance: 50, totalTransactions: null, lastTransactionDate: null, priorityScore: 0, linkedCardIds: [], cards: [] }
     ]
     const connector = createMockConnector({
       fetchAllAccounts: vi.fn().mockResolvedValue(accounts)
@@ -36,8 +36,8 @@ describe('getAccounts()', () => {
 
   it('computes totalOfAssets for asset-type accounts only', async () => {
     const accounts: Account[] = [
-      { id: '1', name: 'Cash', type: 'Cash', balance: 200, linkedCardIds: [], cards: [] },
-      { id: '2', name: 'Credit', type: 'Credit', balance: 50, linkedCardIds: [], cards: [] }
+      { id: '1', name: 'Cash', type: 'Cash', balance: 200, totalTransactions: null, lastTransactionDate: null, priorityScore: 0, linkedCardIds: [], cards: [] },
+      { id: '2', name: 'Credit', type: 'Credit', balance: 50, totalTransactions: null, lastTransactionDate: null, priorityScore: 0, linkedCardIds: [], cards: [] }
     ]
     const connector = createMockConnector({
       fetchAllAccounts: vi.fn().mockResolvedValue(accounts)
@@ -48,8 +48,8 @@ describe('getAccounts()', () => {
 
   it('computes totalOfLiabilities for non-asset-type accounts only', async () => {
     const accounts: Account[] = [
-      { id: '1', name: 'Cash', type: 'Cash', balance: 200, linkedCardIds: [], cards: [] },
-      { id: '2', name: 'Debt', type: 'Debt', balance: 75, linkedCardIds: [], cards: [] }
+      { id: '1', name: 'Cash', type: 'Cash', balance: 200, totalTransactions: null, lastTransactionDate: null, priorityScore: 0, linkedCardIds: [], cards: [] },
+      { id: '2', name: 'Debt', type: 'Debt', balance: 75, totalTransactions: null, lastTransactionDate: null, priorityScore: 0, linkedCardIds: [], cards: [] }
     ]
     const connector = createMockConnector({
       fetchAllAccounts: vi.fn().mockResolvedValue(accounts)

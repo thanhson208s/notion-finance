@@ -21,7 +21,7 @@ export default function AccountsPage() {
   const [ totals, setTotals ] = useState({ total: 0, totalOfAssets: 0, totalOfLiabilities: 0 });
   const [ activeCard, setActiveCard ] = useState<string | null>(null);
   const [ filter, setFilter ] = useState<"all" | "assets" | "liabilities">("all");
-  const [ sort, setSort ] = useState<"balance" | "type">("balance");
+  const [ sort, setSort ] = useState<"relevance" | "balance" | "type">("relevance");
   const [ hideEmpty, setHideEmpty ] = useState<boolean>(true);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const navigate = useNavigate();
@@ -160,8 +160,9 @@ export default function AccountsPage() {
         <select className="account-select"
           title="sort"
           value={sort}
-          onChange={(e) => setSort(e.target.value as "balance" | "type")}
+          onChange={(e) => setSort(e.target.value as "relevance" | "balance" | "type")}
         >
+          <option value="relevance">Relevance</option>
           <option value="balance">Balance</option>
           <option value="type">Group</option>
         </select>
@@ -188,7 +189,9 @@ export default function AccountsPage() {
           if (filter === 'liabilities' && type2Group[account.type] !== 'liability') return false;
           return true;
         }).sort((a, b) => {
-          if (sort === 'balance') {
+          if (sort === 'relevance') {
+            return b.priorityScore - a.priorityScore;
+          } else if (sort === 'balance') {
             if (a.balance === 0 && b.balance !== 0) return 1;
             if (a.balance !== 0 && b.balance === 0) return -1;
             return b.balance - a.balance;

@@ -7,15 +7,20 @@ import { RouteHandler } from "../_lib/router";
 export const logExpense: RouteHandler<LogExpenseRequest, LogExpenseResponse> = async(event, connector) => {
   const req = event.body;
   if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
-  const oldBalance = (await connector.fetchAccount(req.accountId)).balance;
+  const oldAccount = await connector.fetchAccount(req.accountId);
   await connector.fetchCategory(req.categoryId);
   const amount = (await connector.addExpense(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId)).amount;
-  const newBalance = (await connector.updateAccountBalance(req.accountId, oldBalance - amount)).balance;
+  const newAccount = await connector.updateAccountAfterTransaction(
+    req.accountId,
+    oldAccount.balance - amount,
+    (oldAccount.totalTransactions ?? 0) + 1,
+    req.timestamp ?? Date.now()
+  );
 
   return ok({
     accountId: req.accountId,
-    oldBalance,
-    newBalance,
+    oldBalance: oldAccount.balance,
+    newBalance: newAccount.balance,
     amount,
     categoryId: req.categoryId,
     note: req.note
@@ -34,15 +39,20 @@ export const listExpenses: RouteHandler<undefined, ListExpensesResponse> = async
 export const logIncome: RouteHandler<LogIncomeRequest, LogIncomeResponse> = async(event, connector) => {
   const req = event.body;
   if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
-  const oldBalance = (await connector.fetchAccount(req.accountId)).balance;
+  const oldAccount = await connector.fetchAccount(req.accountId);
   await connector.fetchCategory(req.categoryId);
   const amount = (await connector.addIncome(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId)).amount;
-  const newBalance = (await connector.updateAccountBalance(req.accountId, oldBalance + amount)).balance;
+  const newAccount = await connector.updateAccountAfterTransaction(
+    req.accountId,
+    oldAccount.balance + amount,
+    (oldAccount.totalTransactions ?? 0) + 1,
+    req.timestamp ?? Date.now()
+  );
 
   return ok({
     accountId: req.accountId,
-    oldBalance,
-    newBalance,
+    oldBalance: oldAccount.balance,
+    newBalance: newAccount.balance,
     amount,
     categoryId: req.categoryId,
     note: req.note

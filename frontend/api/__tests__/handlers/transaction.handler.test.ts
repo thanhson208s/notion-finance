@@ -22,20 +22,25 @@ const makeTx = (amount: number): Transaction => ({
 
 const mockCategory: Category = { id: 'cat-1', name: 'Food', type: 'Expense', parentId: null }
 
+const makeAccount = (balance: number, totalTransactions: number | null = null) => ({
+  balance, totalTransactions, lastTransactionDate: null, priorityScore: 0,
+  id: 'acc-1', name: 'Test', type: 'Cash', linkedCardIds: [], cards: []
+})
+
 // Default overrides shared by most logExpense/logIncome tests
 const defaultExpenseSetup = (overrides = {}) => createMockConnector({
-  fetchAccount: vi.fn().mockResolvedValue({ balance: 200 }),
+  fetchAccount: vi.fn().mockResolvedValue(makeAccount(200)),
   fetchCategory: vi.fn().mockResolvedValue(mockCategory),
   addExpense: vi.fn().mockResolvedValue(makeTx(50)),
-  updateAccountBalance: vi.fn().mockResolvedValue({ balance: 150 }),
+  updateAccountAfterTransaction: vi.fn().mockResolvedValue(makeAccount(150)),
   ...overrides
 })
 
 const defaultIncomeSetup = (overrides = {}) => createMockConnector({
-  fetchAccount: vi.fn().mockResolvedValue({ balance: 0 }),
+  fetchAccount: vi.fn().mockResolvedValue(makeAccount(0)),
   fetchCategory: vi.fn().mockResolvedValue(mockCategory),
   addIncome: vi.fn().mockResolvedValue(makeTx(100)),
-  updateAccountBalance: vi.fn().mockResolvedValue({ balance: 100 }),
+  updateAccountAfterTransaction: vi.fn().mockResolvedValue(makeAccount(100)),
   ...overrides
 })
 
@@ -61,13 +66,13 @@ describe('logExpense()', () => {
 
   it('deducts amount from account balance', async () => {
     const connector = createMockConnector({
-      fetchAccount: vi.fn().mockResolvedValue({ balance: 500 }),
+      fetchAccount: vi.fn().mockResolvedValue(makeAccount(500)),
       fetchCategory: vi.fn().mockResolvedValue(mockCategory),
       addExpense: vi.fn().mockResolvedValue(makeTx(100)),
-      updateAccountBalance: vi.fn().mockResolvedValue({ balance: 400 })
+      updateAccountAfterTransaction: vi.fn().mockResolvedValue(makeAccount(400))
     })
     const result = await logExpense(makeEvent({ accountId: 'a', amount: 100, categoryId: 'c', note: '' }), connector)
-    expect((connector.updateAccountBalance)).toHaveBeenCalledWith('a', 400)
+    expect(connector.updateAccountAfterTransaction).toHaveBeenCalledWith('a', 400, 1, expect.any(Number))
     expect((result.body).newBalance).toBe(400)
   })
 
@@ -94,10 +99,10 @@ describe('logExpense()', () => {
 
   it('returns oldBalance, newBalance, amount, categoryId, note', async () => {
     const connector = createMockConnector({
-      fetchAccount: vi.fn().mockResolvedValue({ balance: 300 }),
+      fetchAccount: vi.fn().mockResolvedValue(makeAccount(300)),
       fetchCategory: vi.fn().mockResolvedValue(mockCategory),
       addExpense: vi.fn().mockResolvedValue(makeTx(75)),
-      updateAccountBalance: vi.fn().mockResolvedValue({ balance: 225 })
+      updateAccountAfterTransaction: vi.fn().mockResolvedValue(makeAccount(225))
     })
     const result = await logExpense(makeEvent({ accountId: 'a', amount: 75, categoryId: 'cat-1', note: 'coffee' }), connector)
     const body = result.body
@@ -106,6 +111,36 @@ describe('logExpense()', () => {
     expect(body.amount).toBe(75)
     expect(body.categoryId).toBe('cat-1')
     expect(body.note).toBe('coffee')
+  })
+
+  it('passes timestamp to updateAccountAfterTransaction when provided', async () => {
+    const updateAccountAfterTransaction = vi.fn().mockResolvedValue(makeAccount(150))
+    const connector = defaultExpenseSetup({ updateAccountAfterTransaction })
+    await logExpense(makeEvent({ accountId: 'acc-1', amount: 50, categoryId: 'cat-2', note: '', timestamp: 1700000000000 }), connector)
+    expect(updateAccountAfterTransaction).toHaveBeenCalledWith('acc-1', expect.any(Number), expect.any(Number), 1700000000000)
+  })
+
+  it('uses Date.now() for updateAccountAfterTransaction when no timestamp', async () => {
+    const updateAccountAfterTransaction = vi.fn().mockResolvedValue(makeAccount(150))
+    const connector = defaultExpenseSetup({ updateAccountAfterTransaction })
+    const before = Date.now()
+    await logExpense(makeEvent({ accountId: 'acc-1', amount: 50, categoryId: 'cat-2', note: '' }), connector)
+    const after = Date.now()
+    const called = (updateAccountAfterTransaction.mock.calls[0] as unknown[])[3] as number
+    expect(called).toBeGreaterThanOrEqual(before)
+    expect(called).toBeLessThanOrEqual(after)
+  })
+
+  it('treats null totalTransactions as 0 and passes 1 as new total', async () => {
+    const updateAccountAfterTransaction = vi.fn().mockResolvedValue(makeAccount(150))
+    const connector = createMockConnector({
+      fetchAccount: vi.fn().mockResolvedValue(makeAccount(200, null)),
+      fetchCategory: vi.fn().mockResolvedValue(mockCategory),
+      addExpense: vi.fn().mockResolvedValue(makeTx(50)),
+      updateAccountAfterTransaction
+    })
+    await logExpense(makeEvent({ accountId: 'acc-1', amount: 50, categoryId: 'cat-2', note: '' }), connector)
+    expect(updateAccountAfterTransaction).toHaveBeenCalledWith('acc-1', 150, 1, expect.any(Number))
   })
 })
 
@@ -125,13 +160,13 @@ describe('logIncome()', () => {
 
   it('adds amount to account balance', async () => {
     const connector = createMockConnector({
-      fetchAccount: vi.fn().mockResolvedValue({ balance: 100 }),
+      fetchAccount: vi.fn().mockResolvedValue(makeAccount(100)),
       fetchCategory: vi.fn().mockResolvedValue(mockCategory),
       addIncome: vi.fn().mockResolvedValue(makeTx(200)),
-      updateAccountBalance: vi.fn().mockResolvedValue({ balance: 300 })
+      updateAccountAfterTransaction: vi.fn().mockResolvedValue(makeAccount(300))
     })
     const result = await logIncome(makeEvent({ accountId: 'a', amount: 200, categoryId: 'c', note: '' }), connector)
-    expect((connector.updateAccountBalance)).toHaveBeenCalledWith('a', 300)
+    expect(connector.updateAccountAfterTransaction).toHaveBeenCalledWith('a', 300, 1, expect.any(Number))
     expect((result.body).newBalance).toBe(300)
   })
 

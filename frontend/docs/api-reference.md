@@ -60,7 +60,12 @@ Returns all accounts with aggregated balance totals.
       "id": "string",
       "name": "string",
       "type": "Cash | Bank | eWallet | ...",
-      "balance": 0
+      "balance": 0,
+      "totalTransactions": 0,
+      "lastTransactionDate": 0,
+      "priorityScore": 0,
+      "linkedCardIds": ["string"],
+      "cards": [{ "id": "string", "name": "string", "imageUrl": "string" }]
     }
   ],
   "total": 0,
@@ -73,6 +78,9 @@ Returns all accounts with aggregated balance totals.
 - `total` = sum of ALL account balances
 - `totalOfAssets` = sum of asset-type accounts only
 - `totalOfLiabilities` = sum of liability-type accounts only
+- `totalTransactions` — number of expense/income transactions logged against this account; `null` for accounts with no history yet
+- `lastTransactionDate` — Unix ms timestamp of the most recent expense/income transaction; `null` for unused accounts
+- `priorityScore` — computed ranking score: `0.4 * log(1 + totalTransactions) + 0.6 * 0.5^(daysSince / 30)`; `0` for unused accounts. Frontend can sort by this field descending to surface preferred accounts first.
 - No pagination — returns all accounts
 
 ---
@@ -141,9 +149,10 @@ Logs an expense and deducts the amount from the specified account.
 ```
 
 **Business logic**:
-1. Fetch account → get `oldBalance`
-2. Create transaction: `FromAccount = accountId`, `ToAccount = null`
-3. Update account: `balance = oldBalance - amount`
+1. Fetch account → get `oldBalance`, `totalTransactions`
+2. Validate category exists
+3. Create transaction: `FromAccount = accountId`, `ToAccount = null`
+4. Update account (single Notion call): `balance = oldBalance - amount`, `totalTransactions += 1`, `lastTransactionDate = timestamp ?? now`
 
 ---
 
@@ -177,7 +186,7 @@ Logs income and adds the amount to the specified account.
 }
 ```
 
-**Business logic**: Same as expense but `balance = oldBalance + amount`. Transaction: `FromAccount = null`, `ToAccount = accountId`.
+**Business logic**: Same as expense but `balance = oldBalance + amount`. Transaction: `FromAccount = null`, `ToAccount = accountId`. Also increments `totalTransactions` and sets `lastTransactionDate` in the same Notion call.
 
 ---
 

@@ -18,6 +18,10 @@ The backend only queries and updates records — it never creates or modifies sc
 | `Balance` | Number | `number` | Current balance in VND |
 | `Type` | Select | `AccountType` | See enum below |
 | `Linked cards` | Relation | `string[]` | Relation to Card database — all linked card IDs returned in `GET /api/accounts` |
+| `Total Transactions` | Number | `number \| null` | Count of expense/income transactions; incremented by `POST /expense` and `POST /income`. Null for unused accounts. |
+| `Last Transaction Date` | Date | `number \| null` (epoch ms) | Date of the most recent expense/income; set to request `timestamp` on each write. Null for unused accounts. |
+
+> **Note**: `Total Transactions` and `Last Transaction Date` are used to compute `priorityScore` in `GET /api/accounts`. They are **not** updated by transfers or adjustments.
 
 ### AccountType Enum
 

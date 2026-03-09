@@ -9,6 +9,19 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.6.0] - 2026-03-09
+
+### Changed
+
+- feat(accounts): `Account` type now includes `totalTransactions`, `lastTransactionDate`, and `priorityScore` fields
+- feat(connector): `mapPageToAccount()` reads `Total Transactions` and `Last Transaction Date` from Notion and computes `priorityScore`
+- feat(connector): added `updateAccountAfterTransaction()` — updates Balance, Total Transactions, and Last Transaction Date in a single Notion call
+- feat(transactions): `POST /expense` and `POST /income` now call `updateAccountAfterTransaction()` instead of `updateAccountBalance()`, incrementing stats on every write
+- feat(types): exported `computePriorityScore()` pure function with injectable `now` param for deterministic testing
+- test: updated transaction handler tests to use `updateAccountAfterTransaction` mock; added new tests for null handling, timestamp propagation, and priority score formula
+
+---
+
 ## [FE-0.5.0] - 2026-03-09
 
 ### Changed

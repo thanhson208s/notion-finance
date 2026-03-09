@@ -27,6 +27,9 @@ export type Account = {
   name: string
   type: AccountType
   balance: number
+  totalTransactions: number | null
+  lastTransactionDate: number | null
+  priorityScore: number
   linkedCardIds: string[]
   cards: CardSummary[]
 }

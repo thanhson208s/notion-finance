@@ -1,10 +1,10 @@
 import './TransactionPage.css'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, CalendarDays } from 'lucide-react'
 import TransferForm from '../components/TransferForm'
 import type { Account } from '../App'
-import { API_BASE } from '../App'
+import { useAppContext } from '../contexts/AppContext'
 
 const toDatetimeLocal = (ms: number) => {
   const d = new Date(ms)
@@ -24,26 +24,8 @@ export default function TransferPage() {
   const { state } = useLocation()
   const account = state?.account as Account | undefined
   const [balance, setBalance] = useState<number>(account?.balance ?? 0)
-  const [accounts, setAccounts] = useState<Account[]>([])
+  const { accounts } = useAppContext()
   const [timestamp, setTimestamp] = useState<number>(() => Date.now())
-
-  useEffect(() => {
-    const controller = new AbortController()
-    ;(async () => {
-      try {
-        const response = await fetch(`${API_BASE}/accounts`, {
-          signal: controller.signal,
-        })
-        if (!response.ok) throw new Error('Failed to fetch accounts')
-        const data = await response.json()
-        setAccounts(data.accounts)
-      } catch (e) {
-        if (e instanceof Error) console.log(e.message)
-        setAccounts([])
-      }
-    })()
-    return () => controller.abort()
-  }, [])
 
   return (
     <main className="transaction-page">

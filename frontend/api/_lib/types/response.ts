@@ -71,7 +71,6 @@ export type GetReportsResponse = {
   totalExpense: number
   netSavings: number
   transactions: Transaction[]
-  accounts: Account[]
   expenseCategoryBreakdown: CategoryBreakdown[]
   incomeCategoryBreakdown: CategoryBreakdown[]
 }

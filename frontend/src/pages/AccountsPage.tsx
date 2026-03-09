@@ -5,26 +5,24 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   ArrowLeftRight,
-  Pencil
+  Pencil,
+  Loader2,
+  RefreshCw
 } from "lucide-react"
-import { type Account, type AccountType, API_BASE } from '../App'
-
-type GetAccountsResponse = {
-  accounts: Account[]
-  total: number
-  totalOfAssets: number
-  totalOfLiabilities: number
-}
+import { type AccountType } from '../App'
+import { useAppContext } from '../contexts/AppContext'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
 
 export default function AccountsPage() {
-  const [ accounts, setAccounts ] = useState<Account[]>([]);
-  const [ totals, setTotals ] = useState({ total: 0, totalOfAssets: 0, totalOfLiabilities: 0 });
+  const { accounts, totals, accountsLoading, refetchAccounts } = useAppContext();
   const [ activeCard, setActiveCard ] = useState<string | null>(null);
   const [ filter, setFilter ] = useState<"all" | "assets" | "liabilities">("all");
   const [ sort, setSort ] = useState<"relevance" | "balance" | "type">("relevance");
   const [ hideEmpty, setHideEmpty ] = useState<boolean>(true);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const pageRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
+  const { pullDistance, refreshing } = usePullToRefresh(refetchAccounts, pageRef);
 
   const account2Class: Record<AccountType, string> = {
     Cash: "account-cash",
@@ -78,34 +76,6 @@ export default function AccountsPage() {
   }
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    (async() => {
-      try {
-        const response = await fetch(
-          `${API_BASE}/accounts`,
-          { signal: controller.signal }
-        );
-
-        if (!response.ok)
-          throw new Error("Failed to fetch accounts");
-
-        const data: GetAccountsResponse = await response.json();
-        setAccounts(data.accounts);
-        setTotals({ total: data.total, totalOfAssets: data.totalOfAssets, totalOfLiabilities: data.totalOfLiabilities });
-      } catch(e) {
-        if (e instanceof Error)
-          console.log(e.message);
-        setAccounts([]);
-      }
-    })();
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
-
-  useEffect(() => {
     if (!activeCard) return;
     const card = cardRefs.current[activeCard];
     if (!card) return;
@@ -139,7 +109,17 @@ export default function AccountsPage() {
     : totals.total;
 
   return (
-    <main className="page">
+    <main className="page" ref={pageRef}>
+      <div
+        className="ptr-indicator"
+        style={{ '--pull': `${pullDistance}px` } as React.CSSProperties}
+        aria-hidden
+      >
+        {refreshing
+          ? <Loader2 size={24} className="ptr-spin" />
+          : <RefreshCw size={24} style={{ transform: `rotate(${pullDistance * 2}deg)` }} />
+        }
+      </div>
       <div className="balance-header">
         <div className="balance-pill">
           {displayedTotal.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
@@ -182,6 +162,11 @@ export default function AccountsPage() {
         </label>
       </div>
 
+      {accountsLoading ? (
+        <div className="accounts-loading">
+          <div className="circle-loading" />
+        </div>
+      ) : (
       <div className="account-list">
         {accounts.filter((account) => {
           if (hideEmpty && account.balance === 0) return false;
@@ -263,6 +248,7 @@ export default function AccountsPage() {
           )
         })}
       </div>
+      )}
     </main>
   )
 }

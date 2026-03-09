@@ -8,6 +8,7 @@ import {
   Percent, TrendingDown, TrendingUp, Undo2, UtensilsCrossed
 } from 'lucide-react'
 import { type Account, API_BASE } from '../App'
+import { useAppContext } from '../contexts/AppContext'
 
 // --- Types ---
 
@@ -39,7 +40,6 @@ type ReportsData = {
   totalExpense: number
   netSavings: number
   transactions: Transaction[]
-  accounts: Account[]
   expenseCategoryBreakdown: CategoryItem[]
   incomeCategoryBreakdown: CategoryItem[]
 }
@@ -236,6 +236,7 @@ function getCategoryConfig(catName: string): { icon: React.ReactNode; color: str
 // --- Component ---
 
 export default function ReportsPage() {
+  const { accounts } = useAppContext()
   const [dateRange, setDateRange] = useState<DateRangePreset>('this-month')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
@@ -310,8 +311,16 @@ export default function ReportsPage() {
     const realId = categoryId.endsWith('__other')
       ? categoryId.replace('__other', '')
       : categoryId
-    const { startDate, endDate } = getDateParams(dateRange, customStart, customEnd)
-    console.log('TODO: navigate to transactions', { categoryId: realId, startDate, endDate })
+
+    // Map child category → parent so the dropdown filter (top-level only) works correctly
+    const cat = catMap.get(realId)
+    const filterCategoryId = cat && cat.parentId !== cat.categoryId ? cat.parentId : realId
+
+    setShowTxView(true)
+    setTxTypeFilter(tab === 'expense' ? 'Expense' : 'Income')
+    setTxCategoryFilter(filterCategoryId)
+    setTxSort('date')
+    setTxAmountDir('desc')
   }
 
   // Sub-donut when a group is expanded
@@ -354,7 +363,6 @@ export default function ReportsPage() {
 
   const filteredTxs = useMemo(() => {
     if (!data) return []
-    const accounts = data.accounts
     let txs = data.transactions.filter(tx => {
       const type = getTxType(tx, expenseCatIds, incomeCatIds)
       if (type !== txTypeFilter) return false
@@ -370,7 +378,7 @@ export default function ReportsPage() {
     } else {
       txs = [...txs].sort((a, b) => txAmountDir === 'desc' ? b.amount - a.amount : a.amount - b.amount)
     }
-    return txs.map(tx => ({ tx, type: getTxType(tx, expenseCatIds, incomeCatIds), accounts }))
+    return txs.map(tx => ({ tx, type: getTxType(tx, expenseCatIds, incomeCatIds) }))
   }, [data, txTypeFilter, txCategoryFilter, txSort, txAmountDir, expenseCatIds, incomeCatIds, catMap])
 
   const txIcon = (catName: string, type: TxType): { icon: React.ReactNode; color: string } => {
@@ -500,7 +508,7 @@ export default function ReportsPage() {
                 {filteredTxs.length === 0 && (
                   <div className="reports-empty">No transactions for this filter</div>
                 )}
-                {filteredTxs.map(({ tx, type, accounts }) => {
+                {filteredTxs.map(({ tx, type }) => {
                   const accountId = tx.fromAccountId ?? tx.toAccountId
                   const accountLabel = getAccountLabel(accountId, tx.linkedCardId, accounts)
                   const { catName, subName } = getCategoryLabel(tx, catMap)

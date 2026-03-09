@@ -32,10 +32,9 @@ export const getReports: RouteHandler<undefined, GetReportsResponse> = async (ev
   const TRANSFER_ID   = process.env.NOTION_TRANSFER_TRANSACTION_ID as string;
   const ADJUSTMENT_ID = process.env.NOTION_ADJUSTMENT_TRANSACTION_ID as string;
 
-  const [categories, allTransactions, accounts] = await Promise.all([
+  const [categories, allTransactions] = await Promise.all([
     connector.fetchCategories(null),
     connector.fetchAllTransactions(startDate, endDate),
-    connector.fetchAllAccounts()
   ]);
 
   const categoryMap = new Map(categories.map(c => [c.id, c]));
@@ -58,7 +57,6 @@ export const getReports: RouteHandler<undefined, GetReportsResponse> = async (ev
     totalExpense,
     netSavings,
     transactions: allTransactions,
-    accounts,
     expenseCategoryBreakdown: buildBreakdown(expenses, expenseCategories, categoryMap),
     incomeCategoryBreakdown:  buildBreakdown(incomes,  incomeCategories,  categoryMap)
   } satisfies GetReportsResponse);

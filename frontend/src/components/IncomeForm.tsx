@@ -1,7 +1,8 @@
 import type { Category, CardSummary, AccountType } from '../App'
 import { API_BASE } from '../App'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { TrendingUp, Check, X, Loader2 } from 'lucide-react'
+import { useAppContext } from '../contexts/AppContext'
 
 function EmptyCard() {
   return (
@@ -45,8 +46,9 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
   onSuccess?: (newBalance: number) => void
   timestamp?: number
 }) {
+  const { categories: allCategories } = useAppContext();
+  const categories = allCategories.filter(c => c.type === 'Income');
   const [ status, setStatus ] = useState<LogIncomeStatus>({status: 'idle'});
-  const [ categories, setCategories ] = useState<Category[]>([]);
   const [ amount, setAmount ] = useState<number>(0);
   const [ categoryId, setCategoryId ] = useState<string>("");
   const [ note, setNote ] = useState<string>("");
@@ -57,33 +59,6 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
   const [ cardIndex, setCardIndex ] = useState<number>(() =>
     accountType === 'Credit' && cards.length > 0 ? 0 : -1
   );
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    (async() => {
-      try {
-        const response = await fetch(
-          `${API_BASE}/categories?` + new URLSearchParams({ type: "Income" }).toString(),
-          { signal: controller.signal }
-        );
-
-        if (!response.ok)
-          throw new Error("Failed to fetch accounts");
-
-        const data: {categories: Category[]} = await response.json();
-        setCategories(data.categories);
-      } catch(e) {
-        if (e instanceof Error)
-          console.log(e.message);
-        setCategories([]);
-      }
-    })();
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
 
   const resetToIdle = () => {
     if (status.status !== 'loading') setStatus({status: 'idle'});

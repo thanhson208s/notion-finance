@@ -1,5 +1,6 @@
 import "./App.css"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { AppProvider } from "./contexts/AppContext"
 import NavBar from "./components/NavBar"
 import AccountsPage from "./pages/AccountsPage"
 import ReportsPage from "./pages/ReportsPage"
@@ -13,6 +14,7 @@ import AdjustmentPage from "./pages/AdjustmentPage"
 export default function App() {
   return (
     <div className="app">
+      <AppProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AccountsPage/>}/>
@@ -26,6 +28,7 @@ export default function App() {
         </Routes>
         <NavBar/>
       </BrowserRouter>
+      </AppProvider>
     </div>
   )
 }

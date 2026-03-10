@@ -8,7 +8,7 @@ import {
   type Transaction, type TxType,
   fmtVND, fmtTxDate, getAccountLabel, getCategoryLabel,
   CATEGORY_COLORS, TYPE_COLORS
-} from './txUtils'
+} from '../App'
 import { SwipeableRow } from './SwipeableRow'
 
 type SwipeActions = {

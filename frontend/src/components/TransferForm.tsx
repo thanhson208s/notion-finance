@@ -29,7 +29,7 @@ type TransferStatus = {
 export default function TransferForm({accountId, accounts, onTransferSuccess, timestamp}: {
   accountId: string,
   accounts: Account[]
-  onTransferSuccess?: (fromId: string, fromBalance: number, toId: string, toBalance: number) => void
+  onTransferSuccess?: () => void
   timestamp?: number
 }) {
   const [ status, setStatus ] = useState<TransferStatus>({status: "idle"});
@@ -105,7 +105,7 @@ export default function TransferForm({accountId, accounts, onTransferSuccess, ti
 
         const data = await response.json() as TransferResponse;
         setStatus({status: 'success', data});
-        onTransferSuccess?.(data.fromAccountId, data.newFromAccountBalance, data.toAccountId, data.newToAccountBalance);
+        onTransferSuccess?.();
       } catch(e) {
         if (e instanceof Error) console.log(e.message);
         setStatus({status: 'idle'});

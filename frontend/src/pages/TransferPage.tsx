@@ -20,12 +20,12 @@ const formatDateDisplay = (ms: number) =>
 export default function TransferPage() {
   const { accountId } = useParams()
   const navigate = useNavigate()
-  const { accounts, updateAccountBalance } = useAppContext()
+  const { accounts, refetchAccounts, refetchReports } = useAppContext()
   const [timestamp, setTimestamp] = useState<number>(() => Date.now())
 
-  const handleTransferSuccess = (fromId: string, fromBalance: number, toId: string, toBalance: number) => {
-    updateAccountBalance(fromId, fromBalance)
-    updateAccountBalance(toId, toBalance)
+  const handleTransferSuccess = () => {
+    refetchAccounts();
+    refetchReports(true, true)
   }
 
   return (

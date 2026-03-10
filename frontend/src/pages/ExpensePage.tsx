@@ -25,11 +25,12 @@ export default function ExpensePage() {
   const account = state?.account as Account | undefined
   const [balance, setBalance] = useState<number>(account?.balance ?? 0)
   const [timestamp, setTimestamp] = useState<number>(() => Date.now())
-  const { updateAccountBalance } = useAppContext()
+  const { refetchAccounts, refetchReports } = useAppContext()
 
   const handleSuccess = (newBalance: number) => {
     setBalance(newBalance)
-    if (accountId) updateAccountBalance(accountId, newBalance)
+    refetchAccounts()
+    refetchReports(true, true)
   }
 
   return (

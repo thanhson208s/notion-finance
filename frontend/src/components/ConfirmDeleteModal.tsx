@@ -2,7 +2,7 @@ import './ConfirmDeleteModal.css'
 import { useState, useCallback } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import type { Account, Category } from '../App'
-import { type Transaction, type TxType, fmtVND, fmtTxDate, getAccountLabel, getCategoryLabel } from './txUtils'
+import { type Transaction, type TxType, fmtVND, fmtTxDate, getAccountLabel, getCategoryLabel } from '../App'
 
 const ANIM_MS = 240
 const SUCCESS_MS = 1000

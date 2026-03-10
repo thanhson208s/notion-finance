@@ -6,25 +6,23 @@ import {
   ChevronDown, ChevronRight,
   ListOrdered, TrendingDown, TrendingUp
 } from 'lucide-react'
-import { type Category, API_BASE } from '../App'
+import { type Category, type DateRangePreset, API_BASE } from '../App'
 import { useAppContext } from '../contexts/AppContext'
 import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
-import { type Transaction, type CategoryItem, type TxType, fmtVND } from '../components/txUtils'
+import { type Transaction, type TxType, fmtVND, fmtShort, getTxType, getDateParams } from '../App'
 
 // --- Types ---
 
-type DateRangePreset = 'last-month' | 'this-month' | 'custom'
+
 type Tab = 'expense' | 'income'
 type SortKey = 'date' | 'amount'
 
-type ReportsData = {
-  totalIncome: number
-  totalExpense: number
-  netSavings: number
-  transactions: Transaction[]
-  expenseCategoryBreakdown: CategoryItem[]
-  incomeCategoryBreakdown: CategoryItem[]
+export type CategoryItem = {
+  categoryId: string
+  categoryName: string
+  parentId: string
+  amount: number
 }
 
 type CategoryGroup = {
@@ -50,46 +48,39 @@ const C = 2 * Math.PI * R
 
 // --- Helpers ---
 
-function toISODate(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-function getDateParams(preset: DateRangePreset, customStart: string, customEnd: string) {
-  const now = new Date()
-  if (preset === 'this-month') {
-    return {
-      startDate: toISODate(new Date(now.getFullYear(), now.getMonth(), 1)),
-      endDate: toISODate(now),
-    }
-  }
-  if (preset === 'last-month') {
-    return {
-      startDate: toISODate(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
-      endDate: toISODate(new Date(now.getFullYear(), now.getMonth(), 0)),
-    }
-  }
-  return { startDate: customStart || undefined, endDate: customEnd || undefined }
-}
-
-function buildGroups(breakdown: CategoryItem[]): CategoryGroup[] {
+function buildGroups(categories: Category[], breakdown: {categoryId: string, amount: number}[]): CategoryGroup[] {
   const grouped = new Map<string, CategoryGroup>()
 
   // Register top-level categories first
-  breakdown.filter(c => c.parentId === c.categoryId).forEach(c => {
-    grouped.set(c.categoryId, { parent: c, children: [], groupTotal: c.amount })
+  categories.filter(c => c.parentId === null).forEach(c => {
+    const amount = breakdown.find(b => b.categoryId === c.id)?.amount ?? 0
+    grouped.set(c.id, { parent: {
+      categoryId: c.id,
+      categoryName: c.name,
+      parentId: c.id,
+      amount
+    }, children: [], groupTotal: amount })
   })
 
   // Assign children (orphans treated as top-level)
-  breakdown.filter(c => c.parentId !== c.categoryId).forEach(c => {
-    if (grouped.has(c.parentId)) {
-      const g = grouped.get(c.parentId)!
-      g.children.push(c)
-      g.groupTotal += c.amount
+  categories.filter(c => c.parentId !== null).forEach(c => {
+    const amount = breakdown.find(b => b.categoryId === c.id)?.amount ?? 0
+    if (grouped.has(c.parentId!)) {
+      const g = grouped.get(c.parentId!)!
+      g.children.push({
+        categoryId: c.id,
+        categoryName: c.name,
+        parentId: c.parentId!,
+        amount
+      })
+      g.groupTotal += amount
     } else {
-      grouped.set(c.categoryId, { parent: c, children: [], groupTotal: c.amount })
+      grouped.set(c.id, { parent: {
+        categoryId: c.id,
+        categoryName: c.name,
+        parentId: c.id,
+        amount
+      }, children: [], groupTotal: amount })
     }
   })
 
@@ -115,36 +106,11 @@ function buildColorMap(groups: CategoryGroup[]): Record<string, string> {
   return map
 }
 
-function fmtShort(n: number): string {
-  const abs = Math.abs(n)
-  if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)} tỷ`
-  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)} tr`
-  if (abs >= 1_000) return `${Math.round(n / 1_000)}K`
-  return n.toLocaleString('vi-VN')
-}
-
-function getTxType(
-  tx: Transaction,
-  expenseCatIds: Set<string>,
-  incomeCatIds: Set<string>
-): TxType {
-  if (tx.fromAccountId && tx.toAccountId) return 'Transfer'
-  if (tx.fromAccountId && !tx.toAccountId && expenseCatIds.has(tx.categoryId)) return 'Expense'
-  if (!tx.fromAccountId && tx.toAccountId && incomeCatIds.has(tx.categoryId)) return 'Income'
-  return 'Adjustment'
-}
-
 // --- Component ---
 
 export default function ReportsPage() {
-  const { accounts, categories, refetchAccounts } = useAppContext()
-  const [dateRange, setDateRange] = useState<DateRangePreset>('this-month')
-  const [customStart, setCustomStart] = useState('')
-  const [customEnd, setCustomEnd] = useState('')
+  const { accounts, categories, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, refetchAccounts, refetchReports } = useAppContext()
   const [tab, setTab] = useState<Tab>('expense')
-  const [data, setData] = useState<ReportsData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [fetchError, setFetchError] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
 
@@ -155,10 +121,12 @@ export default function ReportsPage() {
   const [txSort, setTxSort] = useState<SortKey>('date')
   const [txAmountDir, setTxAmountDir] = useState<'desc' | 'asc'>('desc')
   const [deleteTarget, setDeleteTarget] = useState<{ tx: Transaction; type: TxType } | null>(null)
+  
+  const data = dateRange === 'this-month' ? reports.thisMonthReport : (dateRange === 'last-month' ? reports.lastMonthReport : reports.customRangeReport)
 
   const handleDeleteTx = async (txId: string) => {
     await fetch(`${API_BASE}/transactions?id=${txId}`, { method: 'DELETE' })
-    setData(prev => prev ? { ...prev, transactions: prev.transactions.filter(t => t.id !== txId) } : null)
+    refetchReports(true, false)
     refetchAccounts()
   }
 
@@ -167,40 +135,21 @@ export default function ReportsPage() {
   const { startDate: presetStart, endDate: presetEnd } = getDateParams(dateRange, customStart, customEnd)
 
   useEffect(() => {
-    if (dateRange === 'custom' && (!customStart || !customEnd)) return
-    if (dateInvalid) return
-
-    const controller = new AbortController()
-    setLoading(true)
-    setFetchError(false)
-    setSelectedGroup(null)
-    setExpanded(null)
-    setShowTxView(false)
-    setTxTypeFilter('Expense')
-    setTxCategoryFilter('all')
-    setTxSort('date')
-    setTxAmountDir('desc')
-
-    const { startDate, endDate } = getDateParams(dateRange, customStart, customEnd)
-    const params = new URLSearchParams()
-    if (startDate) params.set('startDate', startDate)
-    if (endDate) params.set('endDate', endDate)
-    const query = params.size ? `?${params.toString()}` : ''
-
-    ;(async () => {
-      try {
-        const res = await fetch(`${API_BASE}/reports${query}`, { signal: controller.signal })
-        if (!res.ok) throw new Error('Failed')
-        setData(await res.json() as ReportsData)
-      } catch (e) {
-        if (e instanceof Error && e.name !== 'AbortError') setFetchError(true)
-      } finally {
-        setLoading(false)
-      }
-    })()
-
-    return () => controller.abort()
-  }, [dateRange, customStart, customEnd])
+    switch(dateRange) {
+      case 'this-month':
+        if (!thisMonthLoading && !reports.thisMonthReport)
+          refetchReports(true, false)
+        break;
+      case 'last-month':
+        if (!lastMonthLoading && !reports.lastMonthReport)
+          refetchReports(true, false)
+        break;
+      case 'custom':
+        if (!customRangeLoading && !reports.customRangeReport)
+          refetchReports(true, false)
+        break;
+    }
+  }, [dateRange, thisMonthLoading, lastMonthLoading, customRangeLoading, reports, refetchReports])
 
   const catMap = useMemo(() => {
     const map = new Map<string, Category>()
@@ -212,8 +161,30 @@ export default function ReportsPage() {
     ? (data?.expenseCategoryBreakdown ?? [])
     : (data?.incomeCategoryBreakdown ?? [])
   const total = tab === 'expense' ? (data?.totalExpense ?? 0) : (data?.totalIncome ?? 0)
-  const groups = buildGroups(breakdown)
+  const groups = buildGroups(categories.filter(c => (tab === 'expense' && c.type === 'Expense' || tab === 'income' && c.type === 'Income')), breakdown)
   const colorMap = buildColorMap(groups)
+
+  const setDateRange = (dateRange: DateRangePreset) => {
+    switch(dateRange) {
+      case 'this-month':
+        refetchReports(false, false, dateRange)
+        break;
+      case 'last-month':
+        refetchReports(false, false, dateRange)
+        break;
+      case 'custom':
+        refetchReports(false, false, dateRange)
+        break;
+    }
+  }
+
+  const setCustomStart = (customStart: string) => {
+    refetchReports(false, false, undefined, customStart, undefined)
+  }
+
+  const setCustomEnd = (customEnd: string) => {
+    refetchReports(false, false, undefined, undefined, customEnd)
+  }
 
   const toggleExpand = (id: string) => setExpanded(prev => prev === id ? null : id)
 
@@ -267,8 +238,8 @@ export default function ReportsPage() {
     const source = txTypeFilter === 'Expense'
       ? (data?.expenseCategoryBreakdown ?? [])
       : (data?.incomeCategoryBreakdown ?? [])
-    return source.filter(c => c.parentId === c.categoryId)
-  }, [txTypeFilter, data])
+    return source.filter(c => categories.find(x => x.id === c.categoryId)?.parentId === null)
+  }, [categories, txTypeFilter, data])
 
   const filteredTxs = useMemo(() => {
     if (!data) return []
@@ -332,19 +303,14 @@ export default function ReportsPage() {
       </div>
 
       {/* ── Loading ── */}
-      {loading && (
+      {(dateRange === 'this-month' && thisMonthLoading || dateRange === 'last-month' && lastMonthLoading || dateRange === 'custom' && customRangeLoading) && (
         <div className="reports-state">
           <div className="circle-loading" />
         </div>
       )}
 
-      {/* ── Error ── */}
-      {!loading && fetchError && (
-        <div className="reports-state reports-error-msg">Failed to load reports</div>
-      )}
-
       {/* ── Content ── */}
-      {!loading && !fetchError && data && (
+      {(dateRange === 'this-month' && !thisMonthLoading || dateRange === 'last-month' && !lastMonthLoading || dateRange === 'custom' && !customRangeLoading) && (
         <>
           {showTxView ? (
             /* ── Transaction history view ── */
@@ -374,7 +340,7 @@ export default function ReportsPage() {
                 >
                   <option value="all">All</option>
                   {categoryOptions.map(c => (
-                    <option key={c.categoryId} value={c.categoryId}>{c.categoryName}</option>
+                    <option key={c.categoryId} value={c.categoryId}>{categories.find(x => x.id === c.categoryId)?.name ?? c.categoryId}</option>
                   ))}
                 </select>
 
@@ -426,12 +392,12 @@ export default function ReportsPage() {
               {/* Summary card */}
               <div className="reports-summary">
                 <div className="reports-summary-label">NET SAVINGS</div>
-                <div className={`reports-summary-amount${data.netSavings < 0 ? ' reports-summary-amount--neg' : ''}`}>
-                  {fmtVND(data.netSavings)}
+                <div className={`reports-summary-amount${data?.netSavings ?? 0 < 0 ? ' reports-summary-amount--neg' : ''}`}>
+                  {fmtVND(data?.netSavings ?? 0)}
                 </div>
                 <div className="reports-summary-sub">
-                  <span className="reports-summary-income">↑ {fmtVND(data.totalIncome)}</span>
-                  <span className="reports-summary-expense">↓ {fmtVND(data.totalExpense)}</span>
+                  <span className="reports-summary-income">↑ {fmtVND(data?.totalIncome ?? 0)}</span>
+                  <span className="reports-summary-expense">↓ {fmtVND(data?.totalExpense ?? 0)}</span>
                 </div>
               </div>
 

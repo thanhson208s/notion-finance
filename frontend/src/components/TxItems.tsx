@@ -9,6 +9,12 @@ import {
   fmtVND, fmtTxDate, getAccountLabel, getCategoryLabel,
   CATEGORY_COLORS, TYPE_COLORS
 } from './txUtils'
+import { SwipeableRow } from './SwipeableRow'
+
+type SwipeActions = {
+  onEdit?: () => void
+  onDelete?: () => void
+}
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Food':           <UtensilsCrossed size={18} />,
@@ -48,9 +54,9 @@ type TxItemProps = {
   type: TxType
   accounts: Account[]
   catMap: Map<string, Category>
-}
+} & SwipeActions
 
-export function TxItem({ tx, type, accounts, catMap }: TxItemProps) {
+export function TxItem({ tx, type, accounts, catMap, onEdit, onDelete }: TxItemProps) {
   const accountId = tx.fromAccountId ?? tx.toAccountId
   const accountLabel = getAccountLabel(accountId, tx.linkedCardId, accounts)
   const { catName, subName } = getCategoryLabel(tx, catMap)
@@ -58,19 +64,21 @@ export function TxItem({ tx, type, accounts, catMap }: TxItemProps) {
   const { icon, color } = txIconConfig(catName, type)
   const typeLower = type.toLowerCase()
   return (
-    <div className="tx-row">
-      <div className="tx-icon" style={{ color }}>{icon}</div>
-      <div className="tx-mid">
-        <span className="tx-account">{accountLabel}</span>
-        <span className="tx-category">{catName}{subName ? ` › ${subName}` : ''}</span>
-        {tx.note && <span className="tx-note">{tx.note}</span>}
+    <SwipeableRow onEdit={onEdit} onDelete={onDelete}>
+      <div className="tx-row">
+        <div className="tx-icon" style={{ color }}>{icon}</div>
+        <div className="tx-mid">
+          <span className="tx-account">{accountLabel}</span>
+          <span className="tx-category">{catName}{subName ? ` › ${subName}` : ''}</span>
+          {tx.note && <span className="tx-note">{tx.note}</span>}
+        </div>
+        <div className="tx-right">
+          <span className="tx-date">{date}</span>
+          <span className="tx-time">{time}</span>
+          <span className={`tx-amount tx-amount--${typeLower}`}>{fmtVND(tx.amount)}</span>
+        </div>
       </div>
-      <div className="tx-right">
-        <span className="tx-date">{date}</span>
-        <span className="tx-time">{time}</span>
-        <span className={`tx-amount tx-amount--${typeLower}`}>{fmtVND(tx.amount)}</span>
-      </div>
-    </div>
+    </SwipeableRow>
   )
 }
 
@@ -78,9 +86,9 @@ type AdjustmentTxItemProps = {
   tx: Transaction
   accounts: Account[]
   catMap: Map<string, Category>
-}
+} & SwipeActions
 
-export function AdjustmentTxItem({ tx, accounts, catMap }: AdjustmentTxItemProps) {
+export function AdjustmentTxItem({ tx, accounts, catMap, onEdit, onDelete }: AdjustmentTxItemProps) {
   const accountId = tx.fromAccountId ?? tx.toAccountId
   const accountLabel = getAccountLabel(accountId, tx.linkedCardId, accounts)
   const { catName, subName } = getCategoryLabel(tx, catMap)
@@ -88,19 +96,21 @@ export function AdjustmentTxItem({ tx, accounts, catMap }: AdjustmentTxItemProps
   const { icon, color } = txIconConfig(catName, 'Adjustment')
   const sign = tx.toAccountId ? '+' : '−'
   return (
-    <div className="tx-row">
-      <div className="tx-icon" style={{ color }}>{icon}</div>
-      <div className="tx-mid">
-        <span className="tx-account">{accountLabel}</span>
-        <span className="tx-category">{catName}{subName ? ` › ${subName}` : ''}</span>
-        {tx.note && <span className="tx-note">{tx.note}</span>}
+    <SwipeableRow onEdit={onEdit} onDelete={onDelete}>
+      <div className="tx-row">
+        <div className="tx-icon" style={{ color }}>{icon}</div>
+        <div className="tx-mid">
+          <span className="tx-account">{accountLabel}</span>
+          <span className="tx-category">{catName}{subName ? ` › ${subName}` : ''}</span>
+          {tx.note && <span className="tx-note">{tx.note}</span>}
+        </div>
+        <div className="tx-right">
+          <span className="tx-date">{date}</span>
+          <span className="tx-time">{time}</span>
+          <span className="tx-amount tx-amount--adjustment">{sign}{fmtVND(tx.amount)}</span>
+        </div>
       </div>
-      <div className="tx-right">
-        <span className="tx-date">{date}</span>
-        <span className="tx-time">{time}</span>
-        <span className="tx-amount tx-amount--adjustment">{sign}{fmtVND(tx.amount)}</span>
-      </div>
-    </div>
+    </SwipeableRow>
   )
 }
 
@@ -108,27 +118,29 @@ type TransferTxItemProps = {
   tx: Transaction
   accounts: Account[]
   catMap: Map<string, Category>
-}
+} & SwipeActions
 
-export function TransferTxItem({ tx, accounts, catMap }: TransferTxItemProps) {
+export function TransferTxItem({ tx, accounts, catMap, onEdit, onDelete }: TransferTxItemProps) {
   const fromName = accounts.find(a => a.id === tx.fromAccountId)?.name ?? '—'
   const toName = accounts.find(a => a.id === tx.toAccountId)?.name ?? '—'
   const { catName, subName } = getCategoryLabel(tx, catMap);
   const { date, time } = fmtTxDate(tx.timestamp)
   const color = TYPE_COLORS['Transfer']
   return (
-    <div className="tx-row">
-      <div className="tx-icon" style={{ color }}><ArrowLeftRight size={16} /></div>
-      <div className="tx-mid">
-        <span className="tx-account">{fromName} → {toName}</span>
-        <span className="tx-category">{catName}{subName ? ` › ${subName}` : ''}</span>
-        {tx.note && <span className="tx-note">{tx.note}</span>}
+    <SwipeableRow onEdit={onEdit} onDelete={onDelete}>
+      <div className="tx-row">
+        <div className="tx-icon" style={{ color }}><ArrowLeftRight size={16} /></div>
+        <div className="tx-mid">
+          <span className="tx-account">{fromName} → {toName}</span>
+          <span className="tx-category">{catName}{subName ? ` › ${subName}` : ''}</span>
+          {tx.note && <span className="tx-note">{tx.note}</span>}
+        </div>
+        <div className="tx-right">
+          <span className="tx-date">{date}</span>
+          <span className="tx-time">{time}</span>
+          <span className="tx-amount tx-amount--transfer">{fmtVND(tx.amount)}</span>
+        </div>
       </div>
-      <div className="tx-right">
-        <span className="tx-date">{date}</span>
-        <span className="tx-time">{time}</span>
-        <span className="tx-amount tx-amount--transfer">{fmtVND(tx.amount)}</span>
-      </div>
-    </div>
+    </SwipeableRow>
   )
 }

@@ -9,6 +9,14 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.6.4] - 2026-03-10
+
+### Added
+
+- feat(ui): swipe-left on transaction history items to reveal Edit and Delete icon buttons with smooth snap transition; Delete calls DELETE /api/transactions and removes the item optimistically
+
+---
+
 ## [FE-0.6.3] - 2026-03-10
 
 ### Added

@@ -1,0 +1,49 @@
+.swipeable-row {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.swipeable-content {
+  position: relative;
+  z-index: 1;
+  background: var(--bg);
+}
+
+.swipeable-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 0;
+  opacity: 0;
+  padding-left: 12px;
+  justify-content: center;
+  gap: 12px;
+}
+
+.swipeable-btn {
+  display: flex;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+}
+
+.swipeable-btn:active {
+  opacity: 0.5;
+}
+
+.swipeable-btn--edit {
+  color: #3b82f6;
+}
+
+.swipeable-btn--delete {
+  color: #ef4444;
+}

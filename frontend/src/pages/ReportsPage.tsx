@@ -8,8 +8,9 @@ import {
 } from 'lucide-react'
 import { type Category, API_BASE } from '../App'
 import { useAppContext } from '../contexts/AppContext'
-import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'                            
-import { type Transaction, type CategoryItem, type TxType, fmtVND } from '../components/txUtils'   
+import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'
+import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
+import { type Transaction, type CategoryItem, type TxType, fmtVND } from '../components/txUtils'
 
 // --- Types ---
 
@@ -136,7 +137,7 @@ function getTxType(
 // --- Component ---
 
 export default function ReportsPage() {
-  const { accounts, categories } = useAppContext()
+  const { accounts, categories, refetchAccounts } = useAppContext()
   const [dateRange, setDateRange] = useState<DateRangePreset>('this-month')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
@@ -153,6 +154,13 @@ export default function ReportsPage() {
   const [txCategoryFilter, setTxCategoryFilter] = useState('all')
   const [txSort, setTxSort] = useState<SortKey>('date')
   const [txAmountDir, setTxAmountDir] = useState<'desc' | 'asc'>('desc')
+  const [deleteTarget, setDeleteTarget] = useState<{ tx: Transaction; type: TxType } | null>(null)
+
+  const handleDeleteTx = async (txId: string) => {
+    await fetch(`${API_BASE}/transactions?id=${txId}`, { method: 'DELETE' })
+    setData(prev => prev ? { ...prev, transactions: prev.transactions.filter(t => t.id !== txId) } : null)
+    refetchAccounts()
+  }
 
   const isCustom = dateRange === 'custom'
   const dateInvalid = isCustom && !!customStart && !!customEnd && customEnd < customStart
@@ -405,10 +413,10 @@ export default function ReportsPage() {
                 )}
                 {filteredTxs.map(({ tx, type }) => {
                   if (type === 'Transfer')
-                    return <TransferTxItem key={tx.id} tx={tx} accounts={accounts} catMap={catMap} />
+                    return <TransferTxItem key={tx.id} tx={tx} accounts={accounts} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
                   if (type === 'Adjustment')
-                    return <AdjustmentTxItem key={tx.id} tx={tx} accounts={accounts} catMap={catMap} />
-                  return <TxItem key={tx.id} tx={tx} type={type} accounts={accounts} catMap={catMap} />
+                    return <AdjustmentTxItem key={tx.id} tx={tx} accounts={accounts} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
+                  return <TxItem key={tx.id} tx={tx} type={type} accounts={accounts} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
                 })}
               </div>
             </>
@@ -607,6 +615,16 @@ export default function ReportsPage() {
         </button>
       </div>
 
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          tx={deleteTarget.tx}
+          type={deleteTarget.type}
+          accounts={accounts}
+          catMap={catMap}
+          onConfirm={() => handleDeleteTx(deleteTarget.tx.id)}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </main>
   )
 }

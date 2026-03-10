@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { logExpense, logIncome, transferBalance, listExpenses, listIncomes } from '../../_handlers/transaction.handler'
+import { logExpense, logIncome, transferBalance, listExpenses, listIncomes, getTransaction, deleteTransaction, updateTransaction } from '../../_handlers/transaction.handler'
 import { createMockConnector } from '../helpers/mockConnector'
 import { QueryError } from '../../_lib/types/error'
 import { Transaction } from '../../_lib/types/transaction.type'
@@ -218,7 +218,7 @@ describe('transferBalance()', () => {
       updateAccountBalance: vi.fn().mockResolvedValue({ balance: 450 })
     })
     await transferBalance(makeEvent({ fromAccountId: 'a', toAccountId: 'b', amount: 50, note: "", timestamp: 1700000000000 }), connector)
-    expect(addTransfer).toHaveBeenCalledWith('a', 'b', 50, 1700000000000)
+    expect(addTransfer).toHaveBeenCalledWith('a', 'b', 50, "", 1700000000000)
   })
 })
 
@@ -253,5 +253,170 @@ describe('listIncomes()', () => {
     const connector = createMockConnector({ fetchTransactions })
     await listIncomes(makeEvent(undefined, {}), connector)
     expect(fetchTransactions).toHaveBeenCalledWith('income', undefined, undefined)
+  })
+})
+
+describe('getTransaction()', () => {
+  it('throws QueryError if id is missing', async () => {
+    const connector = createMockConnector()
+    await expect(getTransaction({ method: 'GET', path: '/api/transactions', query: {}, body: undefined }, connector))
+      .rejects.toThrow(QueryError)
+  })
+
+  it('fetches and returns the transaction', async () => {
+    const tx = makeTx(100)
+    const connector = createMockConnector({ fetchTransaction: vi.fn().mockResolvedValue(tx) })
+    const result = await getTransaction({ method: 'GET', path: '/api/transactions', query: { id: 'tx-1' }, body: undefined }, connector)
+    expect(connector.fetchTransaction).toHaveBeenCalledWith('tx-1')
+    expect(result.body).toEqual(tx)
+  })
+})
+
+describe('deleteTransaction()', () => {
+  it('throws QueryError if id is missing', async () => {
+    const connector = createMockConnector()
+    await expect(deleteTransaction({ method: 'DELETE', path: '/api/transactions', query: {}, body: undefined }, connector))
+      .rejects.toThrow(QueryError)
+  })
+
+  it('reverses expense balance (adds back to fromAccount)', async () => {
+    const tx = { ...makeTx(50), fromAccountId: 'acc-from' }
+    const updateAccountBalance = vi.fn().mockResolvedValue({ balance: 250 })
+    const connector = createMockConnector({
+      fetchTransaction: vi.fn().mockResolvedValue(tx),
+      fetchAccount: vi.fn().mockResolvedValue(makeAccount(200)),
+      updateAccountBalance,
+      archiveTransaction: vi.fn()
+    })
+    const result = await deleteTransaction({ method: 'DELETE', path: '/api/transactions', query: { id: 'tx-1' }, body: undefined }, connector)
+    expect(updateAccountBalance).toHaveBeenCalledWith('acc-from', 250)
+    expect(result.body.balanceChanges).toEqual([{ accountId: 'acc-from', oldBalance: 200, newBalance: 250 }])
+  })
+
+  it('reverses income balance (subtracts from toAccount)', async () => {
+    const tx = { ...makeTx(100), toAccountId: 'acc-to' }
+    const updateAccountBalance = vi.fn().mockResolvedValue({ balance: 400 })
+    const connector = createMockConnector({
+      fetchTransaction: vi.fn().mockResolvedValue(tx),
+      fetchAccount: vi.fn().mockResolvedValue(makeAccount(500)),
+      updateAccountBalance,
+      archiveTransaction: vi.fn()
+    })
+    const result = await deleteTransaction({ method: 'DELETE', path: '/api/transactions', query: { id: 'tx-1' }, body: undefined }, connector)
+    expect(updateAccountBalance).toHaveBeenCalledWith('acc-to', 400)
+    expect(result.body.balanceChanges).toEqual([{ accountId: 'acc-to', oldBalance: 500, newBalance: 400 }])
+  })
+
+  it('reverses transfer (both accounts)', async () => {
+    const tx = { ...makeTx(200), fromAccountId: 'acc-from', toAccountId: 'acc-to' }
+    const updateAccountBalance = vi.fn()
+      .mockResolvedValueOnce({ balance: 1200 })
+      .mockResolvedValueOnce({ balance: 800 })
+    const connector = createMockConnector({
+      fetchTransaction: vi.fn().mockResolvedValue(tx),
+      fetchAccount: vi.fn()
+        .mockResolvedValueOnce(makeAccount(1000))
+        .mockResolvedValueOnce(makeAccount(1000)),
+      updateAccountBalance,
+      archiveTransaction: vi.fn()
+    })
+    const result = await deleteTransaction({ method: 'DELETE', path: '/api/transactions', query: { id: 'tx-1' }, body: undefined }, connector)
+    expect(updateAccountBalance).toHaveBeenCalledWith('acc-from', 1200)
+    expect(updateAccountBalance).toHaveBeenCalledWith('acc-to', 800)
+    expect(result.body.balanceChanges).toHaveLength(2)
+  })
+
+  it('calls archiveTransaction with correct id', async () => {
+    const tx = makeTx(50)
+    const archiveTransaction = vi.fn()
+    const connector = createMockConnector({
+      fetchTransaction: vi.fn().mockResolvedValue(tx),
+      archiveTransaction
+    })
+    await deleteTransaction({ method: 'DELETE', path: '/api/transactions', query: { id: 'tx-1' }, body: undefined }, connector)
+    expect(archiveTransaction).toHaveBeenCalledWith('tx-1')
+  })
+})
+
+describe('updateTransaction()', () => {
+  const makeUpdateEvent = (id: string, body: Record<string, unknown>, query: Record<string, string> = {}) => ({
+    method: 'PATCH', path: '/api/transactions', query: { id, ...query }, body
+  })
+
+  it('throws QueryError if id is missing', async () => {
+    const connector = createMockConnector()
+    await expect(updateTransaction({ method: 'PATCH', path: '/api/transactions', query: {}, body: {} }, connector))
+      .rejects.toThrow(QueryError)
+  })
+
+  it('throws QueryError if amount <= 0', async () => {
+    const connector = createMockConnector()
+    await expect(updateTransaction(makeUpdateEvent('tx-1', { amount: 0 }), connector))
+      .rejects.toThrow(QueryError)
+  })
+
+  it('no balance change when only note/categoryId/timestamp updated', async () => {
+    const tx = makeTx(100)
+    const updateTransactionPage = vi.fn().mockResolvedValue(tx)
+    const connector = createMockConnector({
+      fetchTransaction: vi.fn().mockResolvedValue(tx),
+      updateTransactionPage
+    })
+    const result = await updateTransaction(makeUpdateEvent('tx-1', { note: 'updated' }), connector)
+    expect(connector.fetchAccount).not.toHaveBeenCalled()
+    expect(result.body.balanceChanges).toEqual([])
+  })
+
+  it('reconciles expense balance when amount changes', async () => {
+    const tx = { ...makeTx(100), fromAccountId: 'acc-from' }
+    const updatedTx = { ...tx, amount: 150 }
+    const updateAccountBalance = vi.fn().mockResolvedValue({ balance: 850 })
+    const connector = createMockConnector({
+      fetchTransaction: vi.fn().mockResolvedValue(tx),
+      fetchAccount: vi.fn().mockResolvedValue(makeAccount(900)),
+      updateAccountBalance,
+      updateTransactionPage: vi.fn().mockResolvedValue(updatedTx)
+    })
+    const result = await updateTransaction(makeUpdateEvent('tx-1', { amount: 150 }), connector)
+    // delta = 150 - 100 = 50; expense fromAccount: balance -= delta → 900 - 50 = 850
+    expect(updateAccountBalance).toHaveBeenCalledWith('acc-from', 850)
+    expect(result.body.balanceChanges).toEqual([{ accountId: 'acc-from', oldBalance: 900, newBalance: 850 }])
+  })
+
+  it('reconciles income balance when amount changes', async () => {
+    const tx = { ...makeTx(100), toAccountId: 'acc-to' }
+    const updatedTx = { ...tx, amount: 200 }
+    const updateAccountBalance = vi.fn().mockResolvedValue({ balance: 600 })
+    const connector = createMockConnector({
+      fetchTransaction: vi.fn().mockResolvedValue(tx),
+      fetchAccount: vi.fn().mockResolvedValue(makeAccount(500)),
+      updateAccountBalance,
+      updateTransactionPage: vi.fn().mockResolvedValue(updatedTx)
+    })
+    const result = await updateTransaction(makeUpdateEvent('tx-1', { amount: 200 }), connector)
+    // delta = 200 - 100 = 100; income toAccount: balance += delta → 500 + 100 = 600
+    expect(updateAccountBalance).toHaveBeenCalledWith('acc-to', 600)
+    expect(result.body.balanceChanges).toEqual([{ accountId: 'acc-to', oldBalance: 500, newBalance: 600 }])
+  })
+
+  it('reconciles transfer balances when amount changes', async () => {
+    const tx = { ...makeTx(100), fromAccountId: 'acc-from', toAccountId: 'acc-to' }
+    const updatedTx = { ...tx, amount: 150 }
+    const updateAccountBalance = vi.fn()
+      .mockResolvedValueOnce({ balance: 950 })
+      .mockResolvedValueOnce({ balance: 1050 })
+    const connector = createMockConnector({
+      fetchTransaction: vi.fn().mockResolvedValue(tx),
+      fetchAccount: vi.fn()
+        .mockResolvedValueOnce(makeAccount(1000))
+        .mockResolvedValueOnce(makeAccount(1000)),
+      updateAccountBalance,
+      updateTransactionPage: vi.fn().mockResolvedValue(updatedTx)
+    })
+    const result = await updateTransaction(makeUpdateEvent('tx-1', { amount: 150 }), connector)
+    // delta = 50; from: 1000 - 50 = 950, to: 1000 + 50 = 1050
+    expect(updateAccountBalance).toHaveBeenCalledWith('acc-from', 950)
+    expect(updateAccountBalance).toHaveBeenCalledWith('acc-to', 1050)
+    expect(result.body.balanceChanges).toHaveLength(2)
   })
 })

@@ -378,3 +378,96 @@ Returns spending and income summary with category breakdown for a selected date 
 - Each breakdown sorted by `amount` descending
 - 2 parallel Notion calls: all transactions + all categories
 - Handler: `src/handlers/reports.handler.ts` → `getReports()`
+
+---
+
+### GET /api/transactions
+
+**Status**: ✅ DONE
+
+Returns a single transaction by ID.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | Yes | Notion page ID of the transaction |
+
+**Response 200**: `Transaction` object
+
+**Errors**: 400 if `id` missing, 404 if not found
+
+---
+
+### PATCH /api/transactions
+
+**Status**: ✅ DONE
+
+Updates a transaction and reconciles account balances when amount changes.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | Yes | Notion page ID of the transaction |
+
+**Request Body** (all fields optional):
+```json
+{
+  "amount": "number (must be positive if provided)",
+  "note": "string",
+  "categoryId": "string",
+  "timestamp": "number (Unix ms)",
+  "linkedCardId": "string | null"
+}
+```
+
+**Response 200**:
+```json
+{
+  "transaction": { "id": "string", "timestamp": 0, "amount": 0, "categoryId": "string", "note": "string" },
+  "balanceChanges": [{ "accountId": "string", "oldBalance": 0, "newBalance": 0 }]
+}
+```
+
+**Business logic**:
+- Fetches the existing transaction
+- If `amount` changed: `delta = newAmount - oldAmount`
+  - Expense: `fromAccount.balance -= delta`
+  - Income: `toAccount.balance += delta`
+  - Transfer: `fromAccount.balance -= delta`, `toAccount.balance += delta`
+- Partially updates the Notion page (only provided fields are written)
+
+**Errors**: 400 if `id` missing or `amount <= 0`
+
+---
+
+### DELETE /api/transactions
+
+**Status**: ✅ DONE
+
+Reverses a transaction's balance effects and trashes the Notion page.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | Yes | Notion page ID of the transaction |
+
+**Response 200**:
+```json
+{
+  "id": "string",
+  "balanceChanges": [{ "accountId": "string", "oldBalance": 0, "newBalance": 0 }]
+}
+```
+
+**Business logic**:
+- Fetches the transaction to determine type and amount
+- Reverses balance effects:
+  - Expense (`fromAccountId` only): `fromAccount.balance += amount`
+  - Income (`toAccountId` only): `toAccount.balance -= amount`
+  - Transfer (both set): `fromAccount.balance += amount`, `toAccount.balance -= amount`
+- Archives the Notion page via `in_trash: true`
+
+**Errors**: 400 if `id` missing, 404 if not found

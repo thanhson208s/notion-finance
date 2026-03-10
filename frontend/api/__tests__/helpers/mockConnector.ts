@@ -15,6 +15,9 @@ export function createMockConnector(overrides = {}): Connector {
     addExpense: vi.fn(),
     addIncome: vi.fn(),
     addTransfer: vi.fn(),
+    fetchTransaction: vi.fn(),
+    updateTransactionPage: vi.fn(),
+    archiveTransaction: vi.fn(),
     ...overrides
   } as unknown as Connector
 }

@@ -9,6 +9,14 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.6.3] - 2026-03-10
+
+### Added
+
+- feat(api): GET/PATCH/DELETE /api/transactions endpoints for transaction retrieval, update, and delete with balance reconciliation
+
+---
+
 ## [FE-0.6.2] - 2026-03-10
 
 ### Changed

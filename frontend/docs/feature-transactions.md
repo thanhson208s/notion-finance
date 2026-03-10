@@ -15,6 +15,9 @@ All types write to the same Notion Transaction database and share the `Transacti
 | Log Adjustment | ✅ DONE | ✅ DONE |
 | List Expenses by date range | ✅ DONE | ❌ TODO |
 | List Incomes by date range | ✅ DONE | ❌ TODO |
+| Get Transaction | ✅ DONE | ❌ TODO |
+| Update Transaction | ✅ DONE | ❌ TODO |
+| Delete Transaction | ✅ DONE | ❌ TODO |
 
 ---
 
@@ -162,8 +165,49 @@ Input is the **target balance** (not a delta). Same numeric input UX as ExpenseF
 - ~~🐛 BUG #5~~: Category ID validation added — resolved in v1.3.0. See [known-issues.md](./known-issues.md#bug-5).
 - ⚠️ **Transfer non-atomic**: if the final balance update fails, `fromAccount` is decremented but `toAccount` is not credited (data integrity risk). No frontend recovery mechanism exists.
 
+## Backend: Get Transaction (`GET /api/transactions?id=`)
+
+**Handler**: `api/_handlers/transaction.handler.ts` → `getTransaction()`
+
+1. Validate `id` query param present — throws `QueryError` (HTTP 400) if missing
+2. `connector.fetchTransaction(id)` → return transaction
+
+---
+
+## Backend: Delete Transaction (`DELETE /api/transactions?id=`)
+
+**Handler**: `api/_handlers/transaction.handler.ts` → `deleteTransaction()`
+
+1. Validate `id` query param present
+2. `connector.fetchTransaction(id)` → get transaction details
+3. Reverse balance effects for each affected account:
+   - Expense (`fromAccountId` only): `fromAccount.balance += amount`
+   - Income (`toAccountId` only): `toAccount.balance -= amount`
+   - Transfer (both set): `fromAccount.balance += amount`, `toAccount.balance -= amount`
+4. `connector.archiveTransaction(id)` — sets `in_trash: true` via Notion API
+5. Return `{ id, balanceChanges: [{ accountId, oldBalance, newBalance }] }`
+
+---
+
+## Backend: Update Transaction (`PATCH /api/transactions?id=`)
+
+**Handler**: `api/_handlers/transaction.handler.ts` → `updateTransaction()`
+
+1. Validate `id` query param present
+2. Validate `amount > 0` if provided — throws `QueryError` if not
+3. `connector.fetchTransaction(id)` → get current transaction
+4. If `amount` changed: compute `delta = newAmount - oldAmount`, update affected account balances:
+   - Expense: `fromAccount.balance -= delta`
+   - Income: `toAccount.balance += delta`
+   - Transfer: `fromAccount.balance -= delta`, `toAccount.balance += delta`
+5. `connector.updateTransactionPage(id, fields)` — partial update (only provided fields)
+6. Return `{ transaction, balanceChanges: [{ accountId, oldBalance, newBalance }] }`
+
+---
+
 ## Backlog
 
 - Transaction history view per account (frontend)
 - Date range picker UI on Reports page (frontend)
+- Update/Delete transaction UI (frontend — backend done)
 - Make transfer operation atomic (or add compensating transaction on failure)

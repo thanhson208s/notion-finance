@@ -1,5 +1,5 @@
-import { LogExpenseRequest, LogIncomeRequest, TransferBalanceRequest } from "../_lib/types/request";
-import { ListIncomesResponse, LogIncomeResponse, ListExpensesResponse, LogExpenseResponse, TransferBalanceResponse } from "../_lib/types/response";
+import { LogExpenseRequest, LogIncomeRequest, TransferBalanceRequest, UpdateTransactionRequest } from "../_lib/types/request";
+import { ListIncomesResponse, LogIncomeResponse, ListExpensesResponse, LogExpenseResponse, TransferBalanceResponse, GetTransactionResponse, DeleteTransactionResponse, UpdateTransactionResponse, BalanceChange } from "../_lib/types/response";
 import { QueryError } from "../_lib/types/error";
 import { getQueryString, ok } from "../_lib/helper";
 import { RouteHandler } from "../_lib/router";
@@ -66,6 +66,71 @@ export const listIncomes: RouteHandler<undefined, ListIncomesResponse> = async(e
   const total = transactions.reduce((sum, t) => sum + t.amount, 0);
 
   return ok({ transactions, total } satisfies ListIncomesResponse);
+}
+
+export const getTransaction: RouteHandler<undefined, GetTransactionResponse> = async(event, connector) => {
+  const id = getQueryString(event.query, 'id', true);
+  const transaction = await connector.fetchTransaction(id);
+  return ok(transaction);
+}
+
+export const deleteTransaction: RouteHandler<undefined, DeleteTransactionResponse> = async(event, connector) => {
+  const id = getQueryString(event.query, 'id', true);
+  const transaction = await connector.fetchTransaction(id);
+  const balanceChanges: BalanceChange[] = [];
+
+  if (transaction.fromAccountId) {
+    const account = await connector.fetchAccount(transaction.fromAccountId);
+    const newBalance = account.balance + transaction.amount;
+    await connector.updateAccountBalance(transaction.fromAccountId, newBalance);
+    balanceChanges.push({ accountId: transaction.fromAccountId, oldBalance: account.balance, newBalance });
+  }
+  if (transaction.toAccountId) {
+    const account = await connector.fetchAccount(transaction.toAccountId);
+    const newBalance = account.balance - transaction.amount;
+    await connector.updateAccountBalance(transaction.toAccountId, newBalance);
+    balanceChanges.push({ accountId: transaction.toAccountId, oldBalance: account.balance, newBalance });
+  }
+
+  await connector.archiveTransaction(id);
+  return ok({ id, balanceChanges } satisfies DeleteTransactionResponse);
+}
+
+export const updateTransaction: RouteHandler<UpdateTransactionRequest, UpdateTransactionResponse> = async(event, connector) => {
+  const id = getQueryString(event.query, 'id', true);
+  const req = event.body;
+
+  if (req.amount !== undefined && req.amount <= 0)
+    throw new QueryError("Amount must be a positive number");
+
+  const oldTransaction = await connector.fetchTransaction(id);
+  const balanceChanges: BalanceChange[] = [];
+
+  if (req.amount !== undefined && req.amount !== oldTransaction.amount) {
+    const delta = req.amount - oldTransaction.amount;
+    if (oldTransaction.fromAccountId) {
+      const account = await connector.fetchAccount(oldTransaction.fromAccountId);
+      const newBalance = account.balance - delta;
+      await connector.updateAccountBalance(oldTransaction.fromAccountId, newBalance);
+      balanceChanges.push({ accountId: oldTransaction.fromAccountId, oldBalance: account.balance, newBalance });
+    }
+    if (oldTransaction.toAccountId) {
+      const account = await connector.fetchAccount(oldTransaction.toAccountId);
+      const newBalance = account.balance + delta;
+      await connector.updateAccountBalance(oldTransaction.toAccountId, newBalance);
+      balanceChanges.push({ accountId: oldTransaction.toAccountId, oldBalance: account.balance, newBalance });
+    }
+  }
+
+  const transaction = await connector.updateTransactionPage(id, {
+    amount: req.amount,
+    note: req.note,
+    categoryId: req.categoryId,
+    timestamp: req.timestamp,
+    linkedCardId: req.linkedCardId
+  });
+
+  return ok({ transaction, balanceChanges } satisfies UpdateTransactionResponse);
 }
 
 export const transferBalance: RouteHandler<TransferBalanceRequest, TransferBalanceResponse> = async(event, connector) => {

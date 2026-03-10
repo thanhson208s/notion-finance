@@ -1,4 +1,4 @@
-import { Client, PageObjectResponse } from "@notionhq/client";
+import { Client, PageObjectResponse, UpdatePageParameters } from "@notionhq/client";
 import { Account, AccountType, CardSummary, computePriorityScore } from "./types/account.type";
 import { Category, CategoryType } from "./types/category.type";
 import { Transaction } from "./types/transaction.type";
@@ -236,6 +236,43 @@ export class Connector {
 
   async addTransfer(fromAccountId: string, toAccountId: string, amount: number, note: string, timestamp?: number): Promise<Transaction> {
     return await this.addTransaction(fromAccountId, toAccountId, amount, process.env.NOTION_TRANSFER_TRANSACTION_ID as string, note, timestamp);
+  }
+
+  async fetchTransaction(id: string): Promise<Transaction> {
+    const response = await this.notion.pages.retrieve({ page_id: id });
+    if (!("properties" in response))
+      throw new DatabaseError(`Transaction ${id} not found`);
+    return this.mapPageToTransaction(response);
+  }
+
+  async updateTransactionPage(id: string, fields: {
+    amount?: number;
+    note?: string;
+    categoryId?: string;
+    timestamp?: number;
+    linkedCardId?: string | null;
+  }): Promise<Transaction> {
+    const properties: UpdatePageParameters['properties'] = {};
+
+    if (fields.amount !== undefined)
+      properties['Amount'] = { type: 'number', number: fields.amount };
+    if (fields.note !== undefined)
+      properties['Note'] = { type: 'rich_text', rich_text: [{ type: 'text', text: { content: fields.note } }] };
+    if (fields.categoryId !== undefined)
+      properties['Category'] = { type: 'relation', relation: [{ id: fields.categoryId }] };
+    if (fields.timestamp !== undefined)
+      properties['Timestamp'] = { type: 'date', date: { start: toISOStringWithTimezone(fields.timestamp, 'Asia/Bangkok') } };
+    if (fields.linkedCardId !== undefined)
+      properties['Linked card'] = { type: 'relation', relation: fields.linkedCardId ? [{ id: fields.linkedCardId }] : [] };
+
+    const response = await this.notion.pages.update({ page_id: id, properties });
+    if (!("properties" in response))
+      throw new DatabaseError(`Transaction ${id} not updated`);
+    return this.mapPageToTransaction(response as PageObjectResponse);
+  }
+
+  async archiveTransaction(id: string): Promise<void> {
+    await this.notion.pages.update({ page_id: id, in_trash: true });
   }
 
   private async queryAllPages(

@@ -30,3 +30,11 @@ export type AdjustBalanceRequest = {
   note: string
   timestamp?: number
 }
+
+export type UpdateTransactionRequest = {
+  amount?: number
+  note?: string
+  categoryId?: string
+  timestamp?: number
+  linkedCardId?: string | null
+}

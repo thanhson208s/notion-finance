@@ -66,6 +66,20 @@ export type CategoryBreakdown = {
   amount: number
 }
 
+export type GetTransactionResponse = Transaction
+
+export type BalanceChange = { accountId: string; oldBalance: number; newBalance: number }
+
+export type DeleteTransactionResponse = {
+  id: string
+  balanceChanges: BalanceChange[]
+}
+
+export type UpdateTransactionResponse = {
+  transaction: Transaction
+  balanceChanges: BalanceChange[]
+}
+
 export type GetReportsResponse = {
   totalIncome: number
   totalExpense: number

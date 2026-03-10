@@ -65,6 +65,7 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess, t
   }
 
   const submit = async () => {
+    if (status.status === 'success' || status.status === 'error') { setStatus({status: 'idle'}); return }
     const errorAmount = !amount || amount <= 0;
     const errorCategoryId = !categoryId || categoryId === "";
 

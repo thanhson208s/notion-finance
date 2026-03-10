@@ -188,7 +188,7 @@ describe('logIncome()', () => {
 describe('transferBalance()', () => {
   it('throws QueryError when amount <= 0', async () => {
     const connector = createMockConnector()
-    await expect(transferBalance(makeEvent({ fromAccountId: 'a', toAccountId: 'b', amount: 0 }), connector))
+    await expect(transferBalance(makeEvent({ fromAccountId: 'a', toAccountId: 'b', amount: 0, note: "" }), connector))
       .rejects.toThrow(QueryError)
   })
 
@@ -203,7 +203,7 @@ describe('transferBalance()', () => {
       addTransfer: vi.fn().mockResolvedValue(makeTx(100)),
       updateAccountBalance
     })
-    const result = await transferBalance(makeEvent({ fromAccountId: 'from', toAccountId: 'to', amount: 100 }), connector)
+    const result = await transferBalance(makeEvent({ fromAccountId: 'from', toAccountId: 'to', amount: 100, note: "" }), connector)
     expect(updateAccountBalance).toHaveBeenCalledWith('from', 900)
     expect(updateAccountBalance).toHaveBeenCalledWith('to', 1100)
     expect((result.body).newFromAccountBalance).toBe(900)
@@ -217,7 +217,7 @@ describe('transferBalance()', () => {
       addTransfer,
       updateAccountBalance: vi.fn().mockResolvedValue({ balance: 450 })
     })
-    await transferBalance(makeEvent({ fromAccountId: 'a', toAccountId: 'b', amount: 50, timestamp: 1700000000000 }), connector)
+    await transferBalance(makeEvent({ fromAccountId: 'a', toAccountId: 'b', amount: 50, note: "", timestamp: 1700000000000 }), connector)
     expect(addTransfer).toHaveBeenCalledWith('a', 'b', 50, 1700000000000)
   })
 })

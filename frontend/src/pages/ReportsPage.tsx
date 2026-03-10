@@ -1,39 +1,21 @@
 import './ReportsPage.css'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowDownWideNarrow, ArrowLeftRight, ArrowUpDown, ArrowUpNarrowWide,
-  BarChart2, Briefcase, Calendar, CalendarCheck,
-  Car, Clapperboard, ChevronDown, ChevronRight,
-  Coins, Gift, Home, ListOrdered, Palette, PawPrint,
-  Percent, TrendingDown, TrendingUp, Undo2, UtensilsCrossed
+  ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide,
+  BarChart2, Calendar, CalendarCheck,
+  ChevronDown, ChevronRight,
+  ListOrdered, TrendingDown, TrendingUp
 } from 'lucide-react'
-import { type Account, API_BASE } from '../App'
+import { type Category, API_BASE } from '../App'
 import { useAppContext } from '../contexts/AppContext'
+import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'                            
+import { type Transaction, type CategoryItem, type TxType, fmtVND } from '../components/txUtils'   
 
 // --- Types ---
 
 type DateRangePreset = 'last-month' | 'this-month' | 'custom'
 type Tab = 'expense' | 'income'
-type TxType = 'Income' | 'Expense' | 'Transfer' | 'Adjustment'
 type SortKey = 'date' | 'amount'
-
-type Transaction = {
-  id: string
-  timestamp: number
-  amount: number
-  fromAccountId?: string
-  toAccountId?: string
-  categoryId: string
-  note: string
-  linkedCardId?: string
-}
-
-type CategoryItem = {
-  categoryId: string
-  categoryName: string
-  parentId: string
-  amount: number
-}
 
 type ReportsData = {
   totalIncome: number
@@ -132,10 +114,6 @@ function buildColorMap(groups: CategoryGroup[]): Record<string, string> {
   return map
 }
 
-function fmtVND(n: number) {
-  return n.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
-}
-
 function fmtShort(n: number): string {
   const abs = Math.abs(n)
   if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)} tỷ`
@@ -155,88 +133,10 @@ function getTxType(
   return 'Adjustment'
 }
 
-function getAccountLabel(
-  accountId: string | undefined,
-  linkedCardId: string | undefined,
-  accounts: Account[]
-): string {
-  if (!accountId) return '—'
-  const account = accounts.find(a => a.id === accountId)
-  if (!account) return accountId
-  if (linkedCardId) {
-    const card = account.cards.find(c => c.id === linkedCardId)
-    if (card) return `${account.name} · ${card.name}`
-  }
-  return account.name
-}
-
-function getCategoryLabel(
-  tx: Transaction,
-  catMap: Map<string, CategoryItem>
-): { catName: string; subName: string | null } {
-  const cat = catMap.get(tx.categoryId)
-  if (!cat) return { catName: tx.categoryId, subName: null }
-  if (cat.parentId === cat.categoryId) return { catName: cat.categoryName, subName: null }
-  const parent = catMap.get(cat.parentId)
-  return { catName: parent?.categoryName ?? cat.categoryName, subName: cat.categoryName }
-}
-
-function fmtTxDate(timestamp: number): { date: string; time: string } {
-  const d = new Date(timestamp)
-  const day = String(d.getDate()).padStart(2, '0')
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const year = String(d.getFullYear()).slice(-2)
-  const hours = String(d.getHours()).padStart(2, '0')
-  const minutes = String(d.getMinutes()).padStart(2, '0')
-  return { date: `${day}/${month}/${year}`, time: `${hours}:${minutes}` }
-}
-
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  'Food':           <UtensilsCrossed size={18} />,
-  'Entertainment':  <Clapperboard size={18} />,
-  'Hobbies':        <Palette size={18} />,
-  'Transportation': <Car size={18} />,
-  'Pet':            <PawPrint size={18} />,
-  'Household':      <Home size={18} />,
-  'Gift':           <Gift size={18} />,
-  'Salary':         <Briefcase size={18} />,
-  'Interest':       <Percent size={18} />,
-  'Cashback':       <Coins size={18} />,
-  'Refund':         <Undo2 size={18} />,
-}
-
-const CATEGORY_COLORS: Record<string, string> = {
-  'Food':           '#f97316',
-  'Entertainment':  '#a855f7',
-  'Hobbies':        '#ec4899',
-  'Transportation': '#3b82f6',
-  'Pet':            '#10b981',
-  'Household':      '#14b8a6',
-  'Gift':           '#f43f5e',
-  'Salary':         '#22c55e',
-  'Interest':       '#60a5fa',
-  'Cashback':       '#fbbf24',
-  'Refund':         '#94a3b8',
-}
-
-const TYPE_COLORS: Record<TxType, string> = {
-  'Income':     '#10b981',
-  'Expense':    '#ef4444',
-  'Transfer':   '#3b82f6',
-  'Adjustment': '#64748b',
-}
-
-function getCategoryConfig(catName: string): { icon: React.ReactNode; color: string } | null {
-  const icon = CATEGORY_ICONS[catName]
-  const color = CATEGORY_COLORS[catName]
-  if (!icon || !color) return null
-  return { icon, color }
-}
-
 // --- Component ---
 
 export default function ReportsPage() {
-  const { accounts } = useAppContext()
+  const { accounts, categories } = useAppContext()
   const [dateRange, setDateRange] = useState<DateRangePreset>('this-month')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
@@ -294,6 +194,12 @@ export default function ReportsPage() {
     return () => controller.abort()
   }, [dateRange, customStart, customEnd])
 
+  const catMap = useMemo(() => {
+    const map = new Map<string, Category>()
+    categories.forEach(c => map.set(c.id, c))
+    return map
+  }, [categories])
+
   const breakdown = tab === 'expense'
     ? (data?.expenseCategoryBreakdown ?? [])
     : (data?.incomeCategoryBreakdown ?? [])
@@ -314,7 +220,7 @@ export default function ReportsPage() {
 
     // Map child category → parent so the dropdown filter (top-level only) works correctly
     const cat = catMap.get(realId)
-    const filterCategoryId = cat && cat.parentId !== cat.categoryId ? cat.parentId : realId
+    const filterCategoryId = cat?.parentId ?? realId
 
     setShowTxView(true)
     setTxTypeFilter(tab === 'expense' ? 'Expense' : 'Income')
@@ -331,19 +237,11 @@ export default function ReportsPage() {
   const sel = selectedGroup ? groups.find(g => g.parent.categoryId === selectedGroup) : null
   const centerAmount = sel ? sel.groupTotal : total
   const centerLabel = sel
-    ? sel.parent.categoryName.toUpperCase()
+    ? (catMap.get(sel.parent.categoryId)?.name ?? sel.parent.categoryName).toUpperCase()
     : (tab === 'expense' ? 'TOTAL EXPENSE' : 'TOTAL INCOME')
   const centerPct = sel && total > 0 ? Math.round(sel.groupTotal / total * 100) : null
 
   // --- Transaction view memos ---
-
-  const catMap = useMemo(() => {
-    const map = new Map<string, CategoryItem>()
-    ;[...(data?.expenseCategoryBreakdown ?? []), ...(data?.incomeCategoryBreakdown ?? [])].forEach(c => {
-      map.set(c.categoryId, c)
-    })
-    return map
-  }, [data])
 
   const expenseCatIds = useMemo(() => {
     return new Set((data?.expenseCategoryBreakdown ?? []).map(c => c.categoryId))
@@ -354,7 +252,10 @@ export default function ReportsPage() {
   }, [data])
 
   const categoryOptions = useMemo(() => {
-    if (txTypeFilter === 'Transfer' || txTypeFilter === 'Adjustment') return []
+    if (txTypeFilter === 'System') return [
+      { categoryId: 'Transfer', categoryName: 'Transfer', parentId: 'Transfer', amount: 0 },
+      { categoryId: 'Adjustment', categoryName: 'Adjustment', parentId: 'Adjustment', amount: 0 },
+    ]
     const source = txTypeFilter === 'Expense'
       ? (data?.expenseCategoryBreakdown ?? [])
       : (data?.incomeCategoryBreakdown ?? [])
@@ -365,11 +266,16 @@ export default function ReportsPage() {
     if (!data) return []
     let txs = data.transactions.filter(tx => {
       const type = getTxType(tx, expenseCatIds, incomeCatIds)
-      if (type !== txTypeFilter) return false
-      if (txCategoryFilter !== 'all') {
-        const cat = catMap.get(tx.categoryId)
-        const parentId = cat?.parentId ?? tx.categoryId
-        if (parentId !== txCategoryFilter && tx.categoryId !== txCategoryFilter) return false
+      if (txTypeFilter === 'System') {
+        if (type !== 'Transfer' && type !== 'Adjustment') return false
+        if (txCategoryFilter !== 'all' && type !== txCategoryFilter) return false
+      } else {
+        if (type !== txTypeFilter) return false
+        if (txCategoryFilter !== 'all') {
+          const cat = catMap.get(tx.categoryId)
+          const parentId = cat?.parentId ?? tx.categoryId
+          if (parentId !== txCategoryFilter && tx.categoryId !== txCategoryFilter) return false
+        }
       }
       return true
     })
@@ -380,16 +286,6 @@ export default function ReportsPage() {
     }
     return txs.map(tx => ({ tx, type: getTxType(tx, expenseCatIds, incomeCatIds) }))
   }, [data, txTypeFilter, txCategoryFilter, txSort, txAmountDir, expenseCatIds, incomeCatIds, catMap])
-
-  const txIcon = (catName: string, type: TxType): { icon: React.ReactNode; color: string } => {
-    const cat = getCategoryConfig(catName)
-    if (cat) return cat
-    const color = TYPE_COLORS[type]
-    if (type === 'Income') return { icon: <TrendingUp size={18} />, color }
-    if (type === 'Expense') return { icon: <TrendingDown size={18} />, color }
-    if (type === 'Transfer') return { icon: <ArrowLeftRight size={16} />, color }
-    return { icon: <BarChart2 size={16} />, color }
-  }
 
   return (
     <main className="page reports-page">
@@ -458,8 +354,7 @@ export default function ReportsPage() {
                 >
                   <option value="Expense">Expense</option>
                   <option value="Income">Income</option>
-                  <option value="Transfer">Transfer</option>
-                  <option value="Adjustment">Adjustment</option>
+                  <option value="System">System</option>
                 </select>
 
                 <select
@@ -509,33 +404,11 @@ export default function ReportsPage() {
                   <div className="reports-empty">No transactions for this filter</div>
                 )}
                 {filteredTxs.map(({ tx, type }) => {
-                  const accountId = tx.fromAccountId ?? tx.toAccountId
-                  const accountLabel = getAccountLabel(accountId, tx.linkedCardId, accounts)
-                  const { catName, subName } = getCategoryLabel(tx, catMap)
-                  const { date, time } = fmtTxDate(tx.timestamp)
-                  const { icon, color } = txIcon(catName, type)
-                  const typeLower = type.toLowerCase()
-                  return (
-                    <div key={tx.id} className="tx-row">
-                      <div className="tx-icon" style={{ color }}>
-                        {icon}
-                      </div>
-                      <div className="tx-mid">
-                        <span className="tx-account">{accountLabel}</span>
-                        <span className="tx-category">
-                          {catName}{subName ? ` › ${subName}` : ''}
-                        </span>
-                        {tx.note && <span className="tx-note">{tx.note}</span>}
-                      </div>
-                      <div className="tx-right">
-                        <span className="tx-date">{date}</span>
-                        <span className="tx-time">{time}</span>
-                        <span className={`tx-amount tx-amount--${typeLower}`}>
-                          {fmtVND(tx.amount)}
-                        </span>
-                      </div>
-                    </div>
-                  )
+                  if (type === 'Transfer')
+                    return <TransferTxItem key={tx.id} tx={tx} accounts={accounts} catMap={catMap} />
+                  if (type === 'Adjustment')
+                    return <AdjustmentTxItem key={tx.id} tx={tx} accounts={accounts} catMap={catMap} />
+                  return <TxItem key={tx.id} tx={tx} type={type} accounts={accounts} catMap={catMap} />
                 })}
               </div>
             </>
@@ -677,7 +550,7 @@ export default function ReportsPage() {
                       }}>
                         <div className="reports-parent-body">
                           <div className="reports-parent-header">
-                            <span className="reports-parent-name">{g.parent.categoryName}</span>
+                            <span className="reports-parent-name">{catMap.get(g.parent.categoryId)?.name ?? g.parent.categoryName}</span>
                             <span className="reports-parent-amount">{fmtVND(g.groupTotal)}</span>
                           </div>
                           <div className="reports-bar-track">
@@ -693,19 +566,20 @@ export default function ReportsPage() {
                       {/* Children block */}
                       {isExpanded && g.children.length > 0 && (
                         <div className="reports-children-block">
-                          {g.children.map(child => {
+                          {g.children.map((child, i) => {
                             const childPct = total > 0 ? (child.amount / total) * 100 : 0
+                            const childColor = COLORS[i % COLORS.length]
                             return (
                               <div key={child.categoryId} className="reports-child-row"
                                 onClick={() => navigateToTransactions(child.categoryId)}
                               >
                                 <div className="reports-child-body">
                                   <div className="reports-child-header">
-                                    <span className="reports-child-name">{child.categoryName}</span>
+                                    <span className="reports-child-name">{catMap.get(child.categoryId)?.name ?? child.categoryName}</span>
                                     <span className="reports-child-amount">{fmtVND(child.amount)}</span>
                                   </div>
                                   <div className="reports-bar-track reports-bar-track--child">
-                                    <div className="reports-bar-fill" style={{ width: `${childPct}%`, background: color }} />
+                                    <div className="reports-bar-fill" style={{ width: `${childPct}%`, background: childColor }} />
                                   </div>
                                 </div>
                                 <ChevronRight size={14} className="reports-chevron reports-chevron--sm" />

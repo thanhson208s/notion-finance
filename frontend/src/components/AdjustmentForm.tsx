@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal, Equal, Plus, Minus, Check, X, Loader2 } from 'lucide-react'
 import { API_BASE } from '../App'
 
 type AdjustmentResponse = {
@@ -23,18 +23,29 @@ type AdjustmentStatus = {
   data: AdjustmentError
 } | { status: 'idle' } | { status: 'loading' }
 
-export default function AdjustmentForm({accountId, onSuccess, timestamp}: {
+export default function AdjustmentForm({accountId, accountBalance, onSuccess, timestamp}: {
   accountId: string
+  accountBalance: number
   onSuccess?: (newBalance: number) => void
   timestamp?: number
 }) {
   const [ status, setStatus] = useState<AdjustmentStatus>({status: 'idle'});
-  const [ balance, setBalance ] = useState<number>(0);
+  const [ delta, setDelta ] = useState<number>(0);
+  const [ dir, setDir ] = useState<1 | -1>(1);
   const [ note, setNote ] = useState<string>("");
   const [ error, setError ] = useState<boolean>(false);
 
+  const balance = accountBalance + delta * dir;
+  const loading = status.status === 'loading'
+  const resetToIdle = () => { if (!loading) setStatus({status: 'idle'}) }
+
+  const reverse = () => {
+    setDir(dir > 0 ? - 1: 1);
+  }
+
   const submit = async() => {
-    if (balance && balance > 0) {
+    if (status.status === 'success' || status.status === 'error') { setStatus({status: 'idle'}); return }
+    if (delta && delta !== 0) {
       setError(false);
       setStatus({status: 'loading'});
       try {
@@ -64,54 +75,41 @@ export default function AdjustmentForm({accountId, onSuccess, timestamp}: {
     } else setError(true);
   }
 
-  if (status.status === 'loading') {
-    return (
-      <div className='submit-state'>
-        <div className='circle-loading'></div>
-      </div>
-    )
-  }
-
-  if (status.status === 'success') {
-    return (
-      <div className='submit-state'>
-        <div className='circle-state circle-success'>✓</div>
-
-        <button
-          className='form-btn log-again-btn'
-          onClick={() => {
-            setStatus({status: "idle"});
-            setBalance(0);
-            setNote("");
-          }}
-        >
-          Log again
-        </button>
-      </div>
-    )
-  }
-
-  if (status.status === 'error') {
-    return (
-      <div className='submit-state'>
-        <div className='circle-state circle-error'>✕</div>
-
-        <button
-          className='form-btn try-again-btn'
-          onClick={() => {
-            setStatus({status: "idle"});
-            setBalance(0);
-            setNote("");
-          }}
-        >
-          Try again
-        </button>
-      </div>
-    )
-  }
-
   return (
     <form className="form-main">
+      <div className="adjustment-divider">
+        <div className="transfer-divider-line" />
+        <button title="Switch" type="button" className="transfer-divider-btn" onClick={reverse}>
+          {dir > 0 ? (<Plus size={18} />) : (<Minus size={18} />)}
+        </button>
+        <div className="transfer-divider-line" />
+      </div>
+
+      <div className="amount-display">
+        <input
+          type="text"
+          value={Math.abs(accountBalance - balance).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+          onChange={() => {}}
+          onKeyDown={(e) => {
+            if (loading) return
+            if (e.code === 'Backspace') { setDelta(Math.floor(delta / 10)); setError(false); resetToIdle() }
+            else if (e.code.match(/^Digit[0-9]$/g)) { setDelta(delta * 10 + parseInt(e.code.slice(-1))); setError(false); resetToIdle() }
+          }}
+          placeholder='0 ₫'
+          inputMode="numeric"
+          disabled={loading}
+          className={`amount-input-small${error ? ' amount-error' : ''}`}
+        />
+      </div>
+
+      <div className="adjustment-divider">
+        <div className="transfer-divider-line" />
+        <button title="Switch" type="button" className="transfer-divider-btn" disabled>
+          <Equal size={18} />
+        </button>
+        <div className="transfer-divider-line" />
+      </div>
+
       <div className="input-amount-area">
         <div className="amount-display">
           <input
@@ -119,11 +117,13 @@ export default function AdjustmentForm({accountId, onSuccess, timestamp}: {
             value={balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
             onChange={() => {}}
             onKeyDown={(e) => {
-              if (e.code === 'Backspace') { setBalance(Math.floor(balance / 10)); setError(false) }
-              else if (e.code.match(/^Digit[0-9]$/g)) { setBalance(balance * 10 + parseInt(e.code.slice(-1))); setError(false) }
+              if (loading) return
+              if (e.code === 'Backspace') { setDelta(Math.abs(Math.floor(balance / 10) - accountBalance)); setDir(Math.floor(balance / 10) >= accountBalance ? 1 : -1); setError(false); resetToIdle() }
+              else if (e.code.match(/^Digit[0-9]$/g)) { setDelta(Math.abs(balance * 10 + parseInt(e.code.slice(-1)) - accountBalance)); setDir(balance * 10 + parseInt(e.code.slice(-1)) >= accountBalance ? 1 : -1); setError(false); resetToIdle() }
             }}
             placeholder='0 ₫'
             inputMode="numeric"
+            disabled={loading}
             className={`amount-input-big${error ? ' amount-error' : ''}`}
           />
         </div>
@@ -133,14 +133,26 @@ export default function AdjustmentForm({accountId, onSuccess, timestamp}: {
         <textarea
           rows={3}
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={(e) => { setNote(e.target.value); resetToIdle() }}
+          disabled={loading}
           placeholder='Note...'
         />
       </div>
 
       <div className="form-buttons">
-        <button type="button" className="form-btn submit-btn-adjustment" onClick={submit}>
-          <SlidersHorizontal size={20} /> Adjust
+        <button type="button" className="form-btn submit-btn-adjustment" onClick={submit} disabled={loading}>
+          <span key={status.status} className="submit-btn-content">
+            {status.status === 'loading' && <Loader2 size={20} className="icon-spin" />}
+            {status.status === 'success' && <Check size={20} />}
+            {status.status === 'error'   && <X size={20} />}
+            {status.status === 'idle'    && <SlidersHorizontal size={20} />}
+            <span>
+              {status.status === 'loading' ? 'Processing...' :
+               status.status === 'success' ? 'Success' :
+               status.status === 'error'   ? 'Error' :
+               'Adjust'}
+            </span>
+          </span>
         </button>
       </div>
     </form>

@@ -65,7 +65,7 @@ export default function AdjustmentPage() {
       )}
 
       <div className="transaction-body">
-        <AdjustmentForm accountId={accountId!} onSuccess={handleSuccess} timestamp={timestamp} />
+        <AdjustmentForm accountId={accountId!} accountBalance={balance} onSuccess={handleSuccess} timestamp={timestamp} />
       </div>
     </main>
   )

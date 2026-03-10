@@ -73,7 +73,7 @@ export const transferBalance: RouteHandler<TransferBalanceRequest, TransferBalan
   if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
   const oldFromAccountBalance = (await connector.fetchAccount(req.fromAccountId)).balance;
   const oldToAccountBalance = (await connector.fetchAccount(req.toAccountId)).balance;
-  const amount = (await connector.addTransfer(req.fromAccountId, req.toAccountId, req.amount, req.timestamp)).amount;
+  const amount = (await connector.addTransfer(req.fromAccountId, req.toAccountId, req.amount, req.note, req.timestamp)).amount;
   const newFromAccountBalance = (await connector.updateAccountBalance(req.fromAccountId, oldFromAccountBalance - req.amount)).balance;
   const newToAccountBalance = (await connector.updateAccountBalance(req.toAccountId, oldToAccountBalance + req.amount)).balance;
 

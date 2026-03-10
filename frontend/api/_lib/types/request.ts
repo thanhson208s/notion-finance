@@ -21,6 +21,7 @@ export type TransferBalanceRequest = {
   toAccountId: string
   amount: number
   timestamp?: number
+  note: string
 }
 
 export type AdjustBalanceRequest = {

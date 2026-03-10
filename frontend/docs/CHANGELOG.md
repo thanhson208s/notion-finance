@@ -9,6 +9,15 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.6.2] - 2026-03-10
+
+### Changed
+
+- feat(transfer): remove pivot account header from TransferPage; accountId now only pre-selects "From" account
+- feat(transfer): replace plain selects with glassmorphism card pickers for From/To account selectors
+
+---
+
 ## [FE-0.6.1] - 2026-03-09
 
 ### Changed

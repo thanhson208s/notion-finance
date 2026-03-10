@@ -69,10 +69,10 @@ export default function AccountsPage() {
     Fund: "asset",
     Bond: "asset",
     Stock: "asset",
+    Crypto: "asset",
     Credit: "liability",
     PayLater: "liability",
     Debt: "liability",
-    Crypto: "liability",
   }
 
   useEffect(() => {

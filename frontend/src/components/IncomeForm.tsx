@@ -109,21 +109,23 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
 
   return (
     <form className="form-main">
-      <div className="amount-display">
-        <input
-          type="text"
-          value={amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
-          onChange={() => {}}
-          onKeyDown={(e) => {
-            if (loading) return;
-            if (e.code === 'Backspace') { setAmount(Math.floor(amount / 10)); setErrors(p => ({...p, amount: false})); resetToIdle(); }
-            else if (e.code.match(/^Digit[0-9]$/g)) { setAmount(amount * 10 + parseInt(e.code.slice(-1))); setErrors(p => ({...p, amount: false})); resetToIdle(); }
-          }}
-          placeholder='0 ₫'
-          inputMode="numeric"
-          disabled={loading}
-          className={`amount-input-big${errors.amount ? ' amount-error' : ''}`}
-        />
+      <div className="input-amount-area">
+        <div className="amount-display">
+          <input
+            type="text"
+            value={amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+            onChange={() => {}}
+            onKeyDown={(e) => {
+              if (loading) return;
+              if (e.code === 'Backspace') { setAmount(Math.floor(amount / 10)); setErrors(p => ({...p, amount: false})); resetToIdle(); }
+              else if (e.code.match(/^Digit[0-9]$/g)) { setAmount(amount * 10 + parseInt(e.code.slice(-1))); setErrors(p => ({...p, amount: false})); resetToIdle(); }
+            }}
+            placeholder='0 ₫'
+            inputMode="numeric"
+            disabled={loading}
+            className={`amount-input-big${errors.amount ? ' amount-error' : ''}`}
+          />
+        </div>
       </div>
 
       <div className="category-display">
@@ -155,7 +157,7 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
       </div>
 
       <div className="form-row">
-        <textarea className="form-note"
+        <textarea
           rows={3}
           value={note}
           onChange={(e) => { setNote(e.target.value); resetToIdle(); }}

@@ -112,23 +112,25 @@ export default function AdjustmentForm({accountId, onSuccess, timestamp}: {
 
   return (
     <form className="form-main">
-      <div className="amount-display">
-        <input
-          type="text"
-          value={balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
-          onChange={() => {}}
-          onKeyDown={(e) => {
-            if (e.code === 'Backspace') { setBalance(Math.floor(balance / 10)); setError(false) }
-            else if (e.code.match(/^Digit[0-9]$/g)) { setBalance(balance * 10 + parseInt(e.code.slice(-1))); setError(false) }
-          }}
-          placeholder='0 ₫'
-          inputMode="numeric"
-          className={`amount-input-big${error ? ' amount-error' : ''}`}
-        />
+      <div className="input-amount-area">
+        <div className="amount-display">
+          <input
+            type="text"
+            value={balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+            onChange={() => {}}
+            onKeyDown={(e) => {
+              if (e.code === 'Backspace') { setBalance(Math.floor(balance / 10)); setError(false) }
+              else if (e.code.match(/^Digit[0-9]$/g)) { setBalance(balance * 10 + parseInt(e.code.slice(-1))); setError(false) }
+            }}
+            placeholder='0 ₫'
+            inputMode="numeric"
+            className={`amount-input-big${error ? ' amount-error' : ''}`}
+          />
+        </div>
       </div>
 
       <div className="form-row">
-        <textarea className="form-note"
+        <textarea
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}

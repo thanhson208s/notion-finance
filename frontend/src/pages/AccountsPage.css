@@ -66,7 +66,7 @@
 /* ---------- LIST ---------- */
 
 .account-list {
-  padding: 16px 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -119,7 +119,7 @@
 
   background: var(--card);
   border: 1px solid #334155;
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 14px;
   transition: all 0.25s ease;
 }
@@ -191,11 +191,15 @@
 }
 
 .account-paylater {
-  background: #ea580c;
+  border: 1px solid #ea580c;
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.4);
+  color: #ea580c;
 }
 
 .account-prepaid {
-  background: #d97706;
+  border: 1px solid #d97706;
+  box-shadow: 0 0 10px rgba(217, 119, 6, 0.4);
+  color: #d97706;
 }
 
 .account-gold {
@@ -461,7 +465,6 @@
   align-items: center;
   justify-content: center;
   margin-top: 2px;
-  flex: 1;
 }
 
 /* ---------- EXPENSE / INCOME FORM LAYOUT ---------- */
@@ -513,19 +516,13 @@
   color: #ef4444;
 }
 
-.form-note {
-  margin-top: 10px;
-  margin-left: 16px;
-  margin-right: 16px;
-}
-
 .submit-btn-expense {
   background: linear-gradient(90deg, #b53114, #e86037);
   color: white;
   border: 1px solid transparent;
-  width: 180px;
-  height: 50px;
-  border-radius: 999px;
+  width: 100%;
+  height: 60px;
+  border-radius: 10px;
   font-size: 20px;
   font-weight: 500;
   display: flex;
@@ -538,9 +535,9 @@
   background: linear-gradient(90deg, #0e7e12, #30c537);
   color: white;
   border: 1px solid transparent;
-  width: 180px;
-  height: 50px;
-  border-radius: 999px;
+  width: 100%;
+  height: 60px;
+  border-radius: 10px;
   font-size: 20px;
   font-weight: 500;
   display: flex;
@@ -550,40 +547,215 @@
 }
 
 .submit-btn-adjustment {
-  background: #4b5563;
+  background: linear-gradient(90deg, #4b5563, #898f97);
   color: white;
   border: none;
-  width: 120px;
-  height: 48px;
+  width: 100%;
+  height: 60px;
   border-radius: 10px;
-  font-size: 18px;
+  font-size: 20px;
+  font-weight: 5000;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-}
 
-.submit-btn-adjustment:hover { background: #374151; }
+}
 
 .submit-btn-transfer {
-  background: #2563eb;
+  background: linear-gradient(90deg, #1d4db6, #396fe4);
   color: white;
   border: none;
-  width: 120px;
-  height: 48px;
+  width: 100%;
+  height: 60px;
   border-radius: 10px;
-  font-size: 18px;
+  font-size: 20px;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
 
-.submit-btn-transfer:hover { background: #1d4ed8; }
+/* ---------- TRANSFER ACCOUNT CARDS ---------- */
 
-.transfer-select {
-  max-width: 100%;
-  width: 100%;
+.transfer-account-card {
+  display: block;
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.transfer-account-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.transfer-card-error {
+  border-color: #ef4444 !important;
+}
+
+.transfer-card-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.transfer-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.transfer-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.transfer-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.transfer-card-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.transfer-card-balance {
+  font-size: 24px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.transfer-card-placeholder {
+  font-size: 18px;
+  color: #475569;
+  font-weight: 500;
+  padding: 0.5px 0;
+}
+
+.transfer-card-chevron {
+  color: #475569;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.transfer-card-chevron-open {
+  transform: rotate(180deg);
+}
+
+.transfer-card-wrapper {
+  position: relative;
+}
+
+.transfer-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  z-index: 100;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.transfer-dropdown-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.transfer-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.transfer-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.transfer-dropdown-item-selected {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.transfer-dropdown-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.transfer-dropdown-name {
+  font-size: 18px;
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.transfer-dropdown-balance {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.transfer-dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+.transfer-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+}
+
+.transfer-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.transfer-divider-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #94a3b8;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.transfer-divider-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.input-amount-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .category-select-borderless:disabled {
@@ -643,20 +815,6 @@
   background: #c0392b;
 }
 
-.switch-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.25s ease;
-  padding: 0;
-  margin: auto;
-  height: 100%;
-  display: flex;
-}
-
-.rotate-180 {
-  transform: rotateZ(180deg);
-}
 
 /* ---------- LOADING ---------- */
 

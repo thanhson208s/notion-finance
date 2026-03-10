@@ -234,8 +234,8 @@ export class Connector {
     return await this.addTransaction(null, accountId, amount, categoryId, note, timestamp, linkedCardId);
   }
 
-  async addTransfer(fromAccountId: string, toAccountId: string, amount: number, timestamp?: number): Promise<Transaction> {
-    return await this.addTransaction(fromAccountId, toAccountId, amount, process.env.NOTION_TRANSFER_TRANSACTION_ID as string, "", timestamp);
+  async addTransfer(fromAccountId: string, toAccountId: string, amount: number, note: string, timestamp?: number): Promise<Transaction> {
+    return await this.addTransaction(fromAccountId, toAccountId, amount, process.env.NOTION_TRANSFER_TRANSACTION_ID as string, note, timestamp);
   }
 
   private async queryAllPages(

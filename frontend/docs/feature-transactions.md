@@ -13,11 +13,11 @@ All types write to the same Notion Transaction database and share the `Transacti
 | Log Income | ✅ DONE | ✅ DONE |
 | Log Transfer | ✅ DONE | ✅ DONE |
 | Log Adjustment | ✅ DONE | ✅ DONE |
-| List Expenses by date range | ✅ DONE | ❌ TODO |
-| List Incomes by date range | ✅ DONE | ❌ TODO |
-| Get Transaction | ✅ DONE | ❌ TODO |
+| List Expenses by date range | ✅ DONE | ✅ TODO |
+| List Incomes by date range | ✅ DONE | ✅ TODO |
+| Get Transaction | ✅ DONE | ✅ TODO |
 | Update Transaction | ✅ DONE | ❌ TODO |
-| Delete Transaction | ✅ DONE | ❌ TODO |
+| Delete Transaction | ✅ DONE | ✅ TODO |
 
 ---
 

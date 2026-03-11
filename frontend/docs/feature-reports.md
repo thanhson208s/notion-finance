@@ -122,16 +122,12 @@ Same as above with `ToAccount is not empty` filter.
   "expenseCategoryBreakdown": [
     {
       "categoryId": "string",
-      "categoryName": "string",
-      "parentId": "string",
       "amount": 0
     }
   ],
   "incomeCategoryBreakdown": [
     {
       "categoryId": "string",
-      "categoryName": "string",
-      "parentId": "string",
       "amount": 0
     }
   ]
@@ -155,5 +151,5 @@ Same as above with `ToAccount is not empty` filter.
 2. ~~Implement `GET /api/income` with real Notion date-range query~~ ✅ Done (v1.1.0)
 3. ~~Add cursor-based pagination for list endpoints~~ ✅ Done (v1.2.1)
 4. ~~Implement `GET /api/reports` backend endpoint~~ ✅ Done (v1.4.0)
-5. Build `ReportsPage` frontend with date picker and summary cards
-6. Add category breakdown chart
+5. ~~Build `ReportsPage` frontend with date picker and summary cards~~
+6. ~~Add category breakdown chart~~

@@ -99,7 +99,7 @@ describe('getReports()', () => {
     const result = await getReports(makeEvent(), connector)
     const breakdown = (result.body).expenseCategoryBreakdown
     expect(breakdown).toHaveLength(1)
-    expect(breakdown[0]).toMatchObject({ categoryId: 'cat-1', categoryName: 'Food', amount: 100 })
+    expect(breakdown[0]).toMatchObject({ categoryId: 'cat-1', amount: 100 })
   })
 
   it('sorts categoryBreakdown descending by amount', async () => {
@@ -122,38 +122,6 @@ describe('getReports()', () => {
     const connector = defaultConnector({ fetchAllTransactions })
     await getReports(makeEvent({ startDate: '2026-01-01', endDate: '2026-03-31' }), connector)
     expect(fetchAllTransactions).toHaveBeenCalledWith('2026-01-01T00:00:00', '2026-03-31T23:59:59')
-  })
-
-  it('uses categoryId as fallback name when category not found in map', async () => {
-    const connector = defaultConnector({
-      fetchAllTransactions: vi.fn().mockResolvedValue([makeExpenseTx('unknown-cat', 50)]),
-      fetchCategories: vi.fn().mockResolvedValue([])
-    })
-    const result = await getReports(makeEvent(), connector)
-    const breakdown = (result.body).expenseCategoryBreakdown
-    expect(breakdown[0].categoryName).toBe('unknown-cat')
-  })
-
-  it('uses categoryId as parentId fallback when category.parentId is null', async () => {
-    const cat = makeCat('cat-1', 'Food', null)
-    const connector = defaultConnector({
-      fetchAllTransactions: vi.fn().mockResolvedValue([makeExpenseTx('cat-1', 50)]),
-      fetchCategories: vi.fn().mockResolvedValue([cat])
-    })
-    const result = await getReports(makeEvent(), connector)
-    const breakdown = (result.body).expenseCategoryBreakdown
-    expect(breakdown[0].parentId).toBe('cat-1')
-  })
-
-  it('sets parentId from category when Notion returns a parent', async () => {
-    const cat = makeCat('cat-child', 'Sub Food', 'cat-parent')
-    const connector = defaultConnector({
-      fetchAllTransactions: vi.fn().mockResolvedValue([makeExpenseTx('cat-child', 50)]),
-      fetchCategories: vi.fn().mockResolvedValue([cat])
-    })
-    const result = await getReports(makeEvent(), connector)
-    const breakdown = (result.body).expenseCategoryBreakdown
-    expect(breakdown[0].parentId).toBe('cat-parent')
   })
 
   it('includes expense categories with no transactions as amount 0', async () => {

@@ -354,16 +354,12 @@ Returns spending and income summary with category breakdown for a selected date 
   "expenseCategoryBreakdown": [
     {
       "categoryId": "string",
-      "categoryName": "string",
-      "parentId": "string",
       "amount": 0
     }
   ],
   "incomeCategoryBreakdown": [
     {
       "categoryId": "string",
-      "categoryName": "string",
-      "parentId": "string",
       "amount": 0
     }
   ]

@@ -61,8 +61,6 @@ export type AdjustBalanceResponse = {
 
 export type CategoryBreakdown = {
   categoryId: string
-  categoryName: string
-  parentId: string
   amount: number
 }
 

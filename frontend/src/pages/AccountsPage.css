@@ -1,29 +1,3 @@
-/* ---------- PULL-TO-REFRESH ---------- */
-
-@keyframes ptr-spin {
-  to { transform: rotate(360deg); }
-}
-
-.ptr-indicator {
-  position: fixed;
-  top: calc(env(safe-area-inset-top) - 4px);
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 48px;
-  color: #22d3ee;
-  transform: translateY(calc(var(--pull, 0px) - 48px));
-  opacity: calc(var(--pull, 0) / 80);
-  pointer-events: none;
-  z-index: 20;
-}
-
-.ptr-spin {
-  animation: ptr-spin 0.7s linear infinite;
-}
-
 /* ---------- LOADING ---------- */
 
 .accounts-loading {

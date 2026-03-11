@@ -1,19 +1,20 @@
 import './ReportsPage.css'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import {
   ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide,
   BarChart2, Calendar, CalendarCheck,
   ChevronDown, ChevronRight,
-  ListOrdered, TrendingDown, TrendingUp
+  ListOrdered, TrendingDown, TrendingUp,
+  Loader2, RefreshCw
 } from 'lucide-react'
 import { type Category, type DateRangePreset, API_BASE } from '../App'
 import { useAppContext } from '../contexts/AppContext'
 import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
 import { type Transaction, type TxType, fmtVND, fmtShort, getTxType, getDateParams } from '../App'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
 
 // --- Types ---
-
 
 type Tab = 'expense' | 'income'
 type SortKey = 'date' | 'amount'
@@ -122,11 +123,14 @@ export default function ReportsPage() {
   const [txAmountDir, setTxAmountDir] = useState<'desc' | 'asc'>('desc')
   const [deleteTarget, setDeleteTarget] = useState<{ tx: Transaction; type: TxType } | null>(null)
   
+  const pageRef = useRef<HTMLElement>(null)
+  const { pullDistance, refreshing } = usePullToRefresh(() => {refetchReports(true, false)}, pageRef)
+
   const data = dateRange === 'this-month' ? reports.thisMonthReport : (dateRange === 'last-month' ? reports.lastMonthReport : reports.customRangeReport)
 
   const handleDeleteTx = async (txId: string) => {
     await fetch(`${API_BASE}/transactions?id=${txId}`, { method: 'DELETE' })
-    refetchReports(true, false)
+    refetchReports(true, true)
     refetchAccounts()
   }
 
@@ -267,7 +271,17 @@ export default function ReportsPage() {
   }, [data, txTypeFilter, txCategoryFilter, txSort, txAmountDir, expenseCatIds, incomeCatIds, catMap])
 
   return (
-    <main className="page reports-page">
+    <main className="page reports-page" ref={pageRef}>
+      <div
+        className="ptr-indicator"
+        style={{ '--pull': `${pullDistance}px` } as React.CSSProperties}
+        aria-hidden
+      >
+        {refreshing
+          ? <Loader2 size={24} className="ptr-spin" />
+          : <RefreshCw size={24} style={{ transform: `rotate(${pullDistance * 2}deg)` }} />
+        }
+      </div>
 
       {/* ── Fixed filter bar ── */}
       <div className="reports-filter-bar">

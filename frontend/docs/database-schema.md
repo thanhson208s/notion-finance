@@ -4,7 +4,7 @@ All databases exist as Notion databases created via the Notion UI.
 The backend only queries and updates records — it never creates or modifies schema.
 
 > **Important**: Notion property names are case-sensitive and must match exactly.
-> The Connector (`src/utils/connector.ts`) uses these names as string literals.
+> The Connector (`api/_lib/connector.ts`) uses these names as string literals.
 
 ---
 

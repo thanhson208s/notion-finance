@@ -25,7 +25,7 @@ export default function TransferPage() {
 
   const handleTransferSuccess = () => {
     refetchAccounts();
-    refetchReports(true, true)
+    refetchReports(false, true)
   }
 
   return (

@@ -14,7 +14,7 @@ Accounts represent financial containers: cash wallets, bank accounts, credit car
 
 ### GET /api/accounts
 
-**Handler**: `src/handlers/account.handler.ts` → `getAccounts()`
+**Handler**: `api/_handlers/account.handler.ts` → `getAccounts()`
 **Connector**: `connector.fetchAllAccounts()`
 
 **Logic**:
@@ -23,8 +23,14 @@ Accounts represent financial containers: cash wallets, bank accounts, credit car
    - `total` = sum of all balances
    - `totalOfAssets` = sum where `isAssetType(account.type) === true`
    - `totalOfLiabilities` = total − totalOfAssets
+3. If any account has `linkedCardIds`, fetch all cards from `NOTION_CARD_DATABASE_ID` in a single extra Notion call and embed matching cards into each account's `cards[]` array. If no account has linked cards, the extra call is skipped.
 
-**Asset vs Liability classification** (`src/types/account.type.ts → isAssetType()`):
+**`cards` field behaviour**:
+- `cards: []` — account has no linked cards (or `NOTION_CARD_DATABASE_ID` is not set)
+- `cards: [{ id, name, imageUrl }]` — one or more linked cards; `imageUrl` can be `null` if the card has no Image property set
+- The `imageUrl` field maps directly to the Card database's `Image` (URL property)
+
+**Asset vs Liability classification** (`api/_lib/types/account.type.ts → isAssetType()`):
 
 | Classification | AccountType values |
 |---|---|
@@ -66,7 +72,7 @@ priority_score = 0.4 * log(1 + total_transactions) + 0.6 * 0.5^(days_since / 30)
 
 ### POST /api/adjustment
 
-**Handler**: `src/handlers/account.handler.ts` → `adjustBalance()`
+**Handler**: `api/_handlers/account.handler.ts` → `adjustBalance()`
 
 Sets an account to a target balance and creates an audit transaction for the difference. See [api-reference.md](./api-reference.md#post-apiadjustment) for full contract.
 

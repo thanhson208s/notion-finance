@@ -30,7 +30,7 @@ export default function AdjustmentPage() {
   const handleSuccess = (newBalance: number) => {
     setBalance(newBalance)
     refetchAccounts()
-    refetchReports(true, true)
+    refetchReports(false, true)
   }
 
   return (

@@ -202,6 +202,7 @@ Transfers an amount from one account to another.
   "fromAccountId": "string (required)",
   "toAccountId": "string (required)",
   "amount": "number (required, must be positive)",
+  "note": "string (required, may be empty)",
   "timestamp": "number (optional, Unix ms)"
 }
 ```
@@ -308,6 +309,7 @@ Omitting both params returns all expense transactions (no date filter).
 - `total` = server-side sum of `amount` across all results
 - Excludes transfer and adjustment transactions (filtered by category)
 - Full pagination via Notion cursor — returns all matching records
+- `note` is always a `string` — Notion null notes are returned as `""` (empty string)
 
 ---
 
@@ -330,8 +332,10 @@ Returns spending and income summary with category breakdown for a selected date 
 
 | Param | Type | Required | Description |
 |---|---|---|---|
-| `startDate` | `string` (ISO 8601) | No | Filter transactions on or after this date |
-| `endDate` | `string` (ISO 8601) | No | Filter transactions on or before this date |
+| `startDate` | `string` (`YYYY-MM-DD`) | No | Inclusive start date — matches transactions from `startDate T00:00:00` onwards |
+| `endDate` | `string` (`YYYY-MM-DD`) | No | Inclusive end date — matches transactions up to `endDate T23:59:59` |
+
+Omitting both params returns all transactions (no date filter). Pass dates as `YYYY-MM-DD` only — do not include a time component; the handler appends the appropriate time boundary automatically.
 
 **Response 200**:
 ```json
@@ -373,7 +377,7 @@ Returns spending and income summary with category breakdown for a selected date 
 - `parentId`: category's own `id` when Notion returns `null` (top-level category)
 - Each breakdown sorted by `amount` descending
 - 2 parallel Notion calls: all transactions + all categories
-- Handler: `src/handlers/reports.handler.ts` → `getReports()`
+- Handler: `api/_handlers/reports.handler.ts` → `getReports()`
 
 ---
 
@@ -435,6 +439,8 @@ Updates a transaction and reconciles account balances when amount changes.
 - Partially updates the Notion page (only provided fields are written)
 
 **Errors**: 400 if `id` missing or `amount <= 0`
+
+> ⚠️ **Known gap**: `categoryId` is written without existence validation in PATCH (unlike POST endpoints which call `fetchCategory()` first). Providing an invalid category ID will silently create a broken Notion relation.
 
 ---
 

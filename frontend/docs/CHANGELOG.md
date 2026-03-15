@@ -9,6 +9,20 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.6.5] - 2026-03-15
+
+### Changed
+
+- docs(api-reference): add missing `note` field to `POST /api/transfer` request body
+- docs(api-reference): clarify `startDate`/`endDate` format (`YYYY-MM-DD`) and inclusive boundary behaviour in `GET /api/reports`
+- docs(api-reference): note that `note` field always returns `""` (never `null`) in list endpoints
+- docs(api-reference): document `PATCH /api/transactions` category validation gap
+- docs(api-reference): fix stale handler path reference (`src/handlers` → `api/_handlers`)
+- docs(database-schema): fix stale connector path (`src/utils/connector.ts` → `api/_lib/connector.ts`)
+- docs(feature-accounts): fix stale handler/type paths; add `cards[]` population behaviour and `imageUrl` semantics
+
+---
+
 ## [FE-0.6.4] - 2026-03-10
 
 ### Added

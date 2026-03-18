@@ -47,7 +47,7 @@ const makeAdjustmentTx = (amount: number) =>
   makeTx(ADJUSTMENT_ID, amount, 'acc-from', undefined)
 
 const makeCat = (id: string, name: string, parentId: string | null = null, type: CategoryType = 'Expense'): Category => ({
-  id, name, type, parentId
+  id, name, type, parentId, note: ''
 })
 
 const defaultConnector = (overrides = {}) => createMockConnector({

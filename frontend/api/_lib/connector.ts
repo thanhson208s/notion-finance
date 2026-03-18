@@ -313,17 +313,19 @@ export class Connector {
 
   private mapPageToCardSummary(page: PageObjectResponse): CardSummary {
     const name = this.getTitleProperty(page, "Name");
+    const number = page.properties["Number"] ? (this.getTextProperty(page, "Number", false) ?? "") : "";
     const imageUrl = this.getFileProperty(page, "Image", true);
-    return { id: page.id, name, imageUrl } satisfies CardSummary;
+    return { id: page.id, name, number, imageUrl } satisfies CardSummary;
   }
 
   private mapPageToCategory(page: PageObjectResponse): Category {
     const name = this.getTitleProperty(page, "Name");
     const type = this.getSelectProperty(page, "Type", true);
     const parentId = this.getParentProperty(page);
+    const note = page.properties["Note"] ? (this.getTextProperty(page, "Note", false) ?? "") : "";
 
     return {
-      id: page.id, name, type: type as CategoryType, parentId
+      id: page.id, name, type: type as CategoryType, parentId, note
     } satisfies Category;
   }
 

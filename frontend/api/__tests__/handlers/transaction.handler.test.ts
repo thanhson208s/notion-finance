@@ -20,7 +20,7 @@ const makeTx = (amount: number): Transaction => ({
   note: ''
 })
 
-const mockCategory: Category = { id: 'cat-1', name: 'Food', type: 'Expense', parentId: null }
+const mockCategory: Category = { id: 'cat-1', name: 'Food', type: 'Expense', parentId: null, note: '' }
 
 const makeAccount = (balance: number, totalTransactions: number | null = null) => ({
   balance, totalTransactions, lastTransactionDate: null, priorityScore: 0,

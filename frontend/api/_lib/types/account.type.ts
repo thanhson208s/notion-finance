@@ -17,6 +17,7 @@ export type AccountType =
 export type CardSummary = {
   id: string
   name: string
+  number: string
   imageUrl: string
 }
 

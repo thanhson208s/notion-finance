@@ -11,8 +11,8 @@ const makeEvent = (query: Record<string, string> = {}) => ({
 })
 
 const mockCategories: Category[] = [
-  { id: 'c1', name: 'Food', type: 'Expense', parentId: null },
-  { id: 'c2', name: 'Salary', type: 'Income', parentId: null }
+  { id: 'c1', name: 'Food', type: 'Expense', parentId: null, note: '' },
+  { id: 'c2', name: 'Salary', type: 'Income', parentId: null, note: '' }
 ]
 
 describe('getCategories()', () => {

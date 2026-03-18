@@ -41,7 +41,7 @@ Four Notion databases. Full schema with property names and types: [`docs/databas
 | Database | Key Fields |
 |---|---|
 | **Account** | `id`, `name`, `balance` (Number), `type` (Select) |
-| **Category** | `id`, `name`, `type` (Select: Income/Expense/Financial), `parentId` (Relation, self-referential) |
+| **Category** | `id`, `name`, `type` (Select: Income/Expense/System), `parentId` (Relation, self-referential) |
 | **Transaction** | `id`, `timestamp` (Date), `amount` (Number), `fromAccount` (Relation), `toAccount` (Relation), `category` (Relation), `note` (Text), `linkedCard` (Relation) |
 | **Card** | `id`, `name`, `annualFee` (Number), `linkedAccount` (Relation) |
 

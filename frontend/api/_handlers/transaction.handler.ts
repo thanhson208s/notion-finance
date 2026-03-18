@@ -9,19 +9,20 @@ export const logExpense: RouteHandler<LogExpenseRequest, LogExpenseResponse> = a
   if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
   const oldAccount = await connector.fetchAccount(req.accountId);
   await connector.fetchCategory(req.categoryId);
-  const amount = (await connector.addExpense(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId)).amount;
+  const transaction = await connector.addExpense(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId);
   const newAccount = await connector.updateAccountAfterTransaction(
     req.accountId,
-    oldAccount.balance - amount,
+    oldAccount.balance - transaction.amount,
     (oldAccount.totalTransactions ?? 0) + 1,
     req.timestamp ?? Date.now()
   );
 
   return ok({
+    transactionId: transaction.id,
     accountId: req.accountId,
     oldBalance: oldAccount.balance,
     newBalance: newAccount.balance,
-    amount,
+    amount: transaction.amount,
     categoryId: req.categoryId,
     note: req.note
   } satisfies LogExpenseResponse);
@@ -41,19 +42,20 @@ export const logIncome: RouteHandler<LogIncomeRequest, LogIncomeResponse> = asyn
   if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
   const oldAccount = await connector.fetchAccount(req.accountId);
   await connector.fetchCategory(req.categoryId);
-  const amount = (await connector.addIncome(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId)).amount;
+  const transaction = await connector.addIncome(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId);
   const newAccount = await connector.updateAccountAfterTransaction(
     req.accountId,
-    oldAccount.balance + amount,
+    oldAccount.balance + transaction.amount,
     (oldAccount.totalTransactions ?? 0) + 1,
     req.timestamp ?? Date.now()
   );
 
   return ok({
+    transactionId: transaction.id,
     accountId: req.accountId,
     oldBalance: oldAccount.balance,
     newBalance: newAccount.balance,
-    amount,
+    amount: transaction.amount,
     categoryId: req.categoryId,
     note: req.note
   } satisfies LogIncomeResponse);

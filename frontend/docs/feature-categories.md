@@ -6,7 +6,7 @@
 
 ## Business Description
 
-Categories classify transactions for reporting and budgeting. They form a two-level hierarchy: a top-level parent category can have multiple child subcategories. Three category types are supported: `Income`, `Expense`, and `Financial` (for internal transfers and adjustments).
+Categories classify transactions for reporting and budgeting. They form a two-level hierarchy: a top-level parent category can have multiple child subcategories. Three category types are supported: `Income`, `Expense`, and `System` (for internal transfers and adjustments).
 
 ---
 
@@ -18,7 +18,7 @@ Categories classify transactions for reporting and budgeting. They form a two-le
 **Connector**: `connector.fetchCategories(type: string | null)`
 
 **Query parameters**:
-- `type` (optional): `"Income" | "Expense" | "Financial"` — if omitted, all categories are returned
+- `type` (optional): `"Income" | "Expense" | "System"` — if omitted, all categories are returned
 
 **Logic**:
 - When `type` is provided: Notion filter `{ property: "Type", select: { equals: type } }`
@@ -40,7 +40,7 @@ Categories classify transactions for reporting and budgeting. They form a two-le
 ## Special System Categories
 
 Two category page IDs are used internally for system-generated transactions.
-They must exist in the Category database (type = `Financial`) and be configured via environment variables:
+They must exist in the Category database (type = `System`) and be configured via environment variables:
 
 | ENV Variable | Category Purpose |
 |---|---|

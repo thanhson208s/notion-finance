@@ -202,7 +202,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - `POST /api/income` — log income transaction and add to account balance
 - `POST /api/transfer` — transfer amount between two accounts with transaction audit trail
 - `POST /api/adjustment` — set account to target balance with transaction audit trail
-- `GET /api/categories` — list categories with optional type filter (`Income | Expense | Financial`)
+- `GET /api/categories` — list categories with optional type filter (`Income | Expense | System`)
 - `GET /api/expense` (stub) — route registered, returns empty array
 - `GET /api/income` (stub) — route registered, returns empty array
 - Custom HTTP router with `/api` prefix normalization (`src/utils/router.ts`)

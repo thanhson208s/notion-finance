@@ -14,6 +14,7 @@ export type GetCategoriesResponse = {
 }
 
 export type LogExpenseResponse = {
+  transactionId: string,
   accountId: string,
   oldBalance: number,
   newBalance: number,
@@ -28,6 +29,7 @@ export type ListExpensesResponse = {
 }
 
 export type LogIncomeResponse = {
+  transactionId: string,
   accountId: string,
   oldBalance: number,
   newBalance: number,

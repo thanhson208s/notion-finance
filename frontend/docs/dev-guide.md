@@ -28,7 +28,7 @@ In production, all variables are set in the Vercel project settings dashboard.
 
 > **How to get database IDs**: Open the Notion database, click Share → Copy link. The ID is the 32-character hex string in the URL.
 >
-> **How to get `NOTION_TRANSFER_TRANSACTION_ID` and `NOTION_ADJUSTMENT_TRANSACTION_ID`**: Open the Category database, find (or create) entries named "Transfer" and "Adjustment" with `Type = Financial`. Open each page and copy the ID from the URL. These are **page IDs**, not database IDs.
+> **How to get `NOTION_TRANSFER_TRANSACTION_ID` and `NOTION_ADJUSTMENT_TRANSACTION_ID`**: Open the Category database, find (or create) entries named "Transfer" and "Adjustment" with `Type = System`. Open each page and copy the ID from the URL. These are **page IDs**, not database IDs.
 
 ---
 

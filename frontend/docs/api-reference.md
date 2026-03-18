@@ -65,7 +65,7 @@ Returns all accounts with aggregated balance totals.
       "lastTransactionDate": 0,
       "priorityScore": 0,
       "linkedCardIds": ["string"],
-      "cards": [{ "id": "string", "name": "string", "imageUrl": "string" }]
+      "cards": [{ "id": "string", "name": "string", "number": "string", "imageUrl": "string" }]
     }
   ],
   "total": 0,
@@ -95,7 +95,7 @@ Returns all categories, optionally filtered by type.
 
 | Param | Type | Required | Description |
 |---|---|---|---|
-| `type` | `"Income" \| "Expense" \| "Financial"` | No | Filter by category type |
+| `type` | `"Income" \| "Expense" \| "System"` | No | Filter by category type |
 
 **Response 200**:
 ```json
@@ -104,8 +104,9 @@ Returns all categories, optionally filtered by type.
     {
       "id": "string",
       "name": "string",
-      "type": "Income | Expense | Financial",
-      "parentId": "string | null"
+      "type": "Income | Expense | System",
+      "parentId": "string | null",
+      "note": "string"
     }
   ]
 }
@@ -139,6 +140,7 @@ Logs an expense and deducts the amount from the specified account.
 **Response 200**:
 ```json
 {
+  "transactionId": "string",
   "accountId": "string",
   "oldBalance": 0,
   "newBalance": 0,
@@ -177,6 +179,7 @@ Logs income and adds the amount to the specified account.
 **Response 200**:
 ```json
 {
+  "transactionId": "string",
   "accountId": "string",
   "oldBalance": 0,
   "newBalance": 0,

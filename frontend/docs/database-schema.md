@@ -43,10 +43,12 @@ Liability types (negative net worth contribution): `Credit, Debt, Crypto, PayLat
 | Notion Property | Notion Type | TypeScript Type | Notes |
 |---|---|---|---|
 | `Name` | Title | `string` | Category display name |
-| `Type` | Select | `CategoryType` | `Income \| Expense \| Financial` |
+| `Type` | Select | `CategoryType` | `Income \| Expense \| System` |
 | `Parent item` | Relation | `string \| null` | Self-referential for subcategories |
+| `Note` | Rich text | `string` | Optional description of what the category covers (e.g. keywords, examples). Used by AI agents for semantic category inference. Returns `""` if not set. |
 
 > **Note**: The property key is exactly `"Parent item"` — with a space and lowercase `i`.
+> The `Note` property is optional — if absent from the Notion database, the field defaults to `""`.
 > This is a Notion-generated name for self-referential relations.
 
 ### Special System Categories
@@ -96,6 +98,7 @@ These are Category **page IDs** (not database IDs) that must be created in the C
 | Notion Property | Notion Type | TypeScript Type | Notes |
 |---|---|---|---|
 | `Name` | Title | `string` | Card display name |
+| `Number` | Rich text | `string` | Masked card number: first 6 digits + `*****` + last 4 digits (e.g. `415231*****9999`). Empty string if not set. |
 | `annualFee` | Number | `number \| null` | Annual fee in VND |
 | `linkedAccount` | Relation | `string \| null` | Relation to Account DB |
 | `Image` | URL | `string \| null` | Vercel Blob public URL of the card image |

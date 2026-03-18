@@ -1,1 +1,1 @@
-{"root":["./agent/script/onaccept.ts","./agent/script/onreject.ts","./agent/script/refreshcache.ts","./agent/script/sendconfirmation.ts","./agent/script/utils.ts"],"version":"5.9.3"}
+{"root":["./agent/script/logtransaction.ts","./agent/script/onaccept.ts","./agent/script/onreject.ts","./agent/script/refreshcache.ts","./agent/script/utils.ts"],"version":"5.9.3"}

@@ -8,9 +8,7 @@ import * as readline from "node:readline";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-export const DATA_DIR =
-  process.env["DATA_DIR"] ?? path.join(process.cwd(), "agent/data");
-
+export const DATA_DIR = './data'
 export const ACCOUNTS_FILE = path.join(DATA_DIR, "accounts.csv");
 export const CATEGORIES_FILE = path.join(DATA_DIR, "categories.csv");
 export const CARDS_FILE = path.join(DATA_DIR, "cards.csv");
@@ -19,11 +17,14 @@ export const CATEGORY_HINTS_FILE = path.join(DATA_DIR, "category_hints.csv");
 export const CARD_HINTS_FILE = path.join(DATA_DIR, "card_hints.csv");
 export const MAP_FILE = path.join(DATA_DIR, "msg_tx_map.csv");
 
-export const TIMEZONE = process.env["TIMEZONE"] ?? "Asia/Bangkok";
-export const API_BASE =
-  process.env["API_BASE"] ?? "https://finance.gootube.online/api";
+export const TIMEZONE = "Asia/Bangkok";
+export const API_BASE = "https://finance.gootube.online/api";
 export const CACHE_TTL_HOURS = 168;
 export const MAP_TTL_HOURS = 72;
+
+export const TELEGRAM_BOT_TOKEN = "7014099402:AAG15B_W2pW6k2gFRWZ_BJHSSdgJMpsSfRg";
+export const TELEGRAM_CHAT_ID = "-1003418336602";
+export const TELEGRAM_TOPIC_ID = 2;
 
 export const MAP_HEADERS =
   "messageId,transactionId,type,amount,accountId,categoryId,cardId,accountRef,categoryRef,cardRef,note,timestamp,lastModified";
@@ -186,7 +187,7 @@ export async function sendMessage(
   token: string,
   chatId: string,
   text: string,
-  topicId?: number
+  topicId: number
 ): Promise<number> {
   const body: Record<string, unknown> = { chat_id: chatId, text };
   if (topicId !== undefined) body["message_thread_id"] = topicId;
@@ -280,17 +281,4 @@ export async function readStdin(): Promise<string> {
     rl.on("line", (line: string) => lines.push(line));
     rl.on("close", () => resolve(lines.join("\n")));
   });
-}
-
-// ─── Env helpers ──────────────────────────────────────────────────────────────
-
-export function requireEnv(name: string): string {
-  const val = process.env[name];
-  if (!val) throw new Error(`Missing env var: ${name}`);
-  return val;
-}
-
-export function optionalIntEnv(name: string): number | undefined {
-  const val = process.env[name];
-  return val ? parseInt(val, 10) : undefined;
 }

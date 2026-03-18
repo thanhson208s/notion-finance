@@ -1,0 +1,34 @@
+updatedAt,id,name,type,parentId,note
+2026-03-18T05:14:58.439Z,170c3752-e48a-80e0-8469-e5e9d1893a34,Food,Expense,null,Eat and drink
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-8001-8265-e07332bb1549,Pet,Expense,null,Things for my cat
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-8023-a8e9-c95c3124af90,Salary,Income,null,Monthly salary
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-802f-9046-fbb541e20842,Gasoline,Expense,2d9c3752-e48a-80bf-a0e4-ed538219f2a7,Gasoline
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-8035-9748-d6f1d7a11226,Pet toys,Expense,2d9c3752-e48a-8001-8265-e07332bb1549,"Cat treats, cat toys"
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-8040-94c0-d75f824c4051,Adjustment,System,null,
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-805d-a2db-cb2f6fe94a44,Taxi,Expense,2d9c3752-e48a-80bf-a0e4-ed538219f2a7,"Bus, taxi, grab"
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-805e-8e9c-f0339708aa31,Transfer,System,null,
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-8060-8c9c-cae46a515909,Entertainment,Expense,null,Things for fun
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-8068-aa3e-fc9ce5faa595,Games,Expense,2d9c3752-e48a-8060-8c9c-cae46a515909,"Steam, mobile apps"
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-8090-b35c-d6e56f62675f,Meals,Expense,170c3752-e48a-80e0-8469-e5e9d1893a34,Everyday meals
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-80a3-874e-c45db5dee8f5,Gift,Expense,null,Money given to others
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-80bd-844c-e406b3514c1e,Movies,Expense,2d9c3752-e48a-8060-8c9c-cae46a515909,Movie tickets
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-80bd-b8be-c9d9edf5e9e8,Board games,Expense,2d9c3752-e48a-8060-8c9c-cae46a515909,Board games
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-80bf-a0e4-ed538219f2a7,Transportation,Expense,null,Moving around
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-80df-9f98-e283c6a3b162,Groceries,Expense,170c3752-e48a-80e0-8469-e5e9d1893a34,"Water, groceries, fruits"
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-80e7-a298-ecca5878bee4,Interest,Income,null,Interest from different accounts
+2026-03-18T05:14:58.439Z,2d9c3752-e48a-80f5-8360-d488b5eea77c,Subscriptions,Expense,2d9c3752-e48a-8060-8c9c-cae46a515909,"Youtube, Netflix,…"
+2026-03-18T05:14:58.439Z,305c3752-e48a-8043-bbe7-f6ffef4d19ff,Cashback,Income,null,Cashback from spendings
+2026-03-18T05:14:58.439Z,30fc3752-e48a-802f-8ce1-e23be95ab84c,Family,Expense,2d9c3752-e48a-80a3-874e-c45db5dee8f5,Money given to family members
+2026-03-18T05:14:58.439Z,30fc3752-e48a-80a9-a3aa-de8c23e00ccd,Events,Expense,2d9c3752-e48a-80a3-874e-c45db5dee8f5,"Wedding, Funeral"
+2026-03-18T05:14:58.439Z,314c3752-e48a-8006-985d-eb814d3d0ffa,Pet essentials,Expense,2d9c3752-e48a-8001-8265-e07332bb1549,"Cat food, cat litter"
+2026-03-18T05:14:58.439Z,314c3752-e48a-80a5-808f-feff0e459d98,Consumables,Expense,314c3752-e48a-80d0-98d7-fdf46135fef7,"Detergent, cleansers, hygiene, toiletries"
+2026-03-18T05:14:58.439Z,314c3752-e48a-80c0-bdd2-e93beff2aac6,Refund,Income,null,Canceled orders
+2026-03-18T05:14:58.439Z,314c3752-e48a-80d0-98d7-fdf46135fef7,Household,Expense,null,In-house items
+2026-03-18T05:14:58.439Z,314c3752-e48a-80d8-9034-e77005a2205e,Utilities,Expense,314c3752-e48a-80d0-98d7-fdf46135fef7,"Electrical, tools"
+2026-03-18T05:14:58.439Z,314c3752-e48a-80f6-9a5d-c4507f95b45c,Furnitures,Expense,314c3752-e48a-80d0-98d7-fdf46135fef7,"Furnitures, decorations"
+2026-03-18T05:14:58.439Z,31fc3752-e48a-80ea-9063-fc25dcfc78d9,Sports,Expense,2d9c3752-e48a-8060-8c9c-cae46a515909,"Gym, sports"
+2026-03-18T05:14:58.439Z,326c3752-e48a-8034-a58a-e1cec511f51e,Maintenance,Expense,326c3752-e48a-809b-97f4-f5589024710c,Occasionally maintenance fee
+2026-03-18T05:14:58.439Z,326c3752-e48a-8050-9cb9-df32e529c4e4,Pet health,Expense,2d9c3752-e48a-8001-8265-e07332bb1549,"Checkups, treatments"
+2026-03-18T05:14:58.439Z,326c3752-e48a-8079-9a4a-dc2c93a121e5,Dining out,Expense,170c3752-e48a-80e0-8469-e5e9d1893a34,Occasional dining out 
+2026-03-18T05:14:58.439Z,326c3752-e48a-809b-97f4-f5589024710c,Rent,Expense,null,Monthly rent
+2026-03-18T05:14:58.439Z,326c3752-e48a-80c9-8991-e516c7dd3a66,Service Fee,Expense,326c3752-e48a-809b-97f4-f5589024710c,Additional service fee

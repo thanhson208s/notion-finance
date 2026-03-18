@@ -7,15 +7,15 @@
  * from the Finance API and overwrites all three files.
  *
  * Usage:
- *   npx tsx agent/script/refreshCache.ts
+ *   npx tsx script/refreshCache.ts
  *
  * Optional env vars:
  *   API_BASE  — Finance API base URL (default: https://finance.gootube.online/api)
- *   DATA_DIR  — path to data directory (default: ./agent/data relative to CWD)
+ *   DATA_DIR  — path to data directory (default: ./data relative to CWD)
  *
  * Output (stdout JSON):
- *   { success: true, refreshed: true, accounts: N, categories: N, cards: N }
- *   { success: true, refreshed: false, reason: "Cache is fresh" }
+ *   { success: true, refreshed: true }
+ *   { success: true, refreshed: false }
  */
 
 import * as fs from "node:fs";
@@ -133,7 +133,7 @@ function writeCardsCsv(
 async function main(): Promise<void> {
   if (isCacheFresh()) {
     console.log(
-      JSON.stringify({ success: true, refreshed: false, reason: "Cache is fresh" })
+      JSON.stringify({ success: true, refreshed: false })
     );
     return;
   }
@@ -162,15 +162,11 @@ async function main(): Promise<void> {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   writeAccountsCsv(accounts, updatedAt);
   writeCategoriesCsv(categories, updatedAt);
-  const cardCount = writeCardsCsv(accounts, updatedAt);
+  writeCardsCsv(accounts, updatedAt);
 
   console.log(
     JSON.stringify({
-      success: true,
-      refreshed: true,
-      accounts: accounts.length,
-      categories: categories.length,
-      cards: cardCount,
+      success: true, refreshed: true
     })
   );
 }

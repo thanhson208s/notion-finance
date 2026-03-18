@@ -7,8 +7,8 @@
  * and edits the Telegram message to mark it as accepted.
  *
  * Usage:
- *   echo '{"telegramMessageId": 123456789}' | npx tsx agent/onAccept.ts
- *   npx tsx agent/onAccept.ts '{"telegramMessageId": 123456789}'
+ *   echo '{"telegramMessageId": 123456789}' | npx tsx script/onAccept.ts
+ *   npx tsx script/onAccept.ts '{"telegramMessageId": 123456789}'
  *
  * Required env vars:
  *   TELEGRAM_BOT_TOKEN
@@ -30,28 +30,26 @@ import {
   MAP_TTL_HOURS,
   parseCsv,
   readStdin,
-  requireEnv,
   rewriteCsv,
   upsertHints,
+  TELEGRAM_BOT_TOKEN,
+  TELEGRAM_CHAT_ID
 } from "./utils.ts";
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  const token = requireEnv("TELEGRAM_BOT_TOKEN");
-  const chatId = requireEnv("TELEGRAM_CHAT_ID");
+  const token = TELEGRAM_BOT_TOKEN;
+  const chatId = TELEGRAM_CHAT_ID;
 
-  const rawJson = process.argv[2] ?? (await readStdin());
-  const { telegramMessageId } = JSON.parse(rawJson.trim()) as {
-    telegramMessageId: number;
-  };
-  const msgId = String(telegramMessageId);
+  const rawMessageId = process.argv[2] ?? (await readStdin());
+  const telegramMessageId = JSON.parse(rawMessageId);
 
   // 1. Load map and find matching row
   const allRows = parseCsv(MAP_FILE);
-  const row = allRows.find((r) => r["messageId"] === msgId);
+  const row = allRows.find((r) => r["messageId"] === rawMessageId);
   if (!row) {
-    throw new Error(`No pending row found for messageId ${msgId}`);
+    throw new Error(`No pending row found for messageId ${rawMessageId}`);
   }
 
   const { transactionId, accountId, categoryId, cardId, accountRef, categoryRef, cardRef } = row as Record<string, string>;
@@ -87,7 +85,7 @@ async function main(): Promise<void> {
   const cutoff = Date.now() - MAP_TTL_HOURS * 3_600_000;
   const remaining = allRows.filter(
     (r) =>
-      r["messageId"] !== msgId &&
+      r["messageId"] !== rawMessageId &&
       Number(r["lastModified"]) >= cutoff
   );
   rewriteCsv(MAP_FILE, MAP_HEADERS, remaining);

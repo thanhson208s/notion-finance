@@ -7,8 +7,8 @@
  * message to mark it as rejected. Does NOT update hint CSV files.
  *
  * Usage:
- *   echo '{"telegramMessageId": 123456789}' | npx tsx agent/onReject.ts
- *   npx tsx agent/onReject.ts '{"telegramMessageId": 123456789}'
+ *   echo '{"telegramMessageId": 123456789}' | npx tsx script/onReject.ts
+ *   npx tsx script/onReject.ts '{"telegramMessageId": 123456789}'
  *
  * Required env vars:
  *   TELEGRAM_BOT_TOKEN
@@ -27,26 +27,24 @@ import {
   MAP_FILE,
   parseCsv,
   readStdin,
-  requireEnv,
+  TELEGRAM_BOT_TOKEN,
+  TELEGRAM_CHAT_ID
 } from "./utils.ts";
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  const token = requireEnv("TELEGRAM_BOT_TOKEN");
-  const chatId = requireEnv("TELEGRAM_CHAT_ID");
+  const token = TELEGRAM_BOT_TOKEN;
+  const chatId = TELEGRAM_CHAT_ID;
 
-  const rawJson = process.argv[2] ?? (await readStdin());
-  const { telegramMessageId } = JSON.parse(rawJson.trim()) as {
-    telegramMessageId: number;
-  };
-  const msgId = String(telegramMessageId);
+  const rawMessageId = process.argv[2] ?? (await readStdin());
+  const telegramMessageId = parseInt(rawMessageId);
 
   // 1. Load map and find matching row
   const allRows = parseCsv(MAP_FILE);
-  const row = allRows.find((r) => r["messageId"] === msgId);
+  const row = allRows.find((r) => r["messageId"] === rawMessageId);
   if (!row) {
-    throw new Error(`No pending row found for messageId ${msgId}`);
+    throw new Error(`No pending row found for messageId ${rawMessageId}`);
   }
 
   const { transactionId } = row as Record<string, string>;
@@ -62,31 +60,23 @@ async function main(): Promise<void> {
     error?: { message: string };
   };
 
+  if (!deleteRes.ok) {
+    const reason = deleteJson.error?.message ?? `HTTP ${deleteRes.status}`;
+    throw new Error(`DELETE transaction failed: ${reason}`);
+  }
+
   // 3. Reconstruct original message text from map row + cache
   const originalText = buildConfirmationText(
     row as Parameters<typeof buildConfirmationText>[0]
   );
 
   // 4. Edit Telegram message with status, remove inline keyboard
-  let statusSuffix: string;
-  if (deleteRes.ok) {
-    statusSuffix = "\n\n— ❌ Rejected & deleted";
-  } else {
-    const reason = deleteJson.error?.message ?? `HTTP ${deleteRes.status}`;
-    statusSuffix = `\n\n— ❌ Rejection failed: ${reason}`;
-  }
-
   await editMessageText(
     token,
     chatId,
     telegramMessageId,
-    originalText + statusSuffix
+    originalText + "\n\n— ❌ Rejected"
   );
-
-  if (!deleteRes.ok) {
-    const reason = deleteJson.error?.message ?? `HTTP ${deleteRes.status}`;
-    throw new Error(`DELETE transaction failed: ${reason}`);
-  }
 
   console.log(
     JSON.stringify({ success: true, transactionId })

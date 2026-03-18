@@ -8,8 +8,8 @@
  *   • unclearFields empty     → calls the Finance API, then sends confirmation or error.
  *
  * Usage:
- *   echo '<json>' | npx tsx agent/script/logTransaction.ts
- *   npx tsx agent/script/logTransaction.ts '<json>'
+ *   echo '<json>' | npx tsx script/logTransaction.ts
+ *   npx tsx script/logTransaction.ts '<json>'
  *
  * Required env vars:
  *   TELEGRAM_BOT_TOKEN — bot token from BotFather
@@ -18,7 +18,7 @@
  * Optional env vars:
  *   TELEGRAM_TOPIC_ID — message_thread_id for a group topic (forum supergroup)
  *   API_BASE          — Finance API base URL (default: https://finance.gootube.online/api)
- *   DATA_DIR          — path to data directory (default: ./agent/data relative to CWD)
+ *   DATA_DIR          — path to data directory (default: ./data relative to CWD)
  *   TIMEZONE          — IANA timezone string (default: Asia/Bangkok)
  *
  * Output (stdout JSON):
@@ -35,12 +35,13 @@ import {
   formatTimestamp,
   MAP_FILE,
   MAP_HEADERS,
-  optionalIntEnv,
   parseCsv,
   readStdin,
-  requireEnv,
   sendMessage,
   setInlineKeyboard,
+  TELEGRAM_BOT_TOKEN,
+  TELEGRAM_CHAT_ID,
+  TELEGRAM_TOPIC_ID
 } from "./utils.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -106,9 +107,9 @@ function buildClarificationText(input: InferenceOutput, unclearFields: string[])
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  const token = requireEnv("TELEGRAM_BOT_TOKEN");
-  const chatId = requireEnv("TELEGRAM_CHAT_ID");
-  const topicId = optionalIntEnv("TELEGRAM_TOPIC_ID");
+  const token = TELEGRAM_BOT_TOKEN;
+  const chatId = TELEGRAM_CHAT_ID;
+  const topicId = TELEGRAM_TOPIC_ID;
 
   const rawJson = process.argv[2] ?? (await readStdin());
   const input = JSON.parse(rawJson.trim()) as InferenceOutput;

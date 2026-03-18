@@ -38,9 +38,9 @@ On error: **STOP** and report to the user.
 - `CARDS_FILE` → list of `{ id, accountId, name, number }`
 
 **Load Hints**:
-- Read `ACCOUNT_HINTS_FILE` → list of `{ hint, accountId }`. If file does not exist, use empty list.
-- Read `CATEGORY_HINTS_FILE` → list of `{ hint, categoryId }`. If file does not exist, use empty list.
-- Read `CARD_HINTS_FILE` → list of `{ hint, cardId }`. If file does not exist, use empty list.
+- Read `ACCOUNT_HINTS_FILE` → list of `{ type, hint, accountId }`. If file does not exist, use empty list.
+- Read `CATEGORY_HINTS_FILE` → list of `{ type, hint, categoryId }`. If file does not exist, use empty list.
+- Read `CARD_HINTS_FILE` → list of `{ type, hint, cardId }`. If file does not exist, use empty list.
 
 ---
 
@@ -52,19 +52,19 @@ Infer all 9 fields simultaneously from the user input + loaded cache and hints:
 |-------|------|-------|
 | `amount` | positive integer (VND) | Parse from input. Strip `₫`, `VND`, `,`, `.`. Round to integer. Must be > 0. |
 | `accountId` | string | Apply account priority rules below. |
-| `accountRef` | string | Decisive word(s) from input that matched the account (e.g. `"vcb"`). Max 20 words. |
+| `accountRef` | string | `\|`-delimited `type:phrase` items that matched the account. `type` is `text` (from message/image text) or `visual` (image visual descriptor). Each item is stored as one hint row. e.g. `text:vcb\|visual:blue store logo` |
 | `categoryId` | string | Apply category priority rules below. `type` derived from matched category. |
-| `categoryRef` | string | Decisive word(s) from input that matched the category (e.g. `"coffee"`, `"xăng xe"`). Max 20 words. |
+| `categoryRef` | string | Same `type:phrase\|...` format. e.g. `text:coffee\|visual:green cup logo` |
 | `cardId` | string \| null | Apply card priority rules below. `null` if no card mentioned or matched. |
-| `cardRef` | string \| null | Decisive word(s)/digits that matched the card (e.g. `"visa 9999"`). `null` if `cardId` is null. |
-| `note` | string | Full transaction description from input. Preserve original wording. |
+| `cardRef` | string \| null | Same `type:phrase\|...` format. `null` if `cardId` is null. |
+| `note` | string | Reason or purpose of the transaction only. Exclude amount, account, card, date/time, and any other already-structured fields. |
 | `timestamp` | Unix ms | Extract date/time from input if present; convert to Unix ms in `TIMEZONE`. Default: `Date.now()`. |
 
 **Account priority rules** (apply in strict order, stop at first match):
 
 | Priority | Rule | Action |
 |----------|------|--------|
-| 1 | Find a row in `accountHints` where `hint` matches any account-related word in input (case-insensitive) | Use that `accountId` |
+| 1 | Find a row in `accountHints` where: `type=text` → `hint` matches any text word in input; `type=visual` → `hint` matches any visual descriptor from the image (case-insensitive) | Use that `accountId` |
 | 2 | Find an account where `account.name` exactly equals an account-related word in input (case-insensitive) | Use that `account.id` |
 | 3 | Find accounts where an input word is a substring of `account.name` or vice versa (case-insensitive) | Collect all matches; pick the one with highest `priorityScore` |
 | 4 | No match | Fail with: `"Cannot find account matching '{input reference}'. Check spelling or update hints."` |
@@ -73,7 +73,7 @@ Infer all 9 fields simultaneously from the user input + loaded cache and hints:
 
 | Priority | Rule | Action |
 |----------|------|--------|
-| 1 | Find a row in `categoryHints` where `hint` exactly equals any word in input (case-insensitive) | Use that `categoryId` |
+| 1 | Find a row in `categoryHints` where: `type=text` → `hint` exactly equals any text word in input; `type=visual` → `hint` matches any visual descriptor from the image (case-insensitive) | Use that `categoryId` |
 | 2 | Semantic note match: input semantically relates to `category.note` using common-sense reasoning (only when `category.note` is non-empty; e.g. "grab a coffee" matches a category whose note says "coffee, tea, beverages") | Collect all matches |
 | 3 | Any input word exactly equals `category.name` (case-insensitive) | Collect all matches |
 | 4 | Any input word is a substring of `category.name` word or vice versa (case-insensitive) | Collect all matches |
@@ -87,7 +87,7 @@ Infer all 9 fields simultaneously from the user input + loaded cache and hints:
 
 | Priority | Rule | Action |
 |----------|------|--------|
-| 1 | Find a row in `cardHints` where `hint` matches any word in input (case-insensitive) | Use that `cardId` |
+| 1 | Find a row in `cardHints` where: `type=text` → `hint` matches any text word in input; `type=visual` → `hint` matches any visual descriptor from the image (case-insensitive) | Use that `cardId` |
 | 2 | Last 4 digits in input match `card.number` last 4 characters | Use that `cardId` |
 | 3 | First 6 digits in input match `card.number` first 6 characters | Use that `cardId` |
 | 4 | Any word in input matches `card.name` (case-insensitive, partial match OK) | Use that `cardId` |

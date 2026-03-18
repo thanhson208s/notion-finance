@@ -46,8 +46,8 @@ function makePendingRow(overrides: Partial<Record<string, string>> = {}): Record
     accountId: 'acc1',
     categoryId: 'cat2',
     cardId: '-',
-    accountRef: 'cash payment',
-    categoryRef: 'lunch grab',
+    accountRef: 'text:cash|text:payment',
+    categoryRef: 'text:lunch|text:grab',
     cardRef: '-',
     note: 'lunch at restaurant',
     timestamp: '1742180400000',
@@ -74,27 +74,35 @@ describe('when messageId is not in the map', () => {
 
 describe('when messageId is found', () => {
   it('upserts account hints from accountRef tokens', () => {
-    setupEnv([makePendingRow({ accountRef: 'cash payment vcb' })])
+    setupEnv([makePendingRow({ accountRef: 'text:vcb' })])
     runScript('onAccept.ts', [MSG_ID], {}, undefined, env.cwd)
 
     const hints = parseCsv(path.join(env.dataDir, 'account_hints.csv'))
-    const words = hints.map((r) => r['hint'])
-    expect(words).toContain('cash')
-    expect(words).toContain('payment')
-    expect(words).toContain('vcb')
-    hints
-      .filter((r) => ['cash', 'payment', 'vcb'].includes(r['hint']!))
-      .forEach((r) => expect(r['accountId']).toBe('acc1'))
+    expect(hints).toHaveLength(1)
+    expect(hints[0]!['hint']).toBe('vcb')
+    expect(hints[0]!['type']).toBe('text')
+    expect(hints[0]!['accountId']).toBe('acc1')
+  })
+
+  it('upserts visual account hints as single multi-word phrase', () => {
+    setupEnv([makePendingRow({ accountRef: 'visual:blue store logo' })])
+    runScript('onAccept.ts', [MSG_ID], {}, undefined, env.cwd)
+
+    const hints = parseCsv(path.join(env.dataDir, 'account_hints.csv'))
+    expect(hints).toHaveLength(1)
+    expect(hints[0]!['type']).toBe('visual')
+    expect(hints[0]!['hint']).toBe('blue store logo')
+    expect(hints[0]!['accountId']).toBe('acc1')
   })
 
   it('upserts category hints from categoryRef tokens', () => {
-    setupEnv([makePendingRow({ categoryRef: 'lunch dining' })])
+    setupEnv([makePendingRow({ categoryRef: 'text:lunch' })])
     runScript('onAccept.ts', [MSG_ID], {}, undefined, env.cwd)
 
     const hints = parseCsv(path.join(env.dataDir, 'category_hints.csv'))
-    const words = hints.map((r) => r['hint'])
-    expect(words).toContain('lunch')
-    expect(words).toContain('dining')
+    expect(hints).toHaveLength(1)
+    expect(hints[0]!['hint']).toBe('lunch')
+    expect(hints[0]!['type']).toBe('text')
   })
 
   it('does NOT create card_hints.csv when cardId is "-"', () => {
@@ -106,13 +114,13 @@ describe('when messageId is found', () => {
   })
 
   it('upserts card hints when cardId and cardRef are non-empty', () => {
-    setupEnv([makePendingRow({ cardId: 'card1', cardRef: 'visa 9999' })])
+    setupEnv([makePendingRow({ cardId: 'card1', cardRef: 'text:visa|text:9999' })])
     runScript('onAccept.ts', [MSG_ID], {}, undefined, env.cwd)
 
     const hints = parseCsv(path.join(env.dataDir, 'card_hints.csv'))
-    const words = hints.map((r) => r['hint'])
-    expect(words).toContain('visa')
-    expect(words).toContain('9999')
+    const hintWords = hints.map((r) => r['hint'])
+    expect(hintWords).toContain('visa')
+    expect(hintWords).toContain('9999')
   })
 
   it('removes the accepted row from msg_tx_map.csv', () => {

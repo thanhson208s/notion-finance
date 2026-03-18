@@ -55,29 +55,35 @@ async function main(): Promise<void> {
   const { transactionId, accountId, categoryId, cardId, accountRef, categoryRef, cardRef } = row as Record<string, string>;
 
   // 2. Upsert hint CSV files
-  const tokenize = (ref: string) =>
+  const tokenize = (ref: string): Array<{ type: string; hint: string }> =>
     ref
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length > 0);
+      .split("|")
+      .map((s) => s.trim())
+      .filter((s) => s.includes(":"))
+      .flatMap((s) => {
+        const colon = s.indexOf(":");
+        const type = s.slice(0, colon).trim().toLowerCase();
+        const phrase = s.slice(colon + 1).trim().toLowerCase();
+        return phrase ? [{ type, hint: phrase }] : [];
+      });
 
   upsertHints(
     ACCOUNT_HINTS_FILE,
     "accountId",
-    tokenize(accountRef).map((hint) => ({ hint, id: accountId }))
+    tokenize(accountRef).map(({ type, hint }) => ({ type, hint, id: accountId }))
   );
 
   upsertHints(
     CATEGORY_HINTS_FILE,
     "categoryId",
-    tokenize(categoryRef).map((hint) => ({ hint, id: categoryId }))
+    tokenize(categoryRef).map(({ type, hint }) => ({ type, hint, id: categoryId }))
   );
 
   if (cardId && cardId !== "-" && cardRef && cardRef !== "-") {
     upsertHints(
       CARD_HINTS_FILE,
       "cardId",
-      tokenize(cardRef).map((hint) => ({ hint, id: cardId }))
+      tokenize(cardRef).map(({ type, hint }) => ({ type, hint, id: cardId }))
     );
   }
 

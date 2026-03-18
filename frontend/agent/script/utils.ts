@@ -121,22 +121,23 @@ export function rewriteCsv(
 // ─── Hints upsert ─────────────────────────────────────────────────────────────
 
 /**
- * Upsert hint rows into a two-column CSV (hint, <idColumn>).
- * Adds new rows; overwrites existing rows with conflicting ids.
+ * Upsert hint rows into a three-column CSV (type, hint, <idColumn>).
+ * Dedup key is `${type}:${hint}` — same word with different types are separate entries.
+ * Adds new rows; overwrites existing rows with the same type+hint key.
  */
 export function upsertHints(
   filePath: string,
   idColumn: string,
-  entries: Array<{ hint: string; id: string }>
+  entries: Array<{ type: string; hint: string; id: string }>
 ): void {
   const existing = parseCsv(filePath);
-  const map = new Map(existing.map((r) => [r["hint"]!, r[idColumn]!]));
-  for (const { hint, id } of entries) {
-    map.set(hint, id);
+  const map = new Map(existing.map((r) => [`${r["type"]}:${r["hint"]}`, { type: r["type"]!, hint: r["hint"]!, id: r[idColumn]! }]));
+  for (const { type, hint, id } of entries) {
+    map.set(`${type}:${hint}`, { type, hint, id });
   }
-  const headers = `hint,${idColumn}`;
-  const lines = Array.from(map.entries()).map(([h, id]) =>
-    serializeCsvRow([h, id])
+  const headers = `type,hint,${idColumn}`;
+  const lines = Array.from(map.values()).map(({ type, hint, id }) =>
+    serializeCsvRow([type, hint, id])
   );
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, [headers, ...lines].join("\n") + "\n");

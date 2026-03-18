@@ -1,7 +1,5 @@
 # Agent Workflow: Log Expense / Income
 
-This document defines the exact, deterministic workflow for an AI agent (via Telegram bot) to receive transaction records from a user and log them via the Finance API.
-
 ---
 
 ## Constants
@@ -20,13 +18,7 @@ This document defines the exact, deterministic workflow for an AI agent (via Tel
 
 ## Workflow
 
-### Step 1 — Receive Input
-
-Accept text, image, or both. Forward all inputs directly to **Step 2**.
-
----
-
-### Step 2 — Refresh Cache
+### Step 1 — Refresh Cache
 
 ```bash
 npx tsx script/refreshCache.ts
@@ -38,7 +30,7 @@ On error: **STOP** and report to the user.
 
 ---
 
-### Step 3 — Load Cache and Hints
+### Step 2 — Load Cache and Hints
 
 **Load Cache** (read only — `refreshCache` already ensured files are fresh):
 - `ACCOUNTS_FILE` → list of `{ id, name, type, balance, priorityScore }`
@@ -52,28 +44,21 @@ On error: **STOP** and report to the user.
 
 ---
 
-### Step 4 — Unified Inference
+### Step 3 — Unified Inference
 
-Using all of the following as a **single unified context**, infer all required fields in one pass:
-- Input: text and/or image from the user
-- `accounts[]` from cache: `{ id, name, type, balance, priorityScore, cards: [{ id, name, number }] }`
-- `categories[]` from cache: `{ id, name, type, parentId, note }`
-- `accountHints[]` from hints: `{ hint, accountId }`
-- `categoryHints[]` from hints: `{ hint, categoryId }`
-
-**Output all 9 fields simultaneously:**
+Infer all 9 fields simultaneously from the user input + loaded cache and hints:
 
 | Field | Type | Rules |
 |-------|------|-------|
 | `amount` | positive integer (VND) | Parse from input. Strip `₫`, `VND`, `,`, `.`. Round to integer. Must be > 0. |
 | `accountId` | string | Apply account priority rules below. |
-| `accountRef` | string | Key word(s) from the input that led to the account match (e.g. "vcb", "momo"). Max 20 words. Store only terms the agent considered decisive — omit filler words. Stored for hints learning. |
-| `categoryId` | string | Apply category priority rules below. `type` is derived from the matched category. |
-| `categoryRef` | string | Key word(s) or phrase(s) from the input that led to the category match (e.g. "coffee", "grab lunch", "xăng xe"). Max 20 words. Store only terms the agent considered decisive — omit filler words. Stored for hints learning. |
-| `cardId` | string \| null | Optional. Apply card priority rules below. `null` if no card mentioned or matched. |
-| `cardRef` | string \| null | Optional. Key word(s)/digits from input that matched the card (e.g. "9999", "visa 9999"). Max 20 words. `null` if `cardId` is null. |
+| `accountRef` | string | Decisive word(s) from input that matched the account (e.g. `"vcb"`). Max 20 words. |
+| `categoryId` | string | Apply category priority rules below. `type` derived from matched category. |
+| `categoryRef` | string | Decisive word(s) from input that matched the category (e.g. `"coffee"`, `"xăng xe"`). Max 20 words. |
+| `cardId` | string \| null | Apply card priority rules below. `null` if no card mentioned or matched. |
+| `cardRef` | string \| null | Decisive word(s)/digits that matched the card (e.g. `"visa 9999"`). `null` if `cardId` is null. |
 | `note` | string | Full transaction description from input. Preserve original wording. |
-| `timestamp` | Unix ms | Extract date/time from input if present (e.g. "hôm qua 3pm", "12/03 10:30", receipt timestamp); convert to Unix ms in `TIMEZONE`. Default: `Date.now()`. Never omit. |
+| `timestamp` | Unix ms | Extract date/time from input if present; convert to Unix ms in `TIMEZONE`. Default: `Date.now()`. |
 
 **Account priority rules** (apply in strict order, stop at first match):
 
@@ -110,11 +95,9 @@ Using all of the following as a **single unified context**, infer all required f
 
 **Note**: `cardId = null` is valid — it does NOT trigger a clarification message.
 
-**After all fields are inferred**, proceed to **Step 5** — pass all results (including nulls for unresolved fields) to the `logTransaction` script.
-
 ---
 
-### Step 5 — Log Transaction
+### Step 4 — Log Transaction
 
 ```bash
 npx tsx script/logTransaction.ts '<json>'
@@ -146,7 +129,7 @@ Output:
 
 ---
 
-### Step 7 — Handle Accept / Reject Callback
+### Step 5 — Handle Accept / Reject Callback
 
 **On `[✅ Accept]`:** Extract telegram message id and run this
 
@@ -163,73 +146,3 @@ npx tsx script/onReject.ts '<telegramMessageId>'
 ```
 
 Output: `{ success: true, transactionId }`
-
----
-
-## File Formats
-
-### CSV cache files
-
-Each file uses standard CSV with a header row. The first data column is always `updatedAt` (ISO 8601 with timezone offset) used for TTL checking. Overwrite the entire file when refreshing — do not merge.
-
-**`data/accounts.csv`**
-```
-updatedAt,id,name,type,balance,priorityScore
-2026-03-17T10:00:00+07:00,abc123,Cash,Cash,1000000,0.85
-2026-03-17T10:00:00+07:00,def456,MoMo,eWallet,500000,0.62
-```
-
-**`data/categories.csv`**
-```
-updatedAt,id,name,type,parentId,note
-2026-03-17T10:00:00+07:00,xyz,Food & Drink,Expense,null,"meals, restaurant, street food, takeaway"
-2026-03-17T10:00:00+07:00,uvw,Dining Out,Expense,xyz,
-2026-03-17T10:00:00+07:00,rst,Salary,Income,null,"monthly pay, base salary, payroll"
-```
-
-**`data/cards.csv`**
-```
-updatedAt,id,accountId,name,number
-2026-03-17T10:00:00+07:00,card-1,abc123,Vietcombank Visa,415231*****9999
-2026-03-17T10:00:00+07:00,card-2,def456,MB Black,123456*****1234
-```
-
-Rules:
-- `updatedAt` is repeated on every data row and is the same value for all rows in a refresh batch.
-- `parentId` stores the literal string `null` when the category has no parent.
-- `note` and `name` fields that contain commas must be quoted.
-- `cards.csv` is flattened from `accounts[].cards[]`; include `accountId` for each card row.
-
----
-
-### Hint CSV files
-
-Three separate files, each with a two-column header row.
-
-**`data/account_hints.csv`**
-```
-hint,accountId
-vcb,abc123
-momo,def456
-```
-
-**`data/category_hints.csv`**
-```
-hint,categoryId
-grab,uvw
-coffee,xyz
-lunch,uvw
-```
-
-**`data/card_hints.csv`**
-```
-hint,cardId
-visa,card-1
-black,card-2
-```
-
-Rules:
-- Each `hint` is a single lowercase word (no spaces, no punctuation).
-- No duplicate rows (same `hint` + same `id`).
-- If a conflicting row exists (same `hint`, different `id`) → replace with the new `id` (upsert).
-- Only update these files on **Accept** (Step 6). Never on Reject.

@@ -5,6 +5,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "strict": true,
     "noUnusedLocals": true,

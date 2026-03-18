@@ -58,7 +58,7 @@ Infer all 9 fields simultaneously from the user input + loaded cache and hints:
 | `cardId` | string \| null | Apply card priority rules below. `null` if no card mentioned or matched. |
 | `cardRef` | string \| null | Same `type:phrase\|...` format. `null` if `cardId` is null. |
 | `note` | string | Reason or purpose of the transaction only. Exclude amount, account, card, date/time, and any other already-structured fields. |
-| `timestamp` | Unix ms | Extract date/time from input if present; convert to Unix ms in `TIMEZONE`. Default: `Date.now()`. |
+| `timestamp` | string `dd/mm/yyyy HH:mm` | Extract date/time from input (day-first format). For any component not present in the input, use its placeholder: `--` for day/month/hour/minute, `----` for year. Examples: `18/03/---- --:--` (day+month only), `--/--/2026 20:24` (time only), `18/03/2026 20:24` (fully specified). Never omit the field. |
 
 **Account priority rules** (apply in strict order, stop at first match):
 
@@ -112,7 +112,7 @@ Input — pass null for any field that could not be confidently determined:
   "categoryId": "... | null",
   "categoryName": "... | null",
   "note": "... | null",
-  "timestamp": 1710000000000,
+  "timestamp": "18/03/2026 20:24",  // or e.g. "18/03/---- --:--" for partial
   "cardId": "... | null",
   "cardName": "... | null",
   "cardNumber": "... | null",

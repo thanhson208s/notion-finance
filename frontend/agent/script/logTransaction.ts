@@ -32,7 +32,6 @@ import {
   appendCsvRow,
   buildConfirmationText,
   CATEGORIES_FILE,
-  formatTimestamp,
   MAP_FILE,
   MAP_HEADERS,
   parseCsv,
@@ -54,7 +53,7 @@ interface InferenceOutput {
   categoryId: string | null;
   categoryName: string | null;
   note: string | null;
-  timestamp: number | null;   // Unix ms
+  timestamp: string | null;   // "dd/mm/yyyy HH:mm" in Asia/Bangkok
   cardId: string | null;
   cardName: string | null;    // display name, e.g. "MB MC"
   cardNumber: string | null;  // masked number, e.g. "530416******6119"
@@ -92,9 +91,7 @@ function buildClarificationText(input: InferenceOutput, unclearFields: string[])
   lines.push(`Category: ${input.categoryName ?? unknown}`);
   lines.push(`Note    : ${input.note ?? unknown}`);
 
-  const timeStr = input.timestamp !== null
-    ? formatTimestamp(input.timestamp)
-    : unknown;
+  const timeStr = input.timestamp ?? unknown;
   lines.push(`Time    : ${timeStr}`);
 
   lines.push("");
@@ -102,6 +99,36 @@ function buildClarificationText(input: InferenceOutput, unclearFields: string[])
   lines.push("Please reply to this message with the missing or corrected information.");
 
   return lines.join("\n");
+}
+
+// ─── Timestamp parsing ────────────────────────────────────────────────────────
+
+/**
+ * Parse "dd/mm/yyyy HH:mm" (Bangkok time) → Unix ms.
+ * Any component may be its placeholder (-- or ----) and will be filled from Date.now().
+ * Throws on invalid format.
+ */
+function parseBangkokTimestamp(s: string): number {
+  const match = s.match(/^(\d{2}|--)\/(\d{2}|--)\/(\d{4}|----)\s+(\d{2}|--):(\d{2}|--)$/);
+  if (!match) throw new Error(`Invalid timestamp format: "${s}". Expected dd/mm/yyyy HH:mm (use -- or ---- for unknown parts)`);
+
+  // Extract current Bangkok time components for filling placeholders
+  const nowParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date());
+  const nowGet = (type: string) => nowParts.find((p) => p.type === type)?.value ?? "00";
+
+  const dd   = match[1] === "--"   ? nowGet("day")    : match[1];
+  const mm   = match[2] === "--"   ? nowGet("month")  : match[2];
+  const yyyy = match[3] === "----" ? nowGet("year")   : match[3];
+  const HH   = match[4] === "--"   ? nowGet("hour")   : match[4];
+  const MM   = match[5] === "--"   ? nowGet("minute") : match[5];
+
+  const ms = new Date(`${yyyy}-${mm}-${dd}T${HH}:${MM}:00+07:00`).getTime();
+  if (isNaN(ms)) throw new Error(`Cannot parse timestamp: "${s}"`);
+  return ms;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -141,13 +168,14 @@ async function main(): Promise<void> {
 
   // ── Happy path: all fields confident ─────────────────────────────────────────
   const endpoint = type === "Expense" ? "expense" : "income";
+  const timestampMs = parseBangkokTimestamp(input.timestamp!);
 
   const requestBody: Record<string, unknown> = {
     accountId: input.accountId,
     amount: input.amount,
     categoryId: input.categoryId,
     note: input.note,
-    timestamp: input.timestamp,
+    timestamp: timestampMs,
   };
   if (input.cardId !== null) {
     requestBody["linkedCardId"] = input.cardId;
@@ -182,7 +210,7 @@ async function main(): Promise<void> {
     categoryId: apiData.categoryId,
     cardId: input.cardId ?? "-",
     note: apiData.note,
-    timestamp: input.timestamp!.toString(),
+    timestamp: timestampMs.toString(),
   });
 
   const telegramMessageId = await sendMessage(token, chatId, messageText, topicId);
@@ -200,7 +228,7 @@ async function main(): Promise<void> {
     input.categoryRef,
     input.cardRef ?? "-",
     apiData.note,
-    input.timestamp!.toString(),
+    timestampMs.toString(),
     Date.now().toString(),
   ]);
 

@@ -1,7 +1,8 @@
 import {
-  ArrowLeftRight, BarChart2, Briefcase, Car, Clapperboard,
-  Coins, Gift, Home, Palette, PawPrint,
-  Percent, TrendingDown, TrendingUp, Undo2, UtensilsCrossed
+  ArrowLeftRight, BarChart2, Briefcase, Car,
+  Coins, Gift, Lamp, Palette, PawPrint, Bed,
+  Percent, TrendingDown, TrendingUp, Undo2, UtensilsCrossed,
+  Balloon,
 } from 'lucide-react'
 import { type Account, type Category } from '../App'
 import {
@@ -18,16 +19,17 @@ type SwipeActions = {
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Food':           <UtensilsCrossed size={18} />,
-  'Entertainment':  <Clapperboard size={18} />,
+  'Entertainment':  <Balloon size={18} />,
   'Hobbies':        <Palette size={18} />,
   'Transportation': <Car size={18} />,
   'Pet':            <PawPrint size={18} />,
-  'Household':      <Home size={18} />,
+  'Household':      <Lamp size={18} />,
   'Gift':           <Gift size={18} />,
   'Salary':         <Briefcase size={18} />,
   'Interest':       <Percent size={18} />,
   'Cashback':       <Coins size={18} />,
   'Refund':         <Undo2 size={18} />,
+  'Rent':           <Bed size={18} />,
 }
 
 function getCategoryConfig(catName: string): { icon: React.ReactNode; color: string } | null {

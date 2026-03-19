@@ -151,25 +151,3 @@ export function getDateParams(preset: DateRangePreset, customStart: string, cust
   }
   return { startDate: customStart || undefined, endDate: customEnd || undefined }
 }
-
-export const CATEGORY_COLORS: Record<string, string> = {
-  'Food':           '#f97316',
-  'Entertainment':  '#a855f7',
-  'Hobbies':        '#ec4899',
-  'Transportation': '#3b82f6',
-  'Pet':            '#10b981',
-  'Household':      '#14b8a6',
-  'Gift':           '#f43f5e',
-  'Salary':         '#22c55e',
-  'Interest':       '#60a5fa',
-  'Cashback':       '#fbbf24',
-  'Refund':         '#94a3b8',
-}
-
-export const TYPE_COLORS: Record<TxType, string> = {
-  'Income':     '#10b981',
-  'Expense':    '#ef4444',
-  'Transfer':   '#3b82f6',
-  'Adjustment': '#64748b',
-  'System':     '#64748b',
-}

@@ -4,7 +4,7 @@ import {
   ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide,
   BarChart2, Calendar, CalendarCheck,
   ChevronDown, ChevronRight,
-  ListOrdered, TrendingDown, TrendingUp,
+  ListOrdered, Search, TrendingDown, TrendingUp,
   Loader2, RefreshCw
 } from 'lucide-react'
 import { type Category, type DateRangePreset, API_BASE } from '../App'
@@ -119,6 +119,9 @@ export default function ReportsPage() {
   const [showTxView, setShowTxView] = useState(false)
   const [txTypeFilter, setTxTypeFilter] = useState<TxType>('Expense')
   const [txCategoryFilter, setTxCategoryFilter] = useState('all')
+  const [txAccountFilter, setTxAccountFilter] = useState('all')
+  const [txSearchInput, setTxSearchInput] = useState('')
+  const [txSearchQuery, setTxSearchQuery] = useState('')
   const [txSort, setTxSort] = useState<SortKey>('date')
   const [txAmountDir, setTxAmountDir] = useState<'desc' | 'asc'>('desc')
   const [deleteTarget, setDeleteTarget] = useState<{ tx: Transaction; type: TxType } | null>(null)
@@ -262,13 +265,23 @@ export default function ReportsPage() {
       }
       return true
     })
+    if (txAccountFilter !== 'all') {
+      txs = txs.filter(tx => tx.fromAccountId === txAccountFilter || tx.toAccountId === txAccountFilter)
+    }
+    if (txSearchQuery.trim() !== '') {
+      const tokens = txSearchQuery.trim().toLowerCase().split(/\s+/)
+      txs = txs.filter(tx => {
+        const note = tx.note.toLowerCase()
+        return tokens.every(token => note.includes(token))
+      })
+    }
     if (txSort === 'date') {
       txs = [...txs].sort((a, b) => b.timestamp - a.timestamp)
     } else {
       txs = [...txs].sort((a, b) => txAmountDir === 'desc' ? b.amount - a.amount : a.amount - b.amount)
     }
     return txs.map(tx => ({ tx, type: getTxType(tx, expenseCatIds, incomeCatIds) }))
-  }, [data, txTypeFilter, txCategoryFilter, txSort, txAmountDir, expenseCatIds, incomeCatIds, catMap])
+  }, [data, txTypeFilter, txCategoryFilter, txAccountFilter, txSearchQuery, txSort, txAmountDir, expenseCatIds, incomeCatIds, catMap])
 
   return (
     <main className="page reports-page" ref={pageRef}>
@@ -329,35 +342,23 @@ export default function ReportsPage() {
           {showTxView ? (
             /* ── Transaction history view ── */
             <>
-              {/* Filters */}
-              <div className="tx-filters">
-                <select
-                  title="Type"
-                  className="tx-select"
-                  value={txTypeFilter}
-                  onChange={e => {
-                    setTxTypeFilter(e.target.value as TxType)
-                    setTxCategoryFilter('all')
-                  }}
+              {/* Search + Sort row */}
+              <div className="tx-search-row">
+                <input
+                  className="tx-search-input"
+                  type="text"
+                  placeholder="Search notes…"
+                  value={txSearchInput}
+                  onChange={e => setTxSearchInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') setTxSearchQuery(txSearchInput) }}
+                />
+                <button
+                  title="Search"
+                  className="tx-search-btn"
+                  onClick={() => setTxSearchQuery(txSearchInput)}
                 >
-                  <option value="Expense">Expense</option>
-                  <option value="Income">Income</option>
-                  <option value="System">System</option>
-                </select>
-
-                <select
-                  title="Category"
-                  className="tx-select"
-                  value={txCategoryFilter}
-                  disabled={categoryOptions.length === 0}
-                  onChange={e => setTxCategoryFilter(e.target.value)}
-                >
-                  <option value="all">All</option>
-                  {categoryOptions.map(c => (
-                    <option key={c.categoryId} value={c.categoryId}>{categories.find(x => x.id === c.categoryId)?.name ?? c.categoryId}</option>
-                  ))}
-                </select>
-
+                  <Search size={16} />
+                </button>
                 <div className="tx-sort-group">
                   <button
                     title="Sort by date"
@@ -379,11 +380,66 @@ export default function ReportsPage() {
                     }}
                   >
                     {txSort === 'amount'
-                      ? (txAmountDir === 'desc' ? <ArrowDownWideNarrow size={15} /> : <ArrowUpNarrowWide size={15} />)
-                      : <ArrowUpDown size={15} />
+                      ? (txAmountDir === 'desc' ? <ArrowDownWideNarrow size={16} /> : <ArrowUpNarrowWide size={16} />)
+                      : <ArrowUpDown size={16} />
                     }
                   </button>
                 </div>
+              </div>
+
+              {/* Filters */}
+              <div className="tx-filters">
+                <select
+                  title="Account"
+                  className="tx-select"
+                  value={txAccountFilter}
+                  onChange={e => setTxAccountFilter(e.target.value)}
+                >
+                  <option value="all">All</option>
+                  {Object.entries(
+                    accounts.reduce<Record<string, typeof accounts>>((acc, a) => {
+                      ;(acc[a.type] ??= []).push(a)
+                      return acc
+                    }, {})
+                  ).map(([type, accs]) => (
+                    <optgroup key={type} label={type}>
+                      {accs.map(a => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+
+                <select
+                  title="Type"
+                  className="tx-select"
+                  value={txTypeFilter}
+                  onChange={e => {
+                    setTxTypeFilter(e.target.value as TxType)
+                    setTxCategoryFilter('all')
+                    setTxAccountFilter('all')
+                  }}
+                >
+                  <option value="Expense">Expense</option>
+                  <option value="Income">Income</option>
+                  <option value="System">System</option>
+                </select>
+
+                <select
+                  title="Category"
+                  className="tx-select"
+                  value={txCategoryFilter}
+                  disabled={categoryOptions.length === 0}
+                  onChange={e => setTxCategoryFilter(e.target.value)}
+                >
+                  <option value="all">All</option>
+                  {categoryOptions.map(c => (
+                    <option key={c.categoryId} value={c.categoryId}>{categories.find(x => x.id === c.categoryId)?.name ?? c.categoryId}</option>
+                  ))}
+                </select>
+
               </div>
 
               {/* Transaction list */}

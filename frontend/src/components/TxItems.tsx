@@ -7,8 +7,7 @@ import {
 import { type Account, type Category } from '../App'
 import {
   type Transaction, type TxType,
-  fmtVND, fmtTxDate, getAccountLabel, getCategoryLabel,
-  CATEGORY_COLORS, TYPE_COLORS
+  fmtVND, fmtTxDate, getAccountLabel, getCategoryLabel
 } from '../App'
 import { SwipeableRow } from './SwipeableRow'
 
@@ -30,6 +29,29 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Cashback':       <Coins size={18} />,
   'Refund':         <Undo2 size={18} />,
   'Rent':           <Bed size={18} />,
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'Food':           '#f97316',
+  'Entertainment':  '#a855f7',
+  'Hobbies':        '#ec4899',
+  'Transportation': '#3b82f6',
+  'Pet':            '#10b981',
+  'Household':      '#14b8a6',
+  'Gift':           '#f43f5e',
+  'Salary':         '#22c55e',
+  'Interest':       '#60a5fa',
+  'Cashback':       '#fbbf24',
+  'Refund':         '#94a3b8',
+  'Rent':           '#ffff1a'
+}
+
+const TYPE_COLORS: Record<TxType, string> = {
+  'Income':     '#10b981',
+  'Expense':    '#ef4444',
+  'Transfer':   '#3b82f6',
+  'Adjustment': '#64748b',
+  'System':     '#64748b',
 }
 
 function getCategoryConfig(catName: string): { icon: React.ReactNode; color: string } | null {

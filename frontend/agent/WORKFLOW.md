@@ -11,7 +11,6 @@
 | `CARDS_FILE` | `data/cards.csv` |
 | `ACCOUNT_HINTS_FILE` | `data/account_hints.csv` |
 | `CATEGORY_HINTS_FILE` | `data/category_hints.csv` |
-| `CARD_HINTS_FILE` | `data/card_hints.csv` |
 | `TIMEZONE` | `Asia/Bangkok` (UTC+7) |
 
 ---
@@ -38,9 +37,8 @@ On error: **STOP** and report to the user.
 - `CARDS_FILE` → list of `{ id, accountId, name, number }`
 
 **Load Hints**:
-- Read `ACCOUNT_HINTS_FILE` → list of `{ type, hint, accountId }`. If file does not exist, use empty list.
-- Read `CATEGORY_HINTS_FILE` → list of `{ type, hint, categoryId }`. If file does not exist, use empty list.
-- Read `CARD_HINTS_FILE` → list of `{ type, hint, cardId }`. If file does not exist, use empty list.
+- Read `ACCOUNT_HINTS_FILE` → list of `{ type, hint, accountId, cardId }`. If file does not exist, use empty list.
+- Read `CATEGORY_HINTS_FILE` → list of `{ type, hint, categoryId, note }`. If file does not exist, use empty list.
 
 ---
 
@@ -87,7 +85,7 @@ Infer all 9 fields simultaneously from the user input + loaded cache and hints:
 
 | Priority | Rule | Action |
 |----------|------|--------|
-| 1 | Find a row in `cardHints` where: `type=text` → `hint` matches any text word in input; `type=visual` → `hint` matches any visual descriptor from the image (case-insensitive) | Use that `cardId` |
+| 1 | Find a row in `accountHints` where `cardId != '-'` and: `type=text` → `hint` matches any text word in input; `type=visual` → `hint` matches any visual descriptor from the image (case-insensitive) | Use both `cardId` and `accountId` from that row |
 | 2 | Last 4 digits in input match `card.number` last 4 characters | Use that `cardId` |
 | 3 | First 6 digits in input match `card.number` first 6 characters | Use that `cardId` |
 | 4 | Any word in input matches `card.name` (case-insensitive, partial match OK) | Use that `cardId` |

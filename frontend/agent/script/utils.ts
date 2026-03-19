@@ -14,7 +14,6 @@ export const CATEGORIES_FILE = path.join(DATA_DIR, "categories.csv");
 export const CARDS_FILE = path.join(DATA_DIR, "cards.csv");
 export const ACCOUNT_HINTS_FILE = path.join(DATA_DIR, "account_hints.csv");
 export const CATEGORY_HINTS_FILE = path.join(DATA_DIR, "category_hints.csv");
-export const CARD_HINTS_FILE = path.join(DATA_DIR, "card_hints.csv");
 export const MAP_FILE = path.join(DATA_DIR, "msg_tx_map.csv");
 
 export const TIMEZONE = "Asia/Bangkok";
@@ -121,26 +120,27 @@ export function rewriteCsv(
 // ─── Hints upsert ─────────────────────────────────────────────────────────────
 
 /**
- * Upsert hint rows into a three-column CSV (type, hint, <idColumn>).
+ * Upsert hint rows into a CSV file with arbitrary columns.
  * Dedup key is `${type}:${hint}` — same word with different types are separate entries.
  * Adds new rows; overwrites existing rows with the same type+hint key.
+ * Missing fields default to '-' when serializing.
  */
 export function upsertHints(
   filePath: string,
-  idColumn: string,
-  entries: Array<{ type: string; hint: string; id: string }>
+  headers: string[],
+  entries: Array<Record<string, string>>
 ): void {
   const existing = parseCsv(filePath);
-  const map = new Map(existing.map((r) => [`${r["type"]}:${r["hint"]}`, { type: r["type"]!, hint: r["hint"]!, id: r[idColumn]! }]));
-  for (const { type, hint, id } of entries) {
-    map.set(`${type}:${hint}`, { type, hint, id });
+  const map = new Map(existing.map((r) => [`${r["type"]}:${r["hint"]}`, r]));
+  for (const entry of entries) {
+    map.set(`${entry["type"]}:${entry["hint"]}`, entry);
   }
-  const headers = `type,hint,${idColumn}`;
-  const lines = Array.from(map.values()).map(({ type, hint, id }) =>
-    serializeCsvRow([type, hint, id])
+  const headerLine = headers.join(",");
+  const lines = Array.from(map.values()).map((row) =>
+    serializeCsvRow(headers.map((h) => row[h] ?? "-"))
   );
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, [headers, ...lines].join("\n") + "\n");
+  fs.writeFileSync(filePath, [headerLine, ...lines].join("\n") + "\n");
 }
 
 // ─── Timestamp ────────────────────────────────────────────────────────────────

@@ -22,7 +22,6 @@
 import {
   ACCOUNT_HINTS_FILE,
   buildConfirmationText,
-  CARD_HINTS_FILE,
   CATEGORY_HINTS_FILE,
   editMessageText,
   MAP_FILE,
@@ -52,7 +51,7 @@ async function main(): Promise<void> {
     throw new Error(`No pending row found for messageId ${rawMessageId}`);
   }
 
-  const { transactionId, accountId, categoryId, cardId, accountRef, categoryRef, cardRef } = row as Record<string, string>;
+  const { transactionId, accountId, categoryId, cardId, accountRef, categoryRef, cardRef, note } = row as Record<string, string>;
 
   // 2. Upsert hint CSV files
   const tokenize = (ref: string): Array<{ type: string; hint: string }> =>
@@ -67,25 +66,21 @@ async function main(): Promise<void> {
         return phrase ? [{ type, hint: phrase }] : [];
       });
 
-  upsertHints(
-    ACCOUNT_HINTS_FILE,
-    "accountId",
-    tokenize(accountRef).map(({ type, hint }) => ({ type, hint, id: accountId }))
+  const accountEntries: Array<Record<string, string>> = tokenize(accountRef).map(
+    ({ type, hint }) => ({ type, hint, accountId, cardId: "-" })
   );
+  if (cardId && cardId !== "-" && cardRef && cardRef !== "-") {
+    accountEntries.push(
+      ...tokenize(cardRef).map(({ type, hint }) => ({ type, hint, accountId, cardId }))
+    );
+  }
+  upsertHints(ACCOUNT_HINTS_FILE, ["type", "hint", "accountId", "cardId"], accountEntries);
 
   upsertHints(
     CATEGORY_HINTS_FILE,
-    "categoryId",
-    tokenize(categoryRef).map(({ type, hint }) => ({ type, hint, id: categoryId }))
+    ["type", "hint", "categoryId", "note"],
+    tokenize(categoryRef).map(({ type, hint }) => ({ type, hint, categoryId, note: note ?? "-" }))
   );
-
-  if (cardId && cardId !== "-" && cardRef && cardRef !== "-") {
-    upsertHints(
-      CARD_HINTS_FILE,
-      "cardId",
-      tokenize(cardRef).map(({ type, hint }) => ({ type, hint, id: cardId }))
-    );
-  }
 
   // 3. Rewrite map: remove accepted row + expired rows
   const cutoff = Date.now() - MAP_TTL_HOURS * 3_600_000;

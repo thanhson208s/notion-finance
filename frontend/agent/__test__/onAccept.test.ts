@@ -82,6 +82,7 @@ describe('when messageId is found', () => {
     expect(hints[0]!['hint']).toBe('vcb')
     expect(hints[0]!['type']).toBe('text')
     expect(hints[0]!['accountId']).toBe('acc1')
+    expect(hints[0]!['cardId']).toBe('-')
   })
 
   it('upserts visual account hints as single multi-word phrase', () => {
@@ -93,6 +94,7 @@ describe('when messageId is found', () => {
     expect(hints[0]!['type']).toBe('visual')
     expect(hints[0]!['hint']).toBe('blue store logo')
     expect(hints[0]!['accountId']).toBe('acc1')
+    expect(hints[0]!['cardId']).toBe('-')
   })
 
   it('upserts category hints from categoryRef tokens', () => {
@@ -103,24 +105,35 @@ describe('when messageId is found', () => {
     expect(hints).toHaveLength(1)
     expect(hints[0]!['hint']).toBe('lunch')
     expect(hints[0]!['type']).toBe('text')
+    expect(hints[0]!['categoryId']).toBe('cat2')
   })
 
-  it('does NOT create card_hints.csv when cardId is "-"', () => {
-    setupEnv([makePendingRow({ cardId: '-', cardRef: '-' })])
+  it('stores transaction note in category_hints.csv', () => {
+    setupEnv([makePendingRow({ categoryRef: 'text:lunch', note: 'lunch at restaurant' })])
     runScript('onAccept.ts', [MSG_ID], {}, undefined, env.cwd)
 
-    const cardHints = parseCsv(path.join(env.dataDir, 'card_hints.csv'))
-    expect(cardHints).toHaveLength(0)
+    const hints = parseCsv(path.join(env.dataDir, 'category_hints.csv'))
+    expect(hints[0]!['note']).toBe('lunch at restaurant')
   })
 
-  it('upserts card hints when cardId and cardRef are non-empty', () => {
+  it('account_hints.csv has cardId="-" when no card', () => {
+    setupEnv([makePendingRow({ cardId: '-', cardRef: '-', accountRef: 'text:vcb' })])
+    runScript('onAccept.ts', [MSG_ID], {}, undefined, env.cwd)
+
+    const hints = parseCsv(path.join(env.dataDir, 'account_hints.csv'))
+    expect(hints.every((r) => r['cardId'] === '-')).toBe(true)
+  })
+
+  it('upserts card hints into account_hints.csv when cardId and cardRef are non-empty', () => {
     setupEnv([makePendingRow({ cardId: 'card1', cardRef: 'text:visa|text:9999' })])
     runScript('onAccept.ts', [MSG_ID], {}, undefined, env.cwd)
 
-    const hints = parseCsv(path.join(env.dataDir, 'card_hints.csv'))
-    const hintWords = hints.map((r) => r['hint'])
+    const hints = parseCsv(path.join(env.dataDir, 'account_hints.csv'))
+    const cardHints = hints.filter((r) => r['cardId'] === 'card1')
+    const hintWords = cardHints.map((r) => r['hint'])
     expect(hintWords).toContain('visa')
     expect(hintWords).toContain('9999')
+    expect(cardHints.every((r) => r['accountId'] === 'acc1')).toBe(true)
   })
 
   it('removes the accepted row from msg_tx_map.csv', () => {

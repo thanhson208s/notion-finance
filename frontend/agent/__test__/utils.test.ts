@@ -185,22 +185,22 @@ describe('rewriteCsv', () => {
 describe('upsertHints', () => {
   it('creates file with hint when file does not exist', () => {
     const f = path.join(tmpDir, 'hints.csv')
-    upsertHints(f, 'accountId', [{ type: 'text', hint: 'vcb', id: 'acc1' }])
+    upsertHints(f, ['type', 'hint', 'accountId'], [{ type: 'text', hint: 'vcb', accountId: 'acc1' }])
     const rows = parseCsv(f)
     expect(rows).toEqual([{ type: 'text', hint: 'vcb', accountId: 'acc1' }])
   })
 
   it('adds new hint to existing file', () => {
     const f = path.join(tmpDir, 'hints.csv')
-    upsertHints(f, 'accountId', [{ type: 'text', hint: 'vcb', id: 'acc1' }])
-    upsertHints(f, 'accountId', [{ type: 'text', hint: 'momo', id: 'acc2' }])
+    upsertHints(f, ['type', 'hint', 'accountId'], [{ type: 'text', hint: 'vcb', accountId: 'acc1' }])
+    upsertHints(f, ['type', 'hint', 'accountId'], [{ type: 'text', hint: 'momo', accountId: 'acc2' }])
     expect(parseCsv(f)).toHaveLength(2)
   })
 
   it('overwrites existing hint when same type+key, new id', () => {
     const f = path.join(tmpDir, 'hints.csv')
-    upsertHints(f, 'accountId', [{ type: 'text', hint: 'vcb', id: 'acc1' }])
-    upsertHints(f, 'accountId', [{ type: 'text', hint: 'vcb', id: 'acc2' }])
+    upsertHints(f, ['type', 'hint', 'accountId'], [{ type: 'text', hint: 'vcb', accountId: 'acc1' }])
+    upsertHints(f, ['type', 'hint', 'accountId'], [{ type: 'text', hint: 'vcb', accountId: 'acc2' }])
     const rows = parseCsv(f)
     expect(rows).toHaveLength(1)
     expect(rows[0]!['accountId']).toBe('acc2')
@@ -208,8 +208,8 @@ describe('upsertHints', () => {
 
   it('keeps same hint word when types differ (text vs visual)', () => {
     const f = path.join(tmpDir, 'hints.csv')
-    upsertHints(f, 'accountId', [{ type: 'text', hint: 'vcb', id: 'acc1' }])
-    upsertHints(f, 'accountId', [{ type: 'visual', hint: 'vcb', id: 'acc2' }])
+    upsertHints(f, ['type', 'hint', 'accountId'], [{ type: 'text', hint: 'vcb', accountId: 'acc1' }])
+    upsertHints(f, ['type', 'hint', 'accountId'], [{ type: 'visual', hint: 'vcb', accountId: 'acc2' }])
     const rows = parseCsv(f)
     expect(rows).toHaveLength(2)
     expect(rows.find((r) => r['type'] === 'text')?.['accountId']).toBe('acc1')
@@ -218,11 +218,11 @@ describe('upsertHints', () => {
 
   it('keeps unrelated hints when upserting', () => {
     const f = path.join(tmpDir, 'hints.csv')
-    upsertHints(f, 'accountId', [
-      { type: 'text', hint: 'vcb', id: 'acc1' },
-      { type: 'text', hint: 'momo', id: 'acc2' },
+    upsertHints(f, ['type', 'hint', 'accountId'], [
+      { type: 'text', hint: 'vcb', accountId: 'acc1' },
+      { type: 'text', hint: 'momo', accountId: 'acc2' },
     ])
-    upsertHints(f, 'accountId', [{ type: 'text', hint: 'vcb', id: 'acc3' }])
+    upsertHints(f, ['type', 'hint', 'accountId'], [{ type: 'text', hint: 'vcb', accountId: 'acc3' }])
     const rows = parseCsv(f)
     expect(rows).toHaveLength(2)
     const momo = rows.find((r) => r['hint'] === 'momo')
@@ -231,18 +231,37 @@ describe('upsertHints', () => {
 
   it('inserts multiple hints in a single call', () => {
     const f = path.join(tmpDir, 'hints.csv')
-    upsertHints(f, 'categoryId', [
-      { type: 'text', hint: 'coffee', id: 'cat1' },
-      { type: 'text', hint: 'lunch', id: 'cat2' },
-      { type: 'visual', hint: 'green cup logo', id: 'cat1' },
+    upsertHints(f, ['type', 'hint', 'categoryId'], [
+      { type: 'text', hint: 'coffee', categoryId: 'cat1' },
+      { type: 'text', hint: 'lunch', categoryId: 'cat2' },
+      { type: 'visual', hint: 'green cup logo', categoryId: 'cat1' },
     ])
     expect(parseCsv(f)).toHaveLength(3)
   })
 
   it('creates parent directory when it does not exist', () => {
     const f = path.join(tmpDir, 'sub', 'hints.csv')
-    upsertHints(f, 'cardId', [{ type: 'text', hint: 'visa', id: 'card1' }])
+    upsertHints(f, ['type', 'hint', 'cardId'], [{ type: 'text', hint: 'visa', cardId: 'card1' }])
     expect(fs.existsSync(f)).toBe(true)
+  })
+
+  it('serializes extra columns using headers array', () => {
+    const f = path.join(tmpDir, 'hints.csv')
+    upsertHints(f, ['type', 'hint', 'accountId', 'cardId'], [
+      { type: 'text', hint: 'visa', accountId: 'acc1', cardId: 'card1' },
+    ])
+    const rows = parseCsv(f)
+    expect(rows[0]!['cardId']).toBe('card1')
+    expect(rows[0]!['accountId']).toBe('acc1')
+  })
+
+  it('defaults missing fields to "-" when serializing', () => {
+    const f = path.join(tmpDir, 'hints.csv')
+    upsertHints(f, ['type', 'hint', 'accountId', 'cardId'], [
+      { type: 'text', hint: 'vcb', accountId: 'acc1' },
+    ])
+    const rows = parseCsv(f)
+    expect(rows[0]!['cardId']).toBe('-')
   })
 })
 

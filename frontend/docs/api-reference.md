@@ -476,3 +476,52 @@ Reverses a transaction's balance effects and trashes the Notion page.
 - Archives the Notion page via `in_trash: true`
 
 **Errors**: 400 if `id` missing, 404 if not found
+
+
+---
+
+## Internal / Cron Endpoints
+
+These endpoints are not user-facing. They are invoked by Vercel's cron scheduler or manually for testing.
+
+---
+
+### GET /api/cron/snapshot
+
+**Status**: ✅ DONE
+
+Creates monthly balance snapshots for all accounts. Runs automatically via Vercel cron at the start of each month (00:00 Bangkok time).
+
+**Auth**: Requires `Authorization: Bearer <CRON_SECRET>` header. Returns `401` if missing or invalid.
+
+**Response 200** (executed on 1st of month):
+```json
+{
+  "label": "01-02-2026",
+  "results": [
+    {
+      "accountId": "string",
+      "accountName": "Cash",
+      "status": "created",
+      "snapshotId": "string",
+      "calculatedBalance": 1500000,
+      "actualBalance": 1500000,
+      "mismatch": false
+    },
+    {
+      "accountId": "string",
+      "accountName": "Savings",
+      "status": "skipped",
+      "reason": "no_transactions"
+    }
+  ],
+  "mismatches": 0
+}
+```
+
+**Business logic**:
+- For each account with a prior snapshot: fetches transactions since the last snapshot, calculates new balance, creates snapshot record
+- Sends a Telegram alert if any account's calculated balance differs from the stored account balance by more than 0.001
+- Accounts without a prior snapshot or with no new transactions are skipped
+
+**Errors**: 401 if unauthorized, 500 on internal error

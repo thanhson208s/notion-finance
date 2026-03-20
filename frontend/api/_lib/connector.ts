@@ -2,6 +2,7 @@ import { Client, PageObjectResponse, UpdatePageParameters } from "@notionhq/clie
 import { Account, AccountType, CardSummary, computePriorityScore } from "./types/account.type";
 import { Category, CategoryType } from "./types/category.type";
 import { Transaction } from "./types/transaction.type";
+import { Snapshot } from "./types/snapshot.type";
 import { DatabaseError, SchemaError } from "./types/error";
 
 export function toISOStringWithTimezone(ms: number, tz: string): string {
@@ -275,6 +276,79 @@ export class Connector {
     await this.notion.pages.update({ page_id: id, in_trash: true });
   }
 
+  async fetchLatestSnapshotForAccount(accountId: string): Promise<Snapshot | null> {
+    const response = await this.notion.dataSources.query({
+      data_source_id: process.env.NOTION_SNAPSHOT_DATABASE_ID as string,
+      filter: {
+        property: "Account",
+        relation: { contains: accountId }
+      },
+      sorts: [{ property: "Date", direction: "descending" }],
+      page_size: 1
+    });
+    const pages = response.results.filter(
+      (r): r is PageObjectResponse => r.object === 'page' && 'properties' in r
+    );
+    if (pages.length === 0) return null;
+    return this.mapPageToSnapshot(pages[0]!);
+  }
+
+  async fetchTransactionsForAccount(accountId: string, startDate: string): Promise<Transaction[]> {
+    const pages = await this.queryAllPages({
+      data_source_id: process.env.NOTION_TRANSACTION_DATABASE_ID as string,
+      filter: {
+        and: [
+          {
+            or: [
+              { property: "FromAccount", relation: { contains: accountId } },
+              { property: "ToAccount", relation: { contains: accountId } }
+            ]
+          },
+          { property: "Timestamp", date: { on_or_after: startDate } }
+        ]
+      },
+      sorts: [{ property: "Timestamp", direction: "ascending" }]
+    });
+    return pages.map(page => this.mapPageToTransaction(page));
+  }
+
+  async createSnapshot(accountId: string, accountName: string, balance: number, snapshotDateMs: number): Promise<Snapshot> {
+    const dateISO = toISOStringWithTimezone(snapshotDateMs, 'Asia/Bangkok');
+    const parts = dateISO.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const year = parts?.[1] ?? '';
+    const month = parts?.[2] ?? '';
+    const day = parts?.[3] ?? '';
+    const name = `${accountName}-${day}-${month}-${year}`;
+
+    const response = await this.notion.pages.create({
+      parent: {
+        data_source_id: process.env.NOTION_SNAPSHOT_DATABASE_ID as string
+      },
+      properties: {
+        "Name": {
+          type: "title",
+          title: [{ type: "text", text: { content: name } }]
+        },
+        "Account": {
+          type: "relation",
+          relation: [{ id: accountId }]
+        },
+        "Date": {
+          type: "date",
+          date: { start: dateISO }
+        },
+        "Balance": {
+          type: "number",
+          number: balance
+        }
+      }
+    });
+
+    if (!("properties" in response))
+      throw new DatabaseError(`Snapshot for ${accountId} not created`);
+    return this.mapPageToSnapshot(response);
+  }
+
   private async queryAllPages(
     params: Parameters<typeof this.notion.dataSources.query>[0]
   ): Promise<PageObjectResponse[]> {
@@ -468,5 +542,13 @@ export class Connector {
     }
 
     return prop.date?.start ? new Date(prop.date.start).getTime() : null;
+  }
+
+  private mapPageToSnapshot(page: PageObjectResponse): Snapshot {
+    const name      = this.getTitleProperty(page, "Name");
+    const accountId = this.getRelationProperty(page, "Account", true);
+    const date      = this.getDateProperty(page, "Date", true);
+    const balance   = this.getNumberProperty(page, "Balance", true);
+    return { id: page.id, name, accountId, date, balance } satisfies Snapshot;
   }
 }

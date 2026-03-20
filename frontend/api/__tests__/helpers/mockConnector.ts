@@ -18,6 +18,9 @@ export function createMockConnector(overrides = {}): Connector {
     fetchTransaction: vi.fn(),
     updateTransactionPage: vi.fn(),
     archiveTransaction: vi.fn(),
+    fetchLatestSnapshotForAccount: vi.fn(),
+    fetchTransactionsForAccount: vi.fn(),
+    createSnapshot: vi.fn(),
     ...overrides
   } as unknown as Connector
 }

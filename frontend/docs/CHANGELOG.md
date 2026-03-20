@@ -9,6 +9,19 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.7.0] - 2026-03-19
+
+### Added
+
+- feat(snapshots): monthly account balance snapshots via Vercel cron job (F-17)
+  - Cron fires at `0 0 1 * *` UTC (= 07:00 Bangkok time on 1st of month)
+  - Calculates balance from previous snapshot + transaction delta
+  - Sends Telegram alert when calculated balance mismatches account balance
+  - New endpoint: `GET /api/cron/snapshot` (CRON_SECRET protected)
+  - New docs: `docs/feature-snapshots.md`
+
+---
+
 ## [FE-0.6.5] - 2026-03-15
 
 ### Changed

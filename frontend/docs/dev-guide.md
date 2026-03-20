@@ -25,6 +25,11 @@ In production, all variables are set in the Vercel project settings dashboard.
 | `NOTION_TRANSFER_TRANSACTION_ID` | Page ID | Page ID of the "Transfer" category in the Category DB |
 | `NOTION_ADJUSTMENT_TRANSACTION_ID` | Page ID | Page ID of the "Adjustment" category in the Category DB |
 | `VITE_API_BASE` | URL | API base URL — `/api` in production, `http://localhost:3000/api` for local dev |
+| `NOTION_SNAPSHOT_DATABASE_ID` | DB ID | ID of the Account Snapshot Notion database |
+| `CRON_SECRET` | Secret | Random secret used to authenticate Vercel cron requests — generate with `openssl rand -hex 32` |
+| `TELEGRAM_BOT_TOKEN` | Secret | Telegram bot token for sending mismatch alerts |
+| `TELEGRAM_CHAT_ID` | String | Telegram chat/group ID to send alerts to |
+| `TELEGRAM_TOPIC_ID` | Number | Telegram forum topic ID (thread); set to `0` if not using topics |
 
 > **How to get database IDs**: Open the Notion database, click Share → Copy link. The ID is the 32-character hex string in the URL.
 >
@@ -53,6 +58,17 @@ npm run deploy
 
 **Build output**: `dist/` directory (Vite static build).
 **Deploy**: `vercel --prod` — pushes both the frontend and `api/` serverless functions.
+
+---
+
+## Triggering the monthly snapshot cron manually
+
+```bash
+curl -X GET https://finance.gootube.online/api/cron/snapshot \
+  -H "Authorization: Bearer <CRON_SECRET>"
+```
+
+Vercel automatically adds the `Authorization: Bearer <CRON_SECRET>` header when invoking scheduled cron functions. For local testing, provide the header manually.
 
 ---
 

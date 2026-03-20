@@ -88,3 +88,19 @@ export type GetReportsResponse = {
   expenseCategoryBreakdown: CategoryBreakdown[]
   incomeCategoryBreakdown: CategoryBreakdown[]
 }
+
+export type SnapshotResult = {
+  accountId: string
+  accountName: string
+  status: 'created' | 'no_prior_snapshot' | 'no_transactions'
+  snapshotId?: string
+  calculatedBalance?: number
+  actualBalance?: number
+  mismatch?: boolean
+}
+
+export type SnapshotRunResponse = {
+  label: string;
+  results: SnapshotResult[];
+  mismatches: number
+}

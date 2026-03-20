@@ -105,3 +105,22 @@ These are Category **page IDs** (not database IDs) that must be created in the C
 
 **Status**: Card data is fetched and embedded in `GET /api/accounts` response (as `cards[]` per account).
 See [feature-cards.md](./feature-cards.md).
+
+---
+
+## 5. Snapshot Database
+
+**ENV**: `NOTION_SNAPSHOT_DATABASE_ID`
+
+| Notion Property | Notion Type | TypeScript Type | Notes |
+|---|---|---|---|
+| `Name` | Title | `string` | Auto-generated: `[account name]-[DD]-[MM]-[YYYY]` e.g. `Cash-01-02-2026` |
+| `Account` | Relation | `string` | Relation to Account database (single) |
+| `Date` | Date | `number` (epoch ms) | `00:00:00+07:00` (Bangkok midnight) on the day of the snapshot |
+| `Balance` | Number | `number` | Calculated balance: previous snapshot balance + transaction delta since last snapshot |
+
+> **First snapshot**: Must be created manually in Notion. Subsequent monthly snapshots are created automatically by the cron job.
+>
+> **Skip rule**: Accounts with no prior snapshot, or no transactions since the last snapshot, are not snapshotted.
+
+See [feature-snapshots.md](./feature-snapshots.md).

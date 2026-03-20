@@ -69,7 +69,7 @@ Four Notion databases. Full schema with property names and types: [`docs/databas
 | F-09 | Spending and income summary for a selected date range | ✅ Done |
 | F-10 | Category breakdown report | ✅ Done |
 | F-11 | Pagination for transaction list endpoints | ✅ Done |
-| F-12 | Account priority ranking based on recent transaction frequency | ❌ Todo |
+| F-12 | Account priority ranking based on recent transaction frequency | ✅ Done |
 
 ### Phase 3 — Extended Features (Backlog)
 
@@ -79,7 +79,7 @@ Four Notion databases. Full schema with property names and types: [`docs/databas
 | F-14 | Monthly budget allocation and tracking per category | ❌ Todo |
 | F-15 | Voucher and promotions management | ❌ Todo |
 | F-16 | Cash flow projection | ❌ Todo |
-| F-17 | Periodic balance snapshot / screenshot archiving | ❌ Todo |
+| F-17 | Periodic balance snapshot / screenshot archiving | ✅ Done |
 
 ---
 

@@ -26,9 +26,12 @@ import {
   editMessageText,
   MAP_FILE,
   parseCsv,
+  rewriteCsv,
   readStdin,
   TELEGRAM_BOT_TOKEN,
-  TELEGRAM_CHAT_ID
+  TELEGRAM_CHAT_ID,
+  MAP_TTL_HOURS,
+  MAP_HEADERS
 } from "./utils.ts";
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -65,12 +68,17 @@ async function main(): Promise<void> {
     throw new Error(`DELETE transaction failed: ${reason}`);
   }
 
-  // 3. Reconstruct original message text from map row + cache
-  const originalText = buildConfirmationText(
-    row as Parameters<typeof buildConfirmationText>[0]
+  // 3. Rewrite map: remove rejected row + expired rows
+  const cutoff = Date.now() - MAP_TTL_HOURS * 3_600_000;
+  const remaining = allRows.filter(
+    (r) =>
+      r["messageId"] !== rawMessageId &&
+      Number(r["lastModified"]) >= cutoff
   );
+  rewriteCsv(MAP_FILE, MAP_HEADERS, remaining);
 
   // 4. Edit Telegram message with status, remove inline keyboard
+  const originalText = buildConfirmationText(row as Parameters<typeof buildConfirmationText>[0]);
   await editMessageText(
     token,
     chatId,

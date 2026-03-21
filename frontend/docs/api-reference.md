@@ -511,17 +511,78 @@ Creates monthly balance snapshots for all accounts. Runs automatically via Verce
     {
       "accountId": "string",
       "accountName": "Savings",
-      "status": "skipped",
-      "reason": "no_transactions"
+      "status": "no_transactions"
+    },
+    {
+      "accountId": "string",
+      "accountName": "Old Account",
+      "status": "no_prior_snapshot"
     }
   ],
   "mismatches": 0
 }
 ```
 
+**`status` values**:
+
+| Value | Meaning |
+|---|---|
+| `created` | Snapshot record created successfully |
+| `no_prior_snapshot` | Skipped — no prior snapshot exists (first snapshot must be created manually) |
+| `no_transactions` | Skipped — no transactions since the last snapshot |
+
 **Business logic**:
 - For each account with a prior snapshot: fetches transactions since the last snapshot, calculates new balance, creates snapshot record
-- Sends a Telegram alert if any account's calculated balance differs from the stored account balance by more than 0.001
-- Accounts without a prior snapshot or with no new transactions are skipped
+- Always sends a full Telegram run report listing created snapshots, mismatched accounts, and skipped accounts with their skip reason
+- Accounts without a prior snapshot or with no new transactions are skipped (reflected in `status`)
+
+**Errors**: 401 if unauthorized, 500 on internal error
+
+---
+
+### GET /api/cron/archive
+
+**Status**: ✅ DONE
+
+Archives transactions older than 3 calendar months into per-month Archive pages with inline child databases. Runs automatically via Vercel cron every day at 00:00 UTC.
+
+**Auth**: Requires `Authorization: Bearer <CRON_SECRET>` header. Returns `401` if missing or invalid.
+
+**Response 200**:
+```json
+{
+  "cutoff": "2025-12-21T00:00:00.000Z",
+  "totalFetched": 42,
+  "buckets": [
+    {
+      "month": 11,
+      "year": 2025,
+      "count": 20,
+      "archiveId": "string",
+      "status": "created"
+    },
+    {
+      "month": 10,
+      "year": 2025,
+      "count": 22,
+      "archiveId": "string",
+      "status": "existing"
+    }
+  ],
+  "totalArchived": 42
+}
+```
+
+**Business logic**:
+1. Compute cutoff = now minus 3 calendar months (midnight UTC)
+2. Fetch all transactions with `Timestamp < cutoff` from the main Transaction DB
+3. Group transactions by Bangkok-timezone month/year
+4. For each bucket:
+   - Find or create an Archive page in the Archive DB
+   - Find or create an inline child Transaction DB under that page
+   - Add each transaction to the inline DB
+   - Delete (in_trash) each transaction from the main Transaction DB
+   - Update archive stats (`Count`, `Debit`, `Credit`)
+5. Always sends a full Telegram run report
 
 **Errors**: 401 if unauthorized, 500 on internal error

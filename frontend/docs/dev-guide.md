@@ -26,9 +26,10 @@ In production, all variables are set in the Vercel project settings dashboard.
 | `NOTION_ADJUSTMENT_TRANSACTION_ID` | Page ID | Page ID of the "Adjustment" category in the Category DB |
 | `VITE_API_BASE` | URL | API base URL — `/api` in production, `http://localhost:3000/api` for local dev |
 | `NOTION_SNAPSHOT_DATABASE_ID` | DB ID | ID of the Account Snapshot Notion database |
+| `NOTION_ARCHIVE_DATABASE_ID` | DB ID | ID of the Archive Notion database (one page per calendar month) |
 | `CRON_SECRET` | Secret | Random secret used to authenticate Vercel cron requests — generate with `openssl rand -hex 32` |
-| `TELEGRAM_BOT_TOKEN` | Secret | Telegram bot token for sending mismatch alerts |
-| `TELEGRAM_CHAT_ID` | String | Telegram chat/group ID to send alerts to |
+| `TELEGRAM_BOT_TOKEN` | Secret | Telegram bot token for sending run reports and alerts |
+| `TELEGRAM_CHAT_ID` | String | Telegram chat/group ID to send reports to |
 | `TELEGRAM_TOPIC_ID` | Number | Telegram forum topic ID (thread); set to `0` if not using topics |
 
 > **How to get database IDs**: Open the Notion database, click Share → Copy link. The ID is the 32-character hex string in the URL.
@@ -69,6 +70,17 @@ curl -X GET https://finance.gootube.online/api/cron/snapshot \
 ```
 
 Vercel automatically adds the `Authorization: Bearer <CRON_SECRET>` header when invoking scheduled cron functions. For local testing, provide the header manually.
+
+---
+
+## Triggering the archive cron manually
+
+```bash
+curl -X GET https://finance.gootube.online/api/cron/archive \
+  -H "Authorization: Bearer <CRON_SECRET>"
+```
+
+The archive cron runs daily at 00:00 UTC and archives any transactions older than 3 calendar months. Safe to re-run — existing archive pages are reused.
 
 ---
 

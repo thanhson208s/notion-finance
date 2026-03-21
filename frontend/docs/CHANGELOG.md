@@ -9,6 +9,29 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.8.0] - 2026-03-21
+
+### Added
+
+- feat(archive): monthly transaction archive cron job (F-18)
+  - Cron fires at `0 0 * * *` UTC (daily midnight) — archives transactions older than 3 calendar months
+  - Fetches all transactions with `Timestamp < cutoff`, groups by Bangkok-timezone month/year
+  - For each bucket: finds or creates an Archive page + inline child DB, moves each transaction to the inline DB, deletes (in_trash) from main Transaction DB, updates archive stats
+  - New Archive DB schema: `Name`, `Month`, `Year`, `Count`, `Debit`, `Credit`, `Transactions DB`
+  - New endpoint: `GET /api/cron/archive` (CRON_SECRET protected)
+  - New docs: `docs/feature-archive.md`
+  - New env var required: `NOTION_ARCHIVE_DATABASE_ID`
+  - New connector methods: `fetchOldTransactions`, `fetchArchive`, `createArchivePage`, `createArchiveTransactionDb`, `setArchiveTransactionsDb`, `addTransactionToArchiveDb`, `updateArchiveStats`
+
+### Changed
+
+- refactor(snapshots): `SnapshotResult` type unified — removed separate `reason` field
+  - Old shape: `status: 'created' | 'skipped'` + optional `reason: 'no_prior_snapshot' | 'no_transactions'`
+  - New shape: `status: 'created' | 'no_prior_snapshot' | 'no_transactions'` (single discriminant field)
+- feat(snapshots): snapshot cron now always sends a full Telegram run report — previously only sent when mismatches were detected; now includes created snapshots, mismatched accounts, and each skip reason
+
+---
+
 ## [FE-0.7.0] - 2026-03-19
 
 ### Added

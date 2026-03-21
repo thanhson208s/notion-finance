@@ -124,3 +124,29 @@ See [feature-cards.md](./feature-cards.md).
 > **Skip rule**: Accounts with no prior snapshot, or no transactions since the last snapshot, are not snapshotted.
 
 See [feature-snapshots.md](./feature-snapshots.md).
+
+---
+
+## 6. Archive Database
+
+**ENV**: `NOTION_ARCHIVE_DATABASE_ID`
+
+Each page in this database represents one calendar month of archived transactions. The page contains an inline child database (created programmatically) that holds the actual moved transaction records.
+
+| Notion Property | Notion Type | TypeScript Type | Notes |
+|---|---|---|---|
+| `Name` | Title | `string` | Auto-generated: `[MM]-[YYYY]` e.g. `11-2025` |
+| `Month` | Number | `number` | Calendar month (1–12) |
+| `Year` | Number | `number` | Calendar year e.g. `2025` |
+| `Count` | Number | `number` | Total number of archived transactions in this page |
+| `Debit` | Number | `number` | Sum of `amount` for transactions where `FromAccount` is set (expense/transfer-out) |
+| `Credit` | Number | `number` | Sum of `amount` for transactions where `ToAccount` is set (income/transfer-in) |
+| `Transactions DB` | Rich text | `string` | Notion database ID of the inline child Transaction DB created under this page |
+
+> **Inline child DB**: Created via `databases.create` with `parent: { type: 'page_id', page_id: archivePageId }`. Its schema mirrors the main Transaction DB.
+>
+> **Archive cutoff**: Transactions older than 3 calendar months from the current date (midnight UTC) are eligible for archiving.
+>
+> **Idempotency**: `fetchArchive(month, year)` checks for an existing archive page before creating a new one — re-running the cron safely re-uses existing pages.
+
+See [feature-archive.md](./feature-archive.md).

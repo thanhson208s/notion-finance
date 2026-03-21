@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/snapshot",
       "schedule": "0 0 1 * *"
+    },
+    {
+      "path": "/api/cron/archive",
+      "schedule": "0 0 * * *"
     }
   ]
 }

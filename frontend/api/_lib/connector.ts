@@ -1,8 +1,9 @@
-import { Client, PageObjectResponse, UpdatePageParameters } from "@notionhq/client";
+import { Client, DatabaseObjectResponse, PageObjectResponse, UpdatePageParameters } from "@notionhq/client";
 import { Account, AccountType, CardSummary, computePriorityScore } from "./types/account.type";
 import { Category, CategoryType } from "./types/category.type";
 import { Transaction } from "./types/transaction.type";
 import { Snapshot } from "./types/snapshot.type";
+import { Archive } from "./types/archive.type";
 import { DatabaseError, SchemaError } from "./types/error";
 
 export function toISOStringWithTimezone(ms: number, tz: string): string {
@@ -276,6 +277,118 @@ export class Connector {
     await this.notion.pages.update({ page_id: id, in_trash: true });
   }
 
+  async fetchOldTransactions(before: string): Promise<Transaction[]> {
+    const pages = await this.queryAllPages({
+      data_source_id: process.env.NOTION_TRANSACTION_DATABASE_ID as string,
+      filter: {
+        property: "Timestamp",
+        date: { before }
+      },
+      sorts: [{ property: "Timestamp", direction: "ascending" }]
+    });
+    return pages.map(page => this.mapPageToTransaction(page));
+  }
+
+  async fetchArchive(month: number, year: number): Promise<Archive | null> {
+    const response = await this.notion.dataSources.query({
+      data_source_id: process.env.NOTION_ARCHIVE_DATABASE_ID as string,
+      filter: {
+        and: [
+          { property: "Month", number: { equals: month } },
+          { property: "Year",  number: { equals: year  } }
+        ]
+      },
+      page_size: 1
+    });
+    const pages = response.results.filter(
+      (r): r is PageObjectResponse => r.object === 'page' && 'properties' in r
+    );
+    if (pages.length === 0) return null;
+    return this.mapPageToArchive(pages[0]!);
+  }
+
+  async createArchivePage(month: number, year: number): Promise<Archive> {
+    const name = `${String(month).padStart(2, '0')}-${year}`;
+    const response = await this.notion.pages.create({
+      parent: {
+        data_source_id: process.env.NOTION_ARCHIVE_DATABASE_ID as string
+      },
+      properties: {
+        "Name":  { type: "title",  title:  [{ type: "text", text: { content: name } }] },
+        "Month": { type: "number", number: month },
+        "Year":  { type: "number", number: year  },
+        "Count": { type: "number", number: 0 },
+        "Debit": { type: "number", number: 0 },
+        "Credit":{ type: "number", number: 0 }
+      }
+    });
+    if (!("properties" in response))
+      throw new DatabaseError(`Archive ${name} not created`);
+    return this.mapPageToArchive(response);
+  }
+
+  async createArchiveTransactionDb(archivePageId: string): Promise<string> {
+    const dbRaw = await this.notion.databases.create({
+      parent: { type: "page_id", page_id: archivePageId },
+      title: [{ type: "text", text: { content: "Transactions" } }],
+      is_inline: true
+    });
+    const db = dbRaw as DatabaseObjectResponse;
+    const dataSourceId = db.data_sources[0]?.id;
+    if (!dataSourceId)
+      throw new DatabaseError(`No data source found for archive transaction DB on page ${archivePageId}`);
+    await this.notion.dataSources.update({
+      data_source_id: dataSourceId,
+      properties: {
+        "Timestamp":   { date: {} },
+        "Amount":      { number: {} },
+        "FromAccount": { relation: { data_source_id: process.env.NOTION_ACCOUNT_DATABASE_ID  as string, type: "single_property", single_property: {} } },
+        "ToAccount":   { relation: { data_source_id: process.env.NOTION_ACCOUNT_DATABASE_ID  as string, type: "single_property", single_property: {} } },
+        "Category":    { relation: { data_source_id: process.env.NOTION_CATEGORY_DATABASE_ID as string, type: "single_property", single_property: {} } },
+        "Note":        { rich_text: {} }
+      }
+    });
+    return dataSourceId;
+  }
+
+  async setArchiveTransactionsDb(archiveId: string, transactionsDbId: string): Promise<void> {
+    await this.notion.pages.update({
+      page_id: archiveId,
+      properties: {
+        "Transactions DB": {
+          type: "rich_text",
+          rich_text: [{ type: "text", text: { content: transactionsDbId } }]
+        }
+      }
+    });
+  }
+
+  async addTransactionToArchiveDb(dbId: string, tx: Transaction): Promise<void> {
+    await this.notion.pages.create({
+      parent: { data_source_id: dbId },
+      properties: {
+        "Name":        { type: "title",     title:     [{ type: "text", text: { content: tx.id } }] },
+        "Timestamp":   { type: "date",      date:      { start: toISOStringWithTimezone(tx.timestamp, 'Asia/Bangkok') } },
+        "Amount":      { type: "number",    number:    tx.amount },
+        "FromAccount": { type: "relation", relation: tx.fromAccountId ? [{ id: tx.fromAccountId }] : [] },
+        "ToAccount":   { type: "relation", relation: tx.toAccountId  ? [{ id: tx.toAccountId  }] : [] },
+        "Category":    { type: "relation", relation: [{ id: tx.categoryId }] },
+        "Note":        { type: "rich_text", rich_text: [{ type: "text", text: { content: tx.note              } }] }
+      }
+    });
+  }
+
+  async updateArchiveStats(archiveId: string, countDelta: number, debitDelta: number, creditDelta: number, current: Archive): Promise<void> {
+    await this.notion.pages.update({
+      page_id: archiveId,
+      properties: {
+        "Count": { type: "number", number: current.count + countDelta },
+        "Debit": { type: "number", number: current.debit + debitDelta },
+        "Credit":{ type: "number", number: current.credit + creditDelta }
+      }
+    });
+  }
+
   async fetchLatestSnapshotForAccount(accountId: string): Promise<Snapshot | null> {
     const response = await this.notion.dataSources.query({
       data_source_id: process.env.NOTION_SNAPSHOT_DATABASE_ID as string,
@@ -542,6 +655,17 @@ export class Connector {
     }
 
     return prop.date?.start ? new Date(prop.date.start).getTime() : null;
+  }
+
+  private mapPageToArchive(page: PageObjectResponse): Archive {
+    const name   = this.getTitleProperty(page, "Name");
+    const month  = this.getNumberProperty(page, "Month", true);
+    const year   = this.getNumberProperty(page, "Year",  true);
+    const count  = this.getNumberProperty(page, "Count", false) ?? 0;
+    const debit  = this.getNumberProperty(page, "Debit", false) ?? 0;
+    const credit = this.getNumberProperty(page, "Credit",false) ?? 0;
+    const transactionsDbId = this.getTextProperty(page, "Transactions DB", false);
+    return { id: page.id, name, month, year, count, debit, credit, transactionsDbId } satisfies Archive;
   }
 
   private mapPageToSnapshot(page: PageObjectResponse): Snapshot {

@@ -52,20 +52,37 @@ Transactions are filtered to those with `Timestamp >= previousSnapshot.date`.
 
 An account is **not** snapshotted when:
 
-1. **No prior snapshot exists** — the first snapshot must be created manually in Notion. This bootstraps the calculation chain.
-2. **No transactions since the last snapshot** — accounts with no activity are skipped to avoid redundant records.
+1. **No prior snapshot exists** (`status: 'no_prior_snapshot'`) — the first snapshot must be created manually in Notion. This bootstraps the calculation chain.
+2. **No transactions since the last snapshot** (`status: 'no_transactions'`) — accounts with no activity are skipped to avoid redundant records.
 
 ---
 
-## Mismatch Detection
+## Result Status Values
 
-After calculating `newBalance`, it is compared against `account.balance` (the live value stored in Notion):
+Each entry in `results[]` carries a `status` field:
 
-- If `|calculatedBalance - account.balance| > 0.001` → mismatch detected
-- A Telegram message is sent listing all mismatched accounts:
+| `status` | Meaning |
+|---|---|
+| `created` | Snapshot created; includes `snapshotId`, `calculatedBalance`, `actualBalance`, `mismatch` |
+| `no_prior_snapshot` | Skipped — no prior snapshot found |
+| `no_transactions` | Skipped — no transactions since the last snapshot |
 
+---
+
+## Telegram Run Report
+
+A full run report is **always** sent to Telegram after every cron execution (regardless of whether mismatches exist). The report includes:
+
+- Snapshots created (with mismatch flag if applicable)
+- Accounts skipped with reason (`no_prior_snapshot` or `no_transactions`)
+- Total mismatch count
+
+Example message:
 ```
-[Snapshot 01-02-2026] Balance mismatch detected:
+[Snapshot 01-02-2026] Run complete
+Created: 3 | Mismatches: 1 | Skipped (no prior): 1 | Skipped (no txns): 2
+
+Mismatches:
 • Cash: calculated=1500000, actual=1499999
 ```
 
@@ -81,7 +98,7 @@ Mismatches indicate that transactions may have been added, edited, or deleted wi
 | `api/_handlers/snapshot.handler.ts` | Business logic: `runSnapshot(connector, now?)` |
 | `api/_lib/connector.ts` | `fetchLatestSnapshotForAccount`, `fetchTransactionsForAccount`, `createSnapshot` |
 | `api/_lib/types/snapshot.type.ts` | `Snapshot` type |
-| `api/_lib/types/response.ts` | `SnapshotAccountResult`, `SnapshotRunResponse` types |
+| `api/_lib/types/response.ts` | `SnapshotResult` (unified `status` discriminant), `SnapshotRunResponse` types |
 
 ---
 

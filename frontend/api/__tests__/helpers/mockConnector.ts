@@ -21,6 +21,13 @@ export function createMockConnector(overrides = {}): Connector {
     fetchLatestSnapshotForAccount: vi.fn(),
     fetchTransactionsForAccount: vi.fn(),
     createSnapshot: vi.fn(),
+    fetchOldTransactions: vi.fn(),
+    fetchArchive: vi.fn(),
+    createArchivePage: vi.fn(),
+    createArchiveTransactionDb: vi.fn(),
+    setArchiveTransactionsDb: vi.fn(),
+    addTransactionToArchiveDb: vi.fn(),
+    updateArchiveStats: vi.fn(),
     ...overrides
   } as unknown as Connector
 }

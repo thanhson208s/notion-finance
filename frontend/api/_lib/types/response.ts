@@ -104,3 +104,9 @@ export type SnapshotRunResponse = {
   results: SnapshotResult[];
   mismatches: number
 }
+
+export type ArchiveRunResponse = {
+  archived: number
+  archivesCreated: number
+  archivesUpdated: number
+}

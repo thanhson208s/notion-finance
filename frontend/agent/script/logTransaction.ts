@@ -141,6 +141,8 @@ async function main(): Promise<void> {
   const rawJson = process.argv[2] ?? (await readStdin());
   const input = JSON.parse(rawJson.trim()) as InferenceOutput;
 
+  // await sendMessage(token, chatId, `[debug] logTransaction input:\n${JSON.stringify(input, null, 2)}`, topicId);
+
   // ── Derive type and unclearFields ─────────────────────────────────────────────
   const categories = parseCsv(CATEGORIES_FILE);
   const matchedCategory = input.categoryId

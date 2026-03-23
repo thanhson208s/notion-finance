@@ -17,6 +17,7 @@ export default function AccountsPage() {
   const { accounts, totals, accountsLoading, refetchAccounts } = useAppContext();
   const [ activeCard, setActiveCard ] = useState<string | null>(null);
   const [ filter, setFilter ] = useState<"all" | "assets" | "liabilities">("all");
+  const [ filteredType, setFilteredType ] = useState<AccountType | "all">("all");
   const [ sort, setSort ] = useState<"relevance" | "balance" | "type">("relevance");
   const [ hideEmpty, setHideEmpty ] = useState<boolean>(true);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -107,6 +108,17 @@ export default function AccountsPage() {
   const displayedTotal = filter === 'assets' ? totals.totalOfAssets
     : filter === 'liabilities' ? totals.totalOfLiabilities
     : totals.total;
+  const displayedAccounts = accounts.filter((account) => {
+    if (hideEmpty && account.balance === 0) return false;
+    if (filter === 'assets' && type2Group[account.type] !== 'asset') return false;
+    if (filter === 'liabilities' && type2Group[account.type] !== 'liability') return false;
+    return true;
+  });
+  const displayedTypes: AccountType[] = [];
+  displayedAccounts.forEach(account => {
+    if (!displayedTypes.includes(account.type))
+      displayedTypes.push(account.type);
+  });
 
   return (
     <main className="page" ref={pageRef}>
@@ -135,6 +147,19 @@ export default function AccountsPage() {
           <option value="all">All</option>
           <option value="assets">Assets</option>
           <option value="liabilities">Liabilities</option>
+        </select>
+
+        <select className="account-select"
+          title="filter"
+          value={filteredType}
+          onChange={(e) => setFilteredType(e.target.value as "all" | AccountType)}
+        >
+          <option value='all'>All</option>
+          {displayedTypes.map(type => {
+            return (
+              <option value={type}>{type}</option>
+            )
+          })}
         </select>
 
         <select className="account-select"
@@ -168,11 +193,8 @@ export default function AccountsPage() {
         </div>
       ) : (
       <div className="account-list">
-        {accounts.filter((account) => {
-          if (hideEmpty && account.balance === 0) return false;
-          if (filter === 'assets' && type2Group[account.type] !== 'asset') return false;
-          if (filter === 'liabilities' && type2Group[account.type] !== 'liability') return false;
-          return true;
+        {displayedAccounts.filter(account => {
+          return filteredType === "all" || account.type === filteredType; 
         }).sort((a, b) => {
           if (sort === 'relevance') {
             return b.priorityScore - a.priorityScore;

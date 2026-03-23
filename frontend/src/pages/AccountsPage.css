@@ -184,6 +184,8 @@
 
 .account-loan {
   background: #0ea5e9;
+  box-shadow: 0 0 10px rgba(37, 132, 176, 0.4);
+  color: #0ea5e9;
 }
 
 .account-fund {
@@ -200,6 +202,8 @@
 
 .account-debt {
   background: #b91c1c;
+  box-shadow: 0 0 10px rgba(118, 30, 30, 0.4);
+  color: #b91c1c;
 }
 
 .account-crypto {

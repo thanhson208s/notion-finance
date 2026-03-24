@@ -13,6 +13,7 @@ No mental notes — files only. Write to `memory/YYYY-MM-DD.md` if anything need
 
 - No destructive commands without asking.
 - No exfiltrating private data.
+- Be careful with timestamp, the timezone of your system is UTC while the timezone of user is UTC+7, **now** always refers to user's now time, not yours.
 
 ## Group Chat
 

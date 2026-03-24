@@ -1,7 +1,11 @@
 import { Client, DatabaseObjectResponse, PageObjectResponse, UpdatePageParameters } from "@notionhq/client";
-import { Account, AccountType, CardSummary, computePriorityScore } from "./types/account.type";
+import { Account, AccountType, computePriorityScore } from "./types/account.type";
 import { Category, CategoryType } from "./types/category.type";
 import { Transaction } from "./types/transaction.type";
+import { Card } from "./types/card.type";
+import { Promotion, PromotionCategory, PromotionType } from "./types/promotion.type";
+import { Statement } from "./types/statement.type";
+import { AddPromotionRequest, AddStatementRequest } from "./types/request";
 import { Snapshot } from "./types/snapshot.type";
 import { Archive } from "./types/archive.type";
 import { DatabaseError, SchemaError } from "./types/error";
@@ -39,23 +43,105 @@ export class Connector {
     const pages = await this.queryAllPages({
       data_source_id: process.env.NOTION_ACCOUNT_DATABASE_ID as string
     });
-    const accounts = pages.map(page => this.mapPageToAccount(page));
-    const allCardIds = [...new Set(accounts.flatMap(a => a.linkedCardIds))];
-    if (allCardIds.length === 0) return accounts;
-    const allCards = await this.fetchAllCards();
-    const cardMap = new Map(allCards.map(c => [c.id, c]));
-    return accounts.map(a => ({
-      ...a,
-      cards: a.linkedCardIds.map(id => cardMap.get(id)).filter((c): c is CardSummary => c !== undefined)
-    }));
+    return pages.map(page => this.mapPageToAccount(page));
   }
 
-  async fetchAllCards(): Promise<CardSummary[]> {
-    console.log(process.env.NOTION_CARD_DATABASE_ID);
+  async fetchAllCards(): Promise<Card[]> {
     const pages = await this.queryAllPages({
       data_source_id: process.env.NOTION_CARD_DATABASE_ID as string
     });
-    return pages.map(page => this.mapPageToCardSummary(page));
+    return pages.map(page => this.mapPageToCard(page));
+  }
+
+  async fetchCardById(id: string): Promise<Card> {
+    const response = await this.notion.pages.retrieve({ page_id: id });
+    if (!('properties' in response)) throw new DatabaseError('Card not found');
+    return this.mapPageToCard(response as PageObjectResponse);
+  }
+
+  async fetchTransactionsByCard(cardId: string, startDate: string, endDate: string): Promise<Transaction[]> {
+    const pages = await this.queryAllPages({
+      data_source_id: process.env.NOTION_TRANSACTION_DATABASE_ID as string,
+      filter: {
+        and: [
+          { property: "Linked card", relation: { contains: cardId } },
+          { property: "Timestamp", date: { on_or_after: startDate } },
+          { property: "Timestamp", date: { on_or_before: endDate } }
+        ]
+      },
+      sorts: [{ property: "Timestamp", direction: "descending" }]
+    });
+    return pages.map(page => this.mapPageToTransaction(page));
+  }
+
+  async fetchPromotions(cardId?: string): Promise<Promotion[]> {
+    const filter = cardId ? {
+      property: "Card",
+      relation: { contains: cardId }
+    } : undefined;
+    const pages = await this.queryAllPages({
+      data_source_id: process.env.NOTION_PROMOTION_DATABASE_ID as string,
+      filter
+    });
+    return pages.map(page => this.mapPageToPromotion(page));
+  }
+
+  async addPromotion(data: AddPromotionRequest): Promise<Promotion> {
+    const response = await this.notion.pages.create({
+      parent: { data_source_id: process.env.NOTION_PROMOTION_DATABASE_ID as string },
+      properties: {
+        "Name": { type: "title", title: [{ type: "text", text: { content: data.name } }] },
+        "Card": { type: "relation", relation: data.cardId ? [{ id: data.cardId }] : [] },
+        "Category": data.category ? { type: "select", select: { name: data.category } } : { type: "select", select: null },
+        "Type": { type: "select", select: { name: data.type } },
+        "Expiry Date": data.expiresAt
+          ? { type: "date", date: { start: new Date(data.expiresAt).toISOString().split('T')[0]! } }
+          : { type: "date", date: null },
+        "Link": { type: "url", url: data.link ?? null }
+      }
+    });
+    if (!("properties" in response))
+      throw new DatabaseError(`Promotion not created`);
+    return this.mapPageToPromotion(response);
+  }
+
+  async deletePromotion(id: string): Promise<void> {
+    await this.notion.pages.update({ page_id: id, in_trash: true });
+  }
+
+  async fetchStatements(cardId?: string): Promise<Statement[]> {
+    const filter = cardId ? {
+      property: "Card",
+      relation: { contains: cardId }
+    } : undefined;
+    const pages = await this.queryAllPages({
+      data_source_id: process.env.NOTION_STATEMENT_DATABASE_ID as string,
+      filter
+    });
+    return pages.map(page => this.mapPageToStatement(page));
+  }
+
+  async addStatement(data: AddStatementRequest): Promise<Statement> {
+    const billingDate = new Date(data.billingDate);
+    const name = `stmt-${billingDate.getFullYear()}-${String(billingDate.getMonth() + 1).padStart(2, '0')}`;
+    const response = await this.notion.pages.create({
+      parent: { data_source_id: process.env.NOTION_STATEMENT_DATABASE_ID as string },
+      properties: {
+        "Name": { type: "title", title: [{ type: "text", text: { content: name } }] },
+        "Card": { type: "relation", relation: [{ id: data.cardId }] },
+        "Billing Date": { type: "date", date: { start: new Date(data.billingDate).toISOString().split('T')[0]! } },
+        "Spending": { type: "number", number: data.spending },
+        "Cashback": { type: "number", number: data.cashback },
+        "Note": { type: "rich_text", rich_text: data.note ? [{ type: "text", text: { content: data.note } }] : [] }
+      }
+    });
+    if (!("properties" in response))
+      throw new DatabaseError(`Statement not created`);
+    return this.mapPageToStatement(response);
+  }
+
+  async deleteStatement(id: string): Promise<void> {
+    await this.notion.pages.update({ page_id: id, in_trash: true });
   }
 
   async fetchAccount(accountId: string): Promise<Account> {
@@ -494,15 +580,8 @@ export class Connector {
     return {
       id: page.id, name, type: type as AccountType, balance,
       totalTransactions, lastTransactionDate, priorityScore,
-      linkedCardIds, cards: []
+      linkedCardIds
     } satisfies Account;
-  }
-
-  private mapPageToCardSummary(page: PageObjectResponse): CardSummary {
-    const name = this.getTitleProperty(page, "Name");
-    const number = this.getTextProperty(page, "Number", false) ?? "";
-    const imageUrl = this.getFileProperty(page, "Image", true);
-    return { id: page.id, name, number, imageUrl } satisfies CardSummary;
   }
 
   private mapPageToCategory(page: PageObjectResponse): Category {
@@ -535,6 +614,53 @@ export class Connector {
       note: note ?? "",
       linkedCardId: linkedCardId ?? undefined
     } satisfies Transaction;
+  }
+
+  private mapPageToCard(page: PageObjectResponse): Card {
+    const name = this.getTitleProperty(page, "Name");
+    const number = this.getTextProperty(page, "Number", false) ?? "";
+    const imageUrl = this.getFileProperty(page, "Image", false) ?? "";
+    const annualFee = this.getNumberProperty(page, "Annual Fee", false);
+    const spendingLimit = this.getNumberProperty(page, "Spending Limit", false);
+    const requiredSpending = this.getNumberProperty(page, "Required Spending", false);
+    const lastChargedDate = this.getDateProperty(page, "Last Charged Date", false);
+    const billingDay = this.getNumberProperty(page, "Billing Day", false);
+    const linkedAccountId = this.getRelationProperty(page, "Linked Account", false);
+    const linkedServices = this.getMultiSelectProperty(page, "Linked Services");
+    const cashbackCap = this.getNumberProperty(page, "Cashback Cap", false);
+    const network = this.getSelectProperty(page, "Network", false);
+
+    return {
+      id: page.id, name, number, imageUrl,
+      annualFee, spendingLimit, requiredSpending,
+      lastChargedDate, billingDay, linkedAccountId,
+      linkedServices, cashbackCap, network
+    } satisfies Card;
+  }
+
+  private mapPageToPromotion(page: PageObjectResponse): Promotion {
+    const name = this.getTitleProperty(page, "Name");
+    const cardIdProp = page.properties["Card"];
+    const cardId = cardIdProp?.type === 'relation' ? (cardIdProp.relation[0]?.id ?? null) : null;
+    const categoryProp = page.properties["Category"];
+    const category = (categoryProp?.type === 'select' ? categoryProp.select?.name : null) as PromotionCategory ?? null;
+    const typeProp = page.properties["Type"];
+    const type = (typeProp?.type === 'select' ? typeProp.select?.name : null) as PromotionType ?? 'Discount';
+    const expiresAt = this.getDateProperty(page, "Expiry Date", false);
+    const linkProp = page.properties["Link"];
+    const link = linkProp?.type === 'url' ? linkProp.url : null;
+
+    return { id: page.id, name, cardId, category, type, expiresAt, link } satisfies Promotion;
+  }
+
+  private mapPageToStatement(page: PageObjectResponse): Statement {
+    const cardId = this.getRelationProperty(page, "Card", true);
+    const billingDate = this.getDateProperty(page, "Billing Date", true);
+    const spending = this.getNumberProperty(page, "Spending", false) || 0;
+    const cashback = this.getNumberProperty(page, "Cashback", false) || 0;
+    const note = this.getTextProperty(page, "Note", false) ?? "";
+
+    return { id: page.id, cardId, billingDate, spending, cashback, note } satisfies Statement;
   }
 
   private getProperty(page: PageObjectResponse, key: string) {
@@ -655,6 +781,13 @@ export class Connector {
     }
 
     return prop.date?.start ? new Date(prop.date.start).getTime() : null;
+  }
+
+  private getMultiSelectProperty(page: PageObjectResponse, key: string): string[] {
+    const prop = this.getProperty(page, key);
+    if (prop.type !== 'multi_select')
+      throw new SchemaError(`Property ${key} is not a multi-select`);
+    return prop.multi_select.map(s => s.name);
   }
 
   private mapPageToArchive(page: PageObjectResponse): Archive {

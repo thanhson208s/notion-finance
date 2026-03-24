@@ -14,13 +14,6 @@ export type AccountType =
   | "Stock"
   | "PayLater";
 
-export type CardSummary = {
-  id: string
-  name: string
-  number: string
-  imageUrl: string
-}
-
 export type Account = {
   id: string
   name: string
@@ -30,7 +23,6 @@ export type Account = {
   lastTransactionDate: number | null
   priorityScore: number
   linkedCardIds: string[]
-  cards: CardSummary[]
 }
 
 export const PRIORITY_WEIGHT_FREQUENCY = 0.4

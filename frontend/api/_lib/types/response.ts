@@ -1,6 +1,9 @@
 import { Account } from "./account.type"
 import { Category } from "./category.type"
 import { Transaction } from "./transaction.type"
+import { Card, CardWithSpending } from "./card.type"
+import { Promotion } from "./promotion.type"
+import { Statement } from "./statement.type"
 
 export type GetAccountsResponse = {
   accounts: Account[]
@@ -109,4 +112,26 @@ export type ArchiveRunResponse = {
   archived: number
   archivesCreated: number
   archivesUpdated: number
+}
+
+export type GetCardsResponse = {
+  cards: Card[]
+}
+
+export type GetCardDetailResponse = CardWithSpending
+
+export type GetPromotionsResponse = {
+  promotions: Promotion[]
+}
+
+export type AddPromotionResponse = Promotion
+
+export type GetStatementsResponse = {
+  statements: Statement[]
+}
+
+export type AddStatementResponse = Statement
+
+export type DeleteResponse = {
+  id: string
 }

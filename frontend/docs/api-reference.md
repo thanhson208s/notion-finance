@@ -64,8 +64,7 @@ Returns all accounts with aggregated balance totals.
       "totalTransactions": 0,
       "lastTransactionDate": 0,
       "priorityScore": 0,
-      "linkedCardIds": ["string"],
-      "cards": [{ "id": "string", "name": "string", "number": "string", "imageUrl": "string" }]
+      "linkedCardIds": ["string"]
     }
   ],
   "total": 0,
@@ -119,85 +118,17 @@ Returns all categories, optionally filtered by type.
 
 ---
 
-### POST /api/expense
-
-**Status**: ✅ DONE
-
-Logs an expense and deducts the amount from the specified account.
-
-**Request Body**:
-```json
-{
-  "accountId": "string (required)",
-  "amount": "number (required, must be positive)",
-  "categoryId": "string (required)",
-  "note": "string (required, may be empty)",
-  "timestamp": "number (optional, Unix ms)",
-  "linkedCardId": "string (optional)"
-}
-```
-
-**Response 200**:
-```json
-{
-  "transactionId": "string",
-  "accountId": "string",
-  "oldBalance": 0,
-  "newBalance": 0,
-  "amount": 0,
-  "categoryId": "string",
-  "note": "string"
-}
-```
-
-**Business logic**:
-1. Fetch account → get `oldBalance`, `totalTransactions`
-2. Validate category exists
-3. Create transaction: `FromAccount = accountId`, `ToAccount = null`
-4. Update account (single Notion call): `balance = oldBalance - amount`, `totalTransactions += 1`, `lastTransactionDate = timestamp ?? now`
-
----
-
-### POST /api/income
-
-**Status**: ✅ DONE
-
-Logs income and adds the amount to the specified account.
-
-**Request Body**:
-```json
-{
-  "accountId": "string (required)",
-  "amount": "number (required, must be positive)",
-  "categoryId": "string (required)",
-  "note": "string (required, may be empty)",
-  "timestamp": "number (optional, Unix ms)",
-  "linkedCardId": "string (optional)"
-}
-```
-
-**Response 200**:
-```json
-{
-  "transactionId": "string",
-  "accountId": "string",
-  "oldBalance": 0,
-  "newBalance": 0,
-  "amount": 0,
-  "categoryId": "string",
-  "note": "string"
-}
-```
-
-**Business logic**: Same as expense but `balance = oldBalance + amount`. Transaction: `FromAccount = null`, `ToAccount = accountId`. Also increments `totalTransactions` and sets `lastTransactionDate` in the same Notion call.
-
----
-
-### POST /api/transfer
+### POST /api/accounts?action=transfer
 
 **Status**: ✅ DONE
 
 Transfers an amount from one account to another.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `action` | `"transfer"` | Yes | Must be `transfer` |
 
 **Request Body**:
 ```json
@@ -233,11 +164,17 @@ Transfers an amount from one account to another.
 
 ---
 
-### POST /api/adjustment
+### POST /api/accounts?action=adjustment
 
 **Status**: ✅ DONE
 
 Sets an account's balance to a target value, creating an audit transaction for the difference.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `action` | `"adjustment"` | Yes | Must be `adjustment` |
 
 **Request Body**:
 ```json
@@ -273,20 +210,19 @@ Sets an account's balance to a target value, creating an audit transaction for t
 
 ---
 
-### GET /api/expense
+### GET /api/transactions?type=expense|income
 
 **Status**: ✅ DONE
 
-Lists expense transactions, optionally filtered by date range.
+Lists expense or income transactions, optionally filtered by date range.
 
 **Query Parameters**:
 
 | Param | Type | Required | Description |
 |---|---|---|---|
+| `type` | `"expense" \| "income"` | Yes | Transaction type to list |
 | `startDate` | `string` (ISO 8601) | No | Filter transactions on or after this date |
 | `endDate` | `string` (ISO 8601) | No | Filter transactions on or before this date |
-
-Omitting both params returns all expense transactions (no date filter).
 
 **Response 200**:
 ```json
@@ -310,18 +246,74 @@ Omitting both params returns all expense transactions (no date filter).
 **Notes**:
 - Results sorted by `timestamp` descending
 - `total` = server-side sum of `amount` across all results
-- Excludes transfer and adjustment transactions (filtered by category)
+- Excludes transfer and adjustment transactions
 - Full pagination via Notion cursor — returns all matching records
 - `note` is always a `string` — Notion null notes are returned as `""` (empty string)
 
 ---
 
-### GET /api/income
+### POST /api/transactions?type=expense
 
 **Status**: ✅ DONE
 
-Same structure as `GET /api/expense`. Filters by `ToAccount is not empty` instead of `FromAccount`.
-Date params and response shape are identical.
+Logs an expense and deducts the amount from the specified account.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"expense"` | Yes | Must be `expense` |
+
+**Request Body**:
+```json
+{
+  "accountId": "string (required)",
+  "amount": "number (required, must be positive)",
+  "categoryId": "string (required)",
+  "note": "string (required, may be empty)",
+  "timestamp": "number (optional, Unix ms)",
+  "linkedCardId": "string (optional)"
+}
+```
+
+**Response 200**:
+```json
+{
+  "transactionId": "string",
+  "accountId": "string",
+  "oldBalance": 0,
+  "newBalance": 0,
+  "amount": 0,
+  "categoryId": "string",
+  "note": "string"
+}
+```
+
+**Business logic**:
+1. Fetch account → get `oldBalance`, `totalTransactions`
+2. Validate category exists
+3. Create transaction: `FromAccount = accountId`, `ToAccount = null`
+4. Update account (single Notion call): `balance = oldBalance - amount`, `totalTransactions += 1`, `lastTransactionDate = timestamp ?? now`
+
+---
+
+### POST /api/transactions?type=income
+
+**Status**: ✅ DONE
+
+Logs income and adds the amount to the specified account.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"income"` | Yes | Must be `income` |
+
+**Request Body**: Same as `POST /api/transactions?type=expense`.
+
+**Response 200**: Same shape as expense response.
+
+**Business logic**: Same as expense but `balance = oldBalance + amount`. Transaction: `FromAccount = null`, `ToAccount = accountId`.
 
 ---
 
@@ -384,7 +376,7 @@ Omitting both params returns all transactions (no date filter). Pass dates as `Y
 
 ---
 
-### GET /api/transactions
+### GET /api/transactions?id=
 
 **Status**: ✅ DONE
 
@@ -398,7 +390,7 @@ Returns a single transaction by ID.
 
 **Response 200**: `Transaction` object
 
-**Errors**: 400 if `id` missing, 404 if not found
+**Errors**: 400 if neither `id` nor `type` is provided, 404 if not found
 
 ---
 

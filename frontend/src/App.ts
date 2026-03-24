@@ -16,10 +16,49 @@ export type AccountType =
   | "Debt"
   | "Crypto"
 
-export type CardSummary = {
+export type Card = {
   id: string
   name: string
+  number: string
   imageUrl: string
+  annualFee: number | null
+  spendingLimit: number | null
+  requiredSpending: number | null
+  lastChargedDate: number | null
+  billingDay: number | null
+  linkedAccountId: string | null
+  linkedServices: string[]
+  cashbackCap: number | null
+  network: string | null
+}
+
+export type CardWithSpending = Card & {
+  cycleStart: string | null
+  cycleEnd: string | null
+  currentCycleSpending: number
+  currentCycleCashback: number
+}
+
+export type PromotionCategory = 'Shopping' | 'F&B' | 'Travel' | 'Entertain' | 'Digital'
+export type PromotionType = 'Cashback' | 'Discount'
+
+export type Promotion = {
+  id: string
+  name: string
+  cardId: string | null
+  category: PromotionCategory | null
+  type: PromotionType
+  expiresAt: number | null
+  link: string | null
+}
+
+export type Statement = {
+  id: string
+  cardId: string
+  billingDate: number
+  spending: number
+  cashback: number
+  note: string
 }
 
 export type Account = {
@@ -31,7 +70,6 @@ export type Account = {
   lastTransactionDate: number | null
   priorityScore: number
   linkedCardIds: string[]
-  cards: CardSummary[]
 }
 
 export type CategoryType = 'Income' | 'Expense' | 'System'
@@ -94,13 +132,14 @@ export function fmtShort(n: number): string {
 export function getAccountLabel(
   accountId: string | undefined,
   linkedCardId: string | undefined,
-  accounts: Account[]
+  accounts: Account[],
+  cards: Card[] = []
 ): string {
   if (!accountId) return '—'
   const account = accounts.find(a => a.id === accountId)
   if (!account) return accountId
   if (linkedCardId) {
-    const card = account.cards.find(c => c.id === linkedCardId)
+    const card = cards.find(c => c.id === linkedCardId)
     if (card) return `${account.name} · ${card.name}`
   }
   return account.name

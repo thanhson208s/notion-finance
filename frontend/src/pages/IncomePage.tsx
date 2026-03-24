@@ -25,7 +25,7 @@ export default function IncomePage() {
   const account = state?.account as Account | undefined
   const [balance, setBalance] = useState<number>(account?.balance ?? 0)
   const [timestamp, setTimestamp] = useState<number>(() => Date.now())
-  const { refetchAccounts, refetchReports } = useAppContext()
+  const { refetchAccounts, refetchReports, cards } = useAppContext()
 
   const handleSuccess = (newBalance: number) => {
     setBalance(newBalance)
@@ -66,7 +66,7 @@ export default function IncomePage() {
       )}
 
       <div className="transaction-body">
-        <IncomeForm accountId={accountId!} cards={account?.cards ?? []} accountType={account?.type} onSuccess={handleSuccess} timestamp={timestamp} />
+        <IncomeForm accountId={accountId!} cards={cards.filter(c => account?.linkedCardIds.includes(c.id))} accountType={account?.type} onSuccess={handleSuccess} timestamp={timestamp} />
       </div>
     </main>
   )

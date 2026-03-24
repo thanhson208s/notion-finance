@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Connector } from './_lib/connector';
-import { logExpense, listExpenses } from './_handlers/transaction.handler';
+import { getStatements, addStatement, deleteStatement } from './_handlers/statement.handler';
 import { handleError } from './_lib/error-handler';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -9,11 +9,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      const result = await listExpenses({ method: 'GET', path: req.url ?? '', query, body: undefined }, connector);
+      const result = await getStatements({ method: 'GET', path: req.url ?? '', query, body: undefined }, connector);
       return res.status(result.statusCode).json(result.body);
     }
     if (req.method === 'POST') {
-      const result = await logExpense({ method: 'POST', path: req.url ?? '', query, body: req.body }, connector);
+      const result = await addStatement({ method: 'POST', path: req.url ?? '', query, body: req.body }, connector);
+      return res.status(result.statusCode).json(result.body);
+    }
+    if (req.method === 'DELETE') {
+      const result = await deleteStatement({ method: 'DELETE', path: req.url ?? '', query, body: undefined }, connector);
       return res.status(result.statusCode).json(result.body);
     }
     return res.status(405).send('Method Not Allowed');

@@ -169,7 +169,7 @@ async function main(): Promise<void> {
   }
 
   // ── Happy path: all fields confident ─────────────────────────────────────────
-  const endpoint = type === "Expense" ? "expense" : "income";
+  const txType = type === "Expense" ? "expense" : "income";
   const timestampMs = parseBangkokTimestamp(input.timestamp!);
 
   const requestBody: Record<string, unknown> = {
@@ -183,7 +183,7 @@ async function main(): Promise<void> {
     requestBody["linkedCardId"] = input.cardId;
   }
 
-  const apiRes = await fetch(`${API_BASE}/${endpoint}`, {
+  const apiRes = await fetch(`${API_BASE}/transactions?type=${txType}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(requestBody),

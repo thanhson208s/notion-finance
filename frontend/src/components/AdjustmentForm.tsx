@@ -49,7 +49,7 @@ export default function AdjustmentForm({accountId, accountBalance, onSuccess, ti
       setError(false);
       setStatus({status: 'loading'});
       try {
-        const response = await fetch(`${API_BASE}/adjustment`, {
+        const response = await fetch(`${API_BASE}/accounts?action=adjustment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

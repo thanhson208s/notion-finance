@@ -1,5 +1,32 @@
 import { QueryError } from "./types/error";
 
+export function toISODateStr(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+export function getBillingCycleDates(billingDay: number, referenceDate = new Date()): { start: Date; end: Date } {
+  const day = referenceDate.getDate()
+  const month = referenceDate.getMonth()
+  const year = referenceDate.getFullYear()
+
+  if (day <= billingDay) {
+    // Cycle: (billingDay+1) of previous month → billingDay of this month
+    return {
+      start: new Date(year, month - 1, billingDay + 1),
+      end: new Date(year, month, billingDay)
+    }
+  } else {
+    // Cycle: (billingDay+1) of this month → billingDay of next month
+    return {
+      start: new Date(year, month, billingDay + 1),
+      end: new Date(year, month + 1, billingDay)
+    }
+  }
+}
+
 export const ok = <T>(data: T) => ({
   statusCode: 200,
   body: data

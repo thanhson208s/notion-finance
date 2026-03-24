@@ -4,7 +4,7 @@ import {
   Percent, TrendingDown, TrendingUp, Undo2, UtensilsCrossed,
   Balloon,
 } from 'lucide-react'
-import { type Account, type Category } from '../App'
+import { type Account, type Card, type Category } from '../App'
 import {
   type Transaction, type TxType,
   fmtVND, fmtTxDate, getAccountLabel, getCategoryLabel
@@ -77,12 +77,13 @@ type TxItemProps = {
   tx: Transaction
   type: TxType
   accounts: Account[]
+  cards: Card[]
   catMap: Map<string, Category>
 } & SwipeActions
 
-export function TxItem({ tx, type, accounts, catMap, onEdit, onDelete }: TxItemProps) {
+export function TxItem({ tx, type, accounts, cards, catMap, onEdit, onDelete }: TxItemProps) {
   const accountId = tx.fromAccountId ?? tx.toAccountId
-  const accountLabel = getAccountLabel(accountId, tx.linkedCardId, accounts)
+  const accountLabel = getAccountLabel(accountId, tx.linkedCardId, accounts, cards)
   const { catName, subName } = getCategoryLabel(tx, catMap)
   const { date, time } = fmtTxDate(tx.timestamp)
   const { icon, color } = txIconConfig(catName, type)
@@ -109,12 +110,13 @@ export function TxItem({ tx, type, accounts, catMap, onEdit, onDelete }: TxItemP
 type AdjustmentTxItemProps = {
   tx: Transaction
   accounts: Account[]
+  cards: Card[]
   catMap: Map<string, Category>
 } & SwipeActions
 
-export function AdjustmentTxItem({ tx, accounts, catMap, onEdit, onDelete }: AdjustmentTxItemProps) {
+export function AdjustmentTxItem({ tx, accounts, cards, catMap, onEdit, onDelete }: AdjustmentTxItemProps) {
   const accountId = tx.fromAccountId ?? tx.toAccountId
-  const accountLabel = getAccountLabel(accountId, tx.linkedCardId, accounts)
+  const accountLabel = getAccountLabel(accountId, tx.linkedCardId, accounts, cards)
   const { catName, subName } = getCategoryLabel(tx, catMap)
   const { date, time } = fmtTxDate(tx.timestamp)
   const { icon, color } = txIconConfig(catName, 'Adjustment')

@@ -110,7 +110,7 @@ function buildColorMap(groups: CategoryGroup[]): Record<string, string> {
 // --- Component ---
 
 export default function ReportsPage() {
-  const { accounts, categories, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, refetchAccounts, refetchReports } = useAppContext()
+  const { accounts, categories, cards, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, refetchAccounts, refetchReports } = useAppContext()
   const [tab, setTab] = useState<Tab>('expense')
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -451,8 +451,8 @@ export default function ReportsPage() {
                   if (type === 'Transfer')
                     return <TransferTxItem key={tx.id} tx={tx} accounts={accounts} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
                   if (type === 'Adjustment')
-                    return <AdjustmentTxItem key={tx.id} tx={tx} accounts={accounts} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
-                  return <TxItem key={tx.id} tx={tx} type={type} accounts={accounts} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
+                    return <AdjustmentTxItem key={tx.id} tx={tx} accounts={accounts} cards={cards} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
+                  return <TxItem key={tx.id} tx={tx} type={type} accounts={accounts} cards={cards} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
                 })}
               </div>
             </>
@@ -656,6 +656,7 @@ export default function ReportsPage() {
           tx={deleteTarget.tx}
           type={deleteTarget.type}
           accounts={accounts}
+          cards={cards}
           catMap={catMap}
           onConfirm={() => handleDeleteTx(deleteTarget.tx.id)}
           onCancel={() => setDeleteTarget(null)}

@@ -1,4 +1,4 @@
-import type { Category, CardSummary, AccountType } from '../App'
+import type { Category, Card, AccountType } from '../App'
 import { API_BASE } from '../App'
 import { useState } from 'react'
 import { TrendingDown, Check, X, Loader2 } from 'lucide-react'
@@ -41,7 +41,7 @@ type LogExpenseStatus = {
 
 export default function ExpenseForm({accountId, cards, accountType, onSuccess, timestamp}: {
   accountId: string
-  cards: CardSummary[]
+  cards: Card[]
   accountType?: AccountType
   onSuccess?: (newBalance: number) => void
   timestamp?: number
@@ -78,7 +78,7 @@ export default function ExpenseForm({accountId, cards, accountType, onSuccess, t
       setStatus({status: 'loading'});
       const selectedCardId = cardIndex >= 0 ? cards[cardIndex].id : undefined;
       try {
-        const response = await fetch(`${API_BASE}/expense`, {
+        const response = await fetch(`${API_BASE}/transactions?type=expense`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

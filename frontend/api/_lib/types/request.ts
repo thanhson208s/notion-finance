@@ -38,3 +38,20 @@ export type UpdateTransactionRequest = {
   timestamp?: number
   linkedCardId?: string | null
 }
+
+export type AddPromotionRequest = {
+  name: string
+  cardId?: string
+  category?: 'Shopping' | 'F&B' | 'Travel' | 'Entertain' | 'Digital'
+  type: 'Cashback' | 'Discount'
+  expiresAt?: number
+  link?: string
+}
+
+export type AddStatementRequest = {
+  cardId: string
+  billingDate: number
+  spending: number
+  cashback: number
+  note?: string
+}

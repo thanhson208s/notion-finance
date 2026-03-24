@@ -92,7 +92,7 @@ export default function TransferForm({accountId, accounts, onTransferSuccess, ti
     if (!errorAmount && !errorFromAccountId && !errorToAccountId) {
       setStatus({status: 'loading'});
       try {
-        const response = await fetch(`${API_BASE}/transfer`, {
+        const response = await fetch(`${API_BASE}/accounts?action=transfer`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount, fromAccountId, toAccountId, timestamp, note })

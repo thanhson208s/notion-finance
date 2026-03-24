@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Connector } from './_lib/connector';
-import { logIncome, listIncomes } from './_handlers/transaction.handler';
+import { getPromotions, addPromotion, deletePromotion } from './_handlers/promotion.handler';
 import { handleError } from './_lib/error-handler';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -9,11 +9,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      const result = await listIncomes({ method: 'GET', path: req.url ?? '', query, body: undefined }, connector);
+      const result = await getPromotions({ method: 'GET', path: req.url ?? '', query, body: undefined }, connector);
       return res.status(result.statusCode).json(result.body);
     }
     if (req.method === 'POST') {
-      const result = await logIncome({ method: 'POST', path: req.url ?? '', query, body: req.body }, connector);
+      const result = await addPromotion({ method: 'POST', path: req.url ?? '', query, body: req.body }, connector);
+      return res.status(result.statusCode).json(result.body);
+    }
+    if (req.method === 'DELETE') {
+      const result = await deletePromotion({ method: 'DELETE', path: req.url ?? '', query, body: undefined }, connector);
       return res.status(result.statusCode).json(result.body);
     }
     return res.status(405).send('Method Not Allowed');

@@ -1,7 +1,7 @@
 import './ConfirmDeleteModal.css'
 import { useState, useCallback } from 'react'
 import { Check, Loader2 } from 'lucide-react'
-import type { Account, Category } from '../App'
+import type { Account, Card, Category } from '../App'
 import { type Transaction, type TxType, fmtVND, fmtTxDate, getAccountLabel, getCategoryLabel } from '../App'
 
 const ANIM_MS = 240
@@ -11,6 +11,7 @@ type Props = {
   tx: Transaction
   type: TxType
   accounts: Account[]
+  cards: Card[]
   catMap: Map<string, Category>
   onConfirm: () => Promise<void>
   onCancel: () => void
@@ -18,10 +19,10 @@ type Props = {
 
 type BtnState = 'idle' | 'deleting' | 'deleted'
 
-export function ConfirmDeleteModal({ tx, type, accounts, catMap, onConfirm, onCancel }: Props) {
+export function ConfirmDeleteModal({ tx, type, accounts, cards, catMap, onConfirm, onCancel }: Props) {
   const [closing, setClosing] = useState(false)
   const [btnState, setBtnState] = useState<BtnState>('idle')
-  const accountLabel = getAccountLabel(tx.fromAccountId ?? tx.toAccountId, tx.linkedCardId, accounts)
+  const accountLabel = getAccountLabel(tx.fromAccountId ?? tx.toAccountId, tx.linkedCardId, accounts, cards)
   const { catName, subName } = getCategoryLabel(tx, catMap)
   const { date, time } = fmtTxDate(tx.timestamp)
   const typeLower = type.toLowerCase()

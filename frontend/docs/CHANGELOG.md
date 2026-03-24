@@ -9,6 +9,38 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.9.1] - 2026-03-24
+
+### Changed
+
+- feat(cards): redesign CardDetailPage with card carousel, identity row, annual fee section, and statement list
+
+---
+
+## [FE-0.9.0] - 2026-03-23
+
+### Added
+
+- feat(cards): full card management module (F-13, F-15)
+  - `GET /api/cards` — returns all cards with billing-cycle spending, estimated cashback, and linked services
+  - `GET/POST/DELETE /api/promotions` — promotions/vouchers CRUD with card filter
+  - `GET/POST/DELETE /api/statements` — actual cashback statement recording per billing cycle
+  - `api/_lib/types/card.type.ts`, `promotion.type.ts`, `statement.type.ts` — new domain types
+  - `api/_lib/helper.ts` — `getBillingCycleDates()` and `toISODateStr()` utilities
+  - Extended `Transaction` with optional `cashback` and `discount` fields (flat VND value, set per transaction)
+  - Frontend `CardsPage` — card grid with billing cycle, spending progress bars, estimated cashback
+  - Frontend `CardDetailPage` — per-card detail: spending, cashback (estimated + actual statements), linked services, annual fee, active promotions
+  - Frontend `PromotionsPage` — filter by card/status, swipe-to-delete, add promotion modal
+  - `AppContext` — `cards` state + `refetchCards()`
+
+### Notes (manual Notion setup required)
+  - Add `Cashback Cap` (Number) field to Card DB
+  - Add `Cashback` (Number) field to Transaction DB
+  - Create Promotions DB and add `NOTION_PROMOTION_DATABASE_ID` env var
+  - Create Statements DB and add `NOTION_STATEMENT_DATABASE_ID` env var
+
+---
+
 ## [FE-0.8.0] - 2026-03-21
 
 ### Added

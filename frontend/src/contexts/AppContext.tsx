@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { API_BASE } from '../App'
-import type { Account, Category, ReportsData, DateRangePreset } from '../App'
+import type { Account, Card, Category, ReportsData, DateRangePreset } from '../App'
 import { getDateParams } from '../App'
 
 type Totals = { total: number; totalOfAssets: number; totalOfLiabilities: number }
@@ -24,9 +24,12 @@ type AppContextValue = {
   dateRange: DateRangePreset
   customStart: string
   customEnd: string
+  cards: Card[]
+  cardsLoading: boolean
 
   refetchAccounts: () => void
   refetchReports: (forced: boolean, reset: boolean, dateRange?: DateRangePreset, customStart?: string, customEnd?: string) => void
+  refetchCards: () => void
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -48,6 +51,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [dateRange, setDateRange] = useState<DateRangePreset>("this-month");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const [cards, setCards] = useState<Card[]>([])
+  const [cardsLoading, setCardsLoading] = useState(true)
   
   const fetchAccounts = useCallback(async (signal?: AbortSignal) => {
     setAccountsLoading(true)
@@ -60,7 +65,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       if (e instanceof Error && e.name !== 'AbortError') console.log(e.message)
     } finally {
-      setAccountsLoading(false)
+      if (!signal?.aborted) setAccountsLoading(false)
+    }
+  }, [])
+
+  const fetchCards = useCallback(async (signal?: AbortSignal) => {
+    setCardsLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/cards`, { signal })
+      if (!res.ok) throw new Error('Failed to fetch cards')
+      const data = await res.json()
+      setCards(data.cards)
+    } catch (e) {
+      if (e instanceof Error && e.name !== 'AbortError') console.log(e.message)
+    } finally {
+      if (!signal?.aborted) setCardsLoading(false)
     }
   }, [])
 
@@ -74,7 +93,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       if (e instanceof Error && e.name !== 'AbortError') console.log(e.message)
     } finally {
-      setCategoriesLoading(false)
+      if (!signal?.aborted) setCategoriesLoading(false)
     }
   }, [])
 
@@ -116,10 +135,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const controller = new AbortController()
     fetchAccounts(controller.signal)
     fetchCategories(controller.signal)
+    fetchCards(controller.signal)
     return () => controller.abort()
-  }, [fetchAccounts, fetchCategories])
+  }, [fetchAccounts, fetchCategories, fetchCards])
 
   const refetchAccounts = useCallback(() => fetchAccounts(), [fetchAccounts])
+  const refetchCards = useCallback(() => fetchCards(), [fetchCards])
 
   const refetchReports = useCallback((forced: boolean, reset: boolean, dateRange?: DateRangePreset, customStart?: string, customEnd?: string) => {
     if (dateRange) setDateRange(dateRange);
@@ -150,7 +171,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [fetchReports])
 
   return (
-    <AppContext.Provider value={{ accounts, totals, accountsLoading, categories, categoriesLoading, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, refetchAccounts, refetchReports }}>
+    <AppContext.Provider value={{ accounts, totals, accountsLoading, categories, categoriesLoading, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, cards, cardsLoading, refetchAccounts, refetchReports, refetchCards }}>
       {children}
     </AppContext.Provider>
   )

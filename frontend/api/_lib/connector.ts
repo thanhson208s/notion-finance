@@ -121,15 +121,12 @@ export class Connector {
     return pages.map(page => this.mapPageToStatement(page));
   }
 
-  async addStatement(data: AddStatementRequest): Promise<Statement> {
-    const startDateStr = `${new Date(data.startDate).toISOString().split('T')[0]!}T00:00:00`;
-    const endDateStr = `${new Date(data.endDate).toISOString().split('T')[0]!}T23:59:59`;
-
+  private async calcStatementTotals(cardId: string, startDateStr: string, endDateStr: string): Promise<{ spending: number; cashback: number; discount: number }> {
     const txPages = await this.queryAllPages({
       data_source_id: process.env.NOTION_TRANSACTION_DATABASE_ID as string,
       filter: {
         and: [
-          { property: "Linked card", relation: { contains: data.cardId } },
+          { property: "Linked card", relation: { contains: cardId } },
           { property: "FromAccount", relation: { is_not_empty: true } },
           { property: "ToAccount", relation: { is_empty: true }},
           { property: "Category", relation: { does_not_contain: process.env.NOTION_TRANSFER_TRANSACTION_ID as string } },
@@ -140,9 +137,24 @@ export class Connector {
       }
     });
     const transactions = txPages.map(p => this.mapPageToTransaction(p));
-    const spending = transactions.reduce((sum, t) => sum + t.amount, 0);
-    const cashback = transactions.reduce((sum, t) => sum + (t.cashback ?? 0), 0);
-    const discount = transactions.reduce((sum, t) => sum + (t.discount ?? 0), 0);
+    return {
+      spending: transactions.reduce((sum, t) => sum + t.amount, 0),
+      cashback: transactions.reduce((sum, t) => sum + (t.cashback ?? 0), 0),
+      discount: transactions.reduce((sum, t) => sum + (t.discount ?? 0), 0),
+    };
+  }
+
+  async previewStatement(cardId: string, startDate: number, endDate: number): Promise<{ spending: number; cashback: number; discount: number }> {
+    const startDateStr = `${new Date(startDate).toISOString().split('T')[0]!}T00:00:00+07:00`;
+    const endDateStr = `${new Date(endDate).toISOString().split('T')[0]!}T23:59:59+07:00`;
+    return this.calcStatementTotals(cardId, startDateStr, endDateStr);
+  }
+
+  async addStatement(data: AddStatementRequest): Promise<Statement> {
+    const startDateStr = `${new Date(data.startDate).toISOString().split('T')[0]!}T00:00:00+07:00`;
+    const endDateStr = `${new Date(data.endDate).toISOString().split('T')[0]!}T23:59:59+07:00`;
+
+    const { spending, cashback, discount } = await this.calcStatementTotals(data.cardId, startDateStr, endDateStr);
 
     const name = `stmt-${data.cardId}-${data.startDate}-${data.endDate}`;
     const response = await this.notion.pages.create({
@@ -154,8 +166,7 @@ export class Connector {
         "End Date": { type: "date", date: { start: endDateStr } },
         "Spending": { type: "number", number: spending },
         "Cashback": { type: "number", number: cashback },
-        "Discount": { type: "number", number: discount },
-        "Note": { type: "rich_text", rich_text: data.note ? [{ type: "text", text: { content: data.note } }] : [] }
+        "Discount": { type: "number", number: discount }
       }
     });
     if (!("properties" in response))
@@ -695,9 +706,8 @@ export class Connector {
     const spending = this.getNumberProperty(page, "Spending", false) || 0;
     const cashback = this.getNumberProperty(page, "Cashback", false) || 0;
     const discount = this.getNumberProperty(page, "Discount", false) || 0;
-    const note = this.getTextProperty(page, "Note", false) ?? "";
 
-    return { id: page.id, cardId, startDate, endDate, spending, cashback, discount, note } satisfies Statement;
+    return { id: page.id, cardId, startDate, endDate, spending, cashback, discount } satisfies Statement;
   }
 
   private getProperty(page: PageObjectResponse, key: string) {

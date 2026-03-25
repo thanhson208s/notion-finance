@@ -6,5 +6,4 @@ export type Statement = {
   spending: number
   cashback: number
   discount: number
-  note: string
 }

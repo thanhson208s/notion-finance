@@ -1,15 +1,23 @@
 import './CardDetailPage.css'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAppContext } from '../contexts/AppContext'
-import { API_BASE, fmtVND, fmtShort, toISODate } from '../App'
-import type { Card, Statement } from '../App'
+import { API_BASE, fmtVND, fmtShort } from '../App'
+import type { Card, CardWithSpending, Statement } from '../App'
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
 function fmtDate(ms: number) {
   const d = new Date(ms)
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+}
+
+function toInputDate(ms: number) {
+  const d = new Date(ms)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 const CARD_W = 90
@@ -71,33 +79,96 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
   )
 }
 
-function AddStatementModal({ cardId, onClose, onAdded }: {
+function BenefitBar({ cashback, discount, annualFee }: { cashback: number; discount: number; annualFee: number }) {
+  const grand = cashback + discount + annualFee
+  const cashbackPct = grand > 0 ? (cashback / grand) * 100 : 0
+  const discountPct = grand > 0 ? (discount / grand) * 100 : 0
+  const feePct = grand > 0 ? (annualFee / grand) * 100 : 100
+
+  const net = cashback + discount - annualFee
+  const positive = net >= 0
+
+  return (
+    <div className="benefit-bar-wrapper">
+      <div className="benefit-bar-track">
+        <div className="benefit-bar-cashback" style={{ width: `${cashbackPct}%` }} />
+        <div className="benefit-bar-discount" style={{ width: `${discountPct}%` }} />
+        <div className="benefit-bar-fee" style={{ width: `${feePct}%` }} />
+      </div>
+      <div className="benefit-bar-legend">
+        <span className="benefit-bar-legend-item">
+          <span className="benefit-dot benefit-dot-cashback" />
+          {Math.round(cashbackPct)}% cashback
+        </span>
+        <span className="benefit-bar-legend-item">
+          <span className="benefit-dot benefit-dot-discount" />
+          {Math.round(discountPct)}% discount
+        </span>
+        <span className="benefit-bar-legend-item">
+          <span className="benefit-dot benefit-dot-fee" />
+          {Math.round(feePct)}% fee
+        </span>
+      </div>
+      <div className={`net-benefit-badge ${positive ? 'net-benefit-positive' : 'net-benefit-negative'}`}>
+        <span className="net-benefit-label">Net benefit</span>
+        <span className="net-benefit-value">
+          {positive ? '+' : '−'}{fmtVND(Math.abs(net))}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+type PreviewData = { spending: number; cashback: number; discount: number }
+
+function AddStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, onAdded }: {
   cardId: string
+  defaultStartDate?: string
+  defaultEndDate?: string
   onClose: () => void
   onAdded: (stmt: Statement) => void
 }) {
-  const [spending, setSpending] = useState('')
-  const [cashback, setCashback] = useState('')
-  const [billingDate, setBillingDate] = useState(() => toISODate(new Date()).slice(0, 10))
-  const [note, setNote] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [startDate, setStartDate] = useState(() => {
+    if (defaultStartDate) return defaultStartDate
+    const d = new Date()
+    d.setMonth(d.getMonth() - 1)
+    d.setDate(d.getDate() + 1)
+    return toInputDate(d.getTime())
+  })
+  const [endDate, setEndDate] = useState(defaultEndDate ?? toInputDate(Date.now()))
+  const [preview, setPreview] = useState<PreviewData | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const startMs = startDate ? new Date(startDate).getTime() : NaN
+  const endMs = endDate ? new Date(endDate).getTime() : NaN
+  const datesValid = !isNaN(startMs) && !isNaN(endMs) && startMs < endMs
+
+  const fetchPreview = async () => {
+    if (!datesValid) return
+    setPreviewLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/statements?preview=1&cardId=${cardId}&startDate=${startMs}&endDate=${endMs}`)
+      if (!res.ok) throw new Error('Failed')
+      setPreview(await res.json() as PreviewData)
+    } catch {
+      setPreview(null)
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  // Auto-fetch preview on first open
+  useEffect(() => { fetchPreview() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = async () => {
-    const spendingAmt = parseFloat(spending)
-    const cashbackAmt = parseFloat(cashback) || 0
-    if (!spendingAmt || spendingAmt < 0) return
-    setLoading(true)
+    if (!datesValid) return
+    setSaving(true)
     try {
       const res = await fetch(`${API_BASE}/statements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cardId,
-          billingDate: new Date(billingDate).getTime(),
-          spending: spendingAmt,
-          cashback: cashbackAmt,
-          note: note.trim() || undefined
-        })
+        body: JSON.stringify({ cardId, startDate: startMs, endDate: endMs })
       })
       if (!res.ok) throw new Error('Failed')
       const data = await res.json() as Statement
@@ -105,7 +176,7 @@ function AddStatementModal({ cardId, onClose, onAdded }: {
     } catch {
       alert('Failed to add statement')
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
   }
 
@@ -115,30 +186,55 @@ function AddStatementModal({ cardId, onClose, onAdded }: {
         <h2 className="modal-title">Add Statement</h2>
         <div className="modal-form">
           <div className="modal-field">
-            <label className="modal-label">Billing Date</label>
-            <input title="Billing Date" type="date" className="modal-input" value={billingDate}
-              onChange={e => setBillingDate(e.target.value)} />
+            <label className="modal-label">Start Date</label>
+            <input
+              title="Start Date" type="date"
+              className={`modal-input${!startDate || (!isNaN(startMs) && !isNaN(endMs) && startMs >= endMs) ? ' modal-input-error' : ''}`}
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+            />
           </div>
           <div className="modal-field">
-            <label className="modal-label">Spending (VND)</label>
-            <input type="number" className="modal-input" placeholder="0" value={spending}
-              onChange={e => setSpending(e.target.value)} />
-          </div>
-          <div className="modal-field">
-            <label className="modal-label">Cashback (VND)</label>
-            <input type="number" className="modal-input" placeholder="0" value={cashback}
-              onChange={e => setCashback(e.target.value)} />
-          </div>
-          <div className="modal-field">
-            <label className="modal-label">Note</label>
-            <input type="text" className="modal-input" placeholder="Optional" value={note}
-              onChange={e => setNote(e.target.value)} />
+            <label className="modal-label">End Date</label>
+            <input
+              title="End Date" type="date"
+              className={`modal-input${!endDate || (!isNaN(startMs) && !isNaN(endMs) && startMs >= endMs) ? ' modal-input-error' : ''}`}
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+            />
           </div>
         </div>
+
+        <div className="modal-preview">
+          {previewLoading ? (
+            <div className="modal-preview-loading">Calculating…</div>
+          ) : preview ? (
+            <div className="modal-preview-rows">
+              <div className="modal-preview-row">
+                <span className="modal-preview-label">Spending</span>
+                <span className="modal-preview-value">{fmtVND(preview.spending)}</span>
+              </div>
+              <div className="modal-preview-row">
+                <span className="modal-preview-label">Cashback</span>
+                <span className="modal-preview-value modal-preview-cashback">{fmtVND(preview.cashback)}</span>
+              </div>
+              <div className="modal-preview-row">
+                <span className="modal-preview-label">Discount</span>
+                <span className="modal-preview-value modal-preview-discount">{fmtVND(preview.discount)}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="modal-preview-loading">Press Preview to calculate</div>
+          )}
+        </div>
+
+        <p className="modal-hint">Spending, cashback and discount will be tallied from transactions linked to this card within the selected period.</p>
         <div className="modal-actions">
-          <button className="modal-btn modal-btn-cancel" onClick={onClose}>Cancel</button>
-          <button className="modal-btn modal-btn-submit" onClick={submit} disabled={loading}>
-            {loading ? '…' : 'Save'}
+          <button type="button" className="modal-btn modal-btn-cancel" onClick={fetchPreview} disabled={previewLoading || !datesValid}>
+            {previewLoading ? '…' : 'Preview'}
+          </button>
+          <button type="button" className="modal-btn modal-btn-submit" onClick={submit} disabled={saving || !datesValid}>
+            {saving ? '…' : 'Save'}
           </button>
         </div>
       </div>
@@ -149,24 +245,48 @@ function AddStatementModal({ cardId, onClose, onAdded }: {
 export default function CardDetailPage() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
-  const { cards, cardsLoading } = useAppContext()
+  const { cards, cardsLoading, accounts } = useAppContext()
 
-  const card = id ? (cards.find(c => c.id === id) ?? null) : (cards[0] ?? null)
+  const sortedCards = useMemo(() => {
+    const accountMap = new Map(accounts.map(a => [a.id, a]))
+    return [...cards].sort((a, b) => {
+      if (a.billingDay && !b.billingDay) return -1;
+      if (!a.billingDay && b.billingDay) return 1;
+      const accA = a.linkedAccountId ? accountMap.get(a.linkedAccountId) : null
+      const accB = b.linkedAccountId ? accountMap.get(b.linkedAccountId) : null
+      const isDebitA = !accA || accA.type !== 'Credit'
+      const isDebitB = !accB || accB.type !== 'Credit'
+      if (isDebitA !== isDebitB) return isDebitA ? 1 : -1
+      return (accB?.priorityScore ?? 0) - (accA?.priorityScore ?? 0)
+    })
+  }, [cards, accounts])
+
+  const card = id ? (sortedCards.find(c => c.id === id) ?? null) : (sortedCards[0] ?? null)
   const effectiveId = card?.id ?? null
 
-  const [statementsState, setStatementsState] = useState<{ cardId: string; stmts: Statement[] } | null>(null)
+  const [statementsCache, setStatementsCache] = useState<Record<string, Statement[]>>({})
+  const [cardDetailCache, setCardDetailCache] = useState<Record<string, CardWithSpending>>({})
   const [showAddStatement, setShowAddStatement] = useState(false)
 
-  const statementsLoading = !effectiveId || statementsState?.cardId !== effectiveId
-  const statements = statementsState?.cardId === effectiveId ? statementsState!.stmts : []
+  const statementsLoading = !!effectiveId && !(effectiveId in statementsCache)
+  const statements = effectiveId ? (statementsCache[effectiveId] ?? []) : []
+  const cycleData = effectiveId ? (cardDetailCache[effectiveId] ?? null) : null
 
   useEffect(() => {
-    if (!effectiveId) return
+    if (!effectiveId || effectiveId in statementsCache) return
     fetch(`${API_BASE}/statements?cardId=${effectiveId}`)
       .then(r => r.json())
-      .then(d => setStatementsState({ cardId: effectiveId, stmts: d.statements ?? [] }))
-      .catch(() => setStatementsState({ cardId: effectiveId, stmts: [] }))
-  }, [effectiveId])
+      .then(d => setStatementsCache(prev => ({ ...prev, [effectiveId]: d.statements ?? [] })))
+      .catch(() => setStatementsCache(prev => ({ ...prev, [effectiveId]: [] })))
+  }, [effectiveId, statementsCache])
+
+  useEffect(() => {
+    if (!effectiveId || effectiveId in cardDetailCache) return
+    fetch(`${API_BASE}/cards?id=${effectiveId}`)
+      .then(r => r.json())
+      .then(d => setCardDetailCache(prev => ({ ...prev, [effectiveId]: d })))
+      .catch(() => {})
+  }, [effectiveId, cardDetailCache])
 
   if (cardsLoading || !card) {
     return (
@@ -185,18 +305,25 @@ export default function CardDetailPage() {
 
   const maskedNumber = card?.number ? `${card.number.slice(0, 6)} •••••• ${card.number.slice(-4)}` : ''
 
+  // Annual cycle: lastChargedDate → (lastChargedDate + 1 year - 1 day)
   const annualStart = card.lastChargedDate ? new Date(card.lastChargedDate) : null
-  const annualEnd = annualStart
+  const annualEndExclusive = annualStart
     ? new Date(annualStart.getFullYear() + 1, annualStart.getMonth(), annualStart.getDate())
     : null
+  const annualEnd = annualEndExclusive
+    ? new Date(annualEndExclusive.getTime() - 86400000)
+    : null
 
-  const annualSpending = (annualStart && annualEnd)
-    ? statements.reduce((sum, s) =>
-        s.billingDate >= annualStart.getTime() && s.billingDate <= annualEnd.getTime()
-          ? sum + s.spending
-          : sum
-      , 0)
-    : statements.reduce((sum, s) => sum + s.spending, 0)
+  // Statements within annual cycle: both startDate and endDate must fall within [annualStart, annualEndExclusive)
+  const annualStatements = (annualStart && annualEndExclusive)
+    ? statements.filter(s =>
+        s.startDate >= annualStart.getTime() && s.endDate < annualEndExclusive.getTime()
+      )
+    : statements
+
+  const annualSpending = annualStatements.reduce((sum, s) => sum + s.spending, 0) + (cycleData?.currentCycleSpending ?? 0)
+  const annualCashback = annualStatements.reduce((sum, s) => sum + s.cashback, 0) + (cycleData?.currentCycleCashback ?? 0)
+  const annualDiscount = annualStatements.reduce((sum, s) => sum + s.discount, 0) + (cycleData?.currentCycleDiscount ?? 0)
 
   return (
     <main className="page detail-page">
@@ -206,7 +333,7 @@ export default function CardDetailPage() {
       </div>
 
       <CardCarousel
-        cards={cards}
+        cards={sortedCards}
         currentId={effectiveId!}
         onSelect={(cardId) => navigate(`/cards/${cardId}`)}
       />
@@ -216,30 +343,107 @@ export default function CardDetailPage() {
           <div className="detail-section-title">
             Annual
             {annualStart && annualEnd && (
-            <span className="annual-dates">
-              {fmtDate(annualStart.getTime())} – {fmtDate(annualEnd.getTime())}
-            </span>
-          )}
+              <span className="annual-dates">
+                {fmtDate(annualStart.getTime())} – {fmtDate(annualEnd.getTime())}
+              </span>
+            )}
           </div>
-
-          {card.annualFee && (
-            <div className="annual-fee-row">
-              <span className="annual-fee-label">Annual fee</span>
-              <span className="annual-fee-value">{fmtVND(card.annualFee)}</span>
-            </div>
-          )}
 
           {card.requiredSpending && (
             <div className="detail-stat">
               <div className="detail-stat-row">
-                <span className="detail-stat-label">Spending / Requirement</span>
+                <span className="detail-stat-label">
+                  Spending
+                  <span className="cycle-cap"> / {fmtShort(card.requiredSpending)} required</span>
+                </span>
                 <span className="detail-stat-value">
-                  {fmtShort(annualSpending)} / {fmtShort(card.requiredSpending)}
+                  {fmtShort(annualSpending)}
                 </span>
               </div>
               <ProgressBar value={annualSpending} max={card.requiredSpending} color="#22c55e" />
             </div>
           )}
+
+          <div className="annual-benefit-rows">
+            {card.annualFee && (
+              <div className="annual-benefit-row">
+                <span className="annual-benefit-label">
+                  <span className="benefit-dot benefit-dot-fee" />
+                  Annual fee
+                </span>
+                <span className="annual-benefit-fee">{fmtVND(card.annualFee)}</span>
+              </div>
+            )}
+            <div className="annual-benefit-row">
+              <span className="annual-benefit-label">
+                <span className="benefit-dot benefit-dot-cashback" />
+                Cashback
+              </span>
+              <span className="annual-benefit-cashback">{fmtVND(annualCashback)}</span>
+            </div>
+            <div className="annual-benefit-row">
+              <span className="annual-benefit-label">
+                <span className="benefit-dot benefit-dot-discount" />
+                Discount
+              </span>
+              <span className="annual-benefit-discount">{fmtVND(annualDiscount)}</span>
+            </div>
+          </div>
+
+          {card.annualFee && (
+            <BenefitBar
+              cashback={annualCashback}
+              discount={annualDiscount}
+              annualFee={card.annualFee}
+            />
+          )}
+        </div>
+      )}
+
+      {card.billingDay !== null && (
+        <div className="detail-section">
+          <div className="detail-section-title">
+            Current
+            {cycleData?.cycleStart && cycleData?.cycleEnd && (
+              <span className="annual-dates">
+                {fmtDate(new Date(cycleData.cycleStart).getTime())} – {fmtDate(new Date(cycleData.cycleEnd).getTime())}
+              </span>
+            )}
+          </div>
+
+          <div className="cycle-rows">
+            <div className="cycle-row">
+              <span className="cycle-label">Spending</span>
+              <span className={`cycle-value ${!cycleData ? 'cycle-calculating' : ''}`}>
+                {cycleData ? fmtVND(cycleData.currentCycleSpending) : 'Calculating…'}
+              </span>
+            </div>
+            <div className="cycle-row">
+              <span className="cycle-label">
+                Cashback
+                {card.cashbackCap
+                  ? <span className="cycle-cap"> / {fmtShort(card.cashbackCap)} cap</span>
+                  : <span className="cycle-cap"> / No limit</span>
+                }
+              </span>
+              <span className={`cycle-value cycle-cashback ${!cycleData ? 'cycle-calculating' : ''}`}>
+                {cycleData ? (
+                  <>
+                    {fmtVND(cycleData.currentCycleCashback)}
+                    {card.cashbackCap && cycleData.currentCycleCashback >= card.cashbackCap && (
+                      <span className="cycle-cap-reached"> (capped)</span>
+                    )}
+                  </>
+                ) : 'Calculating…'}
+              </span>
+            </div>
+            <div className="cycle-row cycle-row-mt">
+              <span className="cycle-label">Discount</span>
+              <span className={`cycle-value cycle-discount ${!cycleData ? 'cycle-calculating' : ''}`}>
+                {cycleData ? fmtVND(cycleData.currentCycleDiscount) : 'Calculating…'}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -252,40 +456,60 @@ export default function CardDetailPage() {
           <div className="detail-sub-empty">No statements yet</div>
         ) : (
           <div className="stmt-list">
-            {statements.map(stmt => {
-              const d = new Date(stmt.billingDate)
-              return (
-                <div key={stmt.id} className="stmt-item">
-                  <span className="stmt-date">{MONTHS[d.getMonth()]} {d.getFullYear()}</span>
-                  <span className="stmt-spend">
-                    <span className="stmt-icon stmt-icon-spend" />
-                    {fmtShort(stmt.spending)}
+            {statements.map(stmt => (
+              <div key={stmt.id} className="stmt-item">
+                <div className="stmt-header">
+                  <span className="stmt-period">
+                    {fmtDate(stmt.startDate)} – {fmtDate(stmt.endDate)}
                   </span>
-                  <span className="stmt-cash">
+                  <span className="stmt-spending">{fmtVND(stmt.spending)}</span>
+                </div>
+                <div className="stmt-benefits">
+                  <span className="stmt-cashback">
                     <span className="stmt-icon stmt-icon-cash" />
                     {fmtShort(stmt.cashback)}
                   </span>
+                  <span className="stmt-discount">
+                    <span className="stmt-icon stmt-icon-discount" />
+                    {fmtShort(stmt.discount)}
+                  </span>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
         )}
 
-        <button className="detail-add-btn" onClick={() => setShowAddStatement(true)}>
-          + Add statement
-        </button>
+        {!statementsLoading && (card.billingDay === null || cycleData !== null) && (
+          <button type="button" className="detail-add-btn" onClick={() => setShowAddStatement(true)}>
+            + Add statement
+          </button>
+        )}
       </div>
 
-      {showAddStatement && (
-        <AddStatementModal
-          cardId={card.id}
-          onClose={() => setShowAddStatement(false)}
-          onAdded={(stmt) => {
-            setStatementsState(prev => prev ? { ...prev, stmts: [stmt, ...prev.stmts] } : { cardId: card.id, stmts: [stmt] })
-            setShowAddStatement(false)
-          }}
-        />
-      )}
+      {showAddStatement && (() => {
+        // Last cycle: end = current cycle start - 1 day, start = same day one month earlier
+        let lastCycleStart: string | undefined
+        let lastCycleEnd: string | undefined
+        if (cycleData?.cycleStart) {
+          const currentStart = new Date(cycleData.cycleStart)
+          const lastEnd = new Date(currentStart.getTime() - 86400000)
+          const lastStart = new Date(lastEnd.getFullYear(), lastEnd.getMonth() - 1, lastEnd.getDate() + 1)
+          lastCycleStart = toInputDate(lastStart.getTime())
+          lastCycleEnd = toInputDate(lastEnd.getTime())
+        }
+        return (
+          <AddStatementModal
+            cardId={card.id}
+            defaultStartDate={lastCycleStart}
+            defaultEndDate={lastCycleEnd}
+            onClose={() => setShowAddStatement(false)}
+            onAdded={(stmt) => {
+              setStatementsCache(prev => ({ ...prev, [card.id]: [stmt, ...(prev[card.id] ?? [])] }))
+              setShowAddStatement(false)
+            }}
+          />
+        )
+      })()}
     </main>
   )
 }

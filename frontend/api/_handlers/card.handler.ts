@@ -22,7 +22,7 @@ export const getCardDetail: RouteHandler<undefined, GetCardDetailResponse> = asy
   const cycleStart = toISODateStr(start)
   const cycleEnd = toISODateStr(end)
 
-  const transactions = (await connector.fetchTransactionsByCard(cardId, `${cycleStart}T00:00:00`, `${cycleEnd}T23:59:59`))
+  const transactions = (await connector.fetchTransactionsByCard(cardId, `${cycleStart}T00:00:00+07:00`, `${cycleEnd}T23:59:59+07:00`))
     .filter(t => t.fromAccountId !== undefined && t.toAccountId === undefined && t.categoryId !== process.env.NOTION_ADJUSTMENT_TRANSACTION_ID)
 
   const currentCycleSpending = transactions.reduce((sum, t) => sum + t.amount, 0)

@@ -23,8 +23,8 @@ export const getReports: RouteHandler<undefined, GetReportsResponse> = async (ev
   const startDateRaw = getQueryString(event.query, "startDate", false) ?? undefined;
   const endDateRaw   = getQueryString(event.query, "endDate",   false) ?? undefined;
 
-  const startDate = startDateRaw ? `${startDateRaw}T00:00:00` : undefined;
-  const endDate   = endDateRaw   ? `${endDateRaw}T23:59:59`   : undefined;
+  const startDate = startDateRaw ? `${startDateRaw}T00:00:00+07:00` : undefined;
+  const endDate   = endDateRaw   ? `${endDateRaw}T23:59:59+07:00`   : undefined;
 
   const TRANSFER_ID   = process.env.NOTION_TRANSFER_TRANSACTION_ID as string;
   const ADJUSTMENT_ID = process.env.NOTION_ADJUSTMENT_TRANSACTION_ID as string;

@@ -37,6 +37,7 @@ export type CardWithSpending = Card & {
   cycleEnd: string | null
   currentCycleSpending: number
   currentCycleCashback: number
+  currentCycleDiscount: number
 }
 
 export type PromotionCategory = 'Shopping' | 'F&B' | 'Travel' | 'Entertain' | 'Digital'
@@ -55,10 +56,11 @@ export type Promotion = {
 export type Statement = {
   id: string
   cardId: string
-  billingDate: number
+  startDate: number
+  endDate: number
   spending: number
   cashback: number
-  note: string
+  discount: number
 }
 
 export type Account = {

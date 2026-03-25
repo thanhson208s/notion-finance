@@ -58,5 +58,4 @@ export type AddStatementRequest = {
   cardId: string
   startDate: number
   endDate: number
-  note?: string
 }

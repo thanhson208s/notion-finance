@@ -1,6 +1,5 @@
 .detail-page {
-  overflow-y: auto;
-  padding-bottom: 80px;
+  padding-bottom: 16px;
 }
 
 .detail-header {
@@ -214,6 +213,209 @@
   pointer-events: none;
 }
 
+/* ---------- ANNUAL BENEFIT ---------- */
+
+.annual-benefit-rows {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.annual-benefit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.annual-benefit-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.benefit-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.benefit-dot-cashback { background: #22c55e; }
+.benefit-dot-discount { background: #f59e0b; }
+
+.annual-benefit-cashback {
+  font-size: 13px;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.annual-benefit-discount {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+.annual-benefit-fee {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+/* ---------- BENEFIT BAR ---------- */
+
+.benefit-bar-wrapper {
+  margin-top: 10px;
+}
+
+.benefit-bar-track {
+  position: relative;
+  height: 20px;
+  background: #0f172a;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  overflow: hidden;
+  display: flex;
+}
+
+.benefit-bar-cashback {
+  height: 100%;
+  background: #22c55e;
+  transition: width 0.4s ease;
+}
+
+.benefit-bar-discount {
+  height: 100%;
+  background: #f59e0b;
+  transition: width 0.4s ease;
+}
+
+.benefit-bar-fee {
+  height: 100%;
+  background: #ef4444;
+  transition: width 0.4s ease;
+}
+
+.benefit-bar-legend {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.benefit-bar-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.benefit-dot-fee { background: #ef4444; }
+
+.net-benefit-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid;
+}
+
+.net-benefit-positive {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.net-benefit-negative {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.net-benefit-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.net-benefit-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.net-benefit-positive .net-benefit-value {
+  color: #22c55e;
+}
+
+.net-benefit-negative .net-benefit-value {
+  color: #ef4444;
+}
+
+/* ---------- CURRENT CYCLE ---------- */
+
+.cycle-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cycle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.cycle-row-mt {
+  margin-top: 4px;
+}
+
+.cycle-label {
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cycle-cap {
+  font-size: 12px;
+  color: #475569;
+}
+
+.cycle-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.cycle-cashback {
+  color: #22c55e;
+}
+
+.cycle-discount {
+  color: #f59e0b;
+}
+
+.cycle-calculating {
+  color: #475569 !important;
+  font-style: italic;
+  font-weight: 400 !important;
+}
+
+.cycle-cap-reached {
+  font-size: 11px;
+  font-weight: 400;
+  color: #ef4444;
+}
+
 /* ---------- STATEMENTS ---------- */
 
 .detail-sub-empty {
@@ -231,8 +433,8 @@
 
 .stmt-item {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 4px;
   padding: 8px 6px;
   border-radius: 8px;
 }
@@ -241,23 +443,29 @@
   background: rgba(255, 255, 255, 0.03);
 }
 
-.stmt-date {
-  font-size: 13px;
-  color: #94a3b8;
-  min-width: 68px;
-  flex-shrink: 0;
-}
-
-.stmt-spend {
-  flex: 1;
+.stmt-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: #cbd5e1;
 }
 
-.stmt-cash {
+.stmt-period {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.stmt-spending {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.stmt-benefits {
+  display: flex;
+  gap: 12px;
+}
+
+.stmt-cashback {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -280,6 +488,19 @@
 
 .stmt-icon-cash {
   background: #22c55e;
+}
+
+.stmt-discount {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.stmt-icon-discount {
+  background: #f59e0b;
 }
 
 /* ---------- BUTTONS ---------- */
@@ -320,6 +541,7 @@
   padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
   width: 100%;
   max-width: 480px;
+  overflow: hidden;
 }
 
 .modal-title {
@@ -359,6 +581,83 @@
   font-family: inherit;
   width: 100%;
   box-sizing: border-box;
+}
+
+.modal-input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  cursor: pointer;
+}
+
+.modal-input[type="date"]::-webkit-date-and-time-value {
+  text-align: center;
+}
+
+.modal-input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.modal-input-error {
+  border-color: #ef4444 !important;
+}
+
+.modal-preview {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.modal-preview-loading {
+  font-size: 13px;
+  color: #475569;
+  font-style: italic;
+  text-align: center;
+  padding: 4px 0;
+}
+
+.modal-preview-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-preview-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.modal-preview-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.modal-preview-cashback {
+  color: #22c55e;
+}
+
+.modal-preview-discount {
+  color: #f59e0b;
+}
+
+.modal-hint {
+  font-size: 12px;
+  color: #475569;
+  margin: -4px 0 12px;
+  line-height: 1.5;
 }
 
 .modal-actions {

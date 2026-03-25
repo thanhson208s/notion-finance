@@ -132,6 +132,12 @@ export type GetStatementsResponse = {
 
 export type AddStatementResponse = Statement
 
+export type PreviewStatementResponse = {
+  spending: number
+  cashback: number
+  discount: number
+}
+
 export type DeleteResponse = {
   id: string
 }

@@ -7,4 +7,6 @@ export type Transaction = {
   categoryId: string
   note: string
   linkedCardId?: string
+  cashback?: number
+  discount?: number
 }

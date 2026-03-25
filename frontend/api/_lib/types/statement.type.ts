@@ -1,8 +1,10 @@
 export type Statement = {
   id: string
   cardId: string
-  billingDate: number    // epoch ms — billing cycle end date
+  startDate: number
+  endDate: number
   spending: number
   cashback: number
+  discount: number
   note: string
 }

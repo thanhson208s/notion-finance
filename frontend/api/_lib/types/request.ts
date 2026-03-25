@@ -5,6 +5,8 @@ export type LogExpenseRequest = {
   note: string
   timestamp?: number
   linkedCardId?: string
+  cashback?: number
+  discount?: number
 }
 
 export type LogIncomeRequest = {
@@ -14,6 +16,8 @@ export type LogIncomeRequest = {
   note: string
   timestamp?: number
   linkedCardId?: string
+  cashback?: number
+  discount?: number
 }
 
 export type TransferBalanceRequest = {
@@ -37,6 +41,8 @@ export type UpdateTransactionRequest = {
   categoryId?: string
   timestamp?: number
   linkedCardId?: string | null
+  cashback?: number | null
+  discount?: number | null
 }
 
 export type AddPromotionRequest = {
@@ -50,8 +56,7 @@ export type AddPromotionRequest = {
 
 export type AddStatementRequest = {
   cardId: string
-  billingDate: number
-  spending: number
-  cashback: number
+  startDate: number
+  endDate: number
   note?: string
 }

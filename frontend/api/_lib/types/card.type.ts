@@ -19,4 +19,5 @@ export type CardWithSpending = Card & {
   cycleEnd: string | null               // YYYY-MM-DD, null for debit cards
   currentCycleSpending: number
   currentCycleCashback: number
+  currentCycleDiscount: number
 }

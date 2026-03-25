@@ -9,7 +9,7 @@ export const logExpense: RouteHandler<LogExpenseRequest, LogExpenseResponse> = a
   if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
   const oldAccount = await connector.fetchAccount(req.accountId);
   await connector.fetchCategory(req.categoryId);
-  const transaction = await connector.addExpense(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId);
+  const transaction = await connector.addExpense(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId, req.cashback, req.discount);
   const newAccount = await connector.updateAccountAfterTransaction(
     req.accountId,
     oldAccount.balance - transaction.amount,
@@ -42,7 +42,7 @@ export const logIncome: RouteHandler<LogIncomeRequest, LogIncomeResponse> = asyn
   if (req.amount <= 0) throw new QueryError("Amount must be a positive number");
   const oldAccount = await connector.fetchAccount(req.accountId);
   await connector.fetchCategory(req.categoryId);
-  const transaction = await connector.addIncome(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId);
+  const transaction = await connector.addIncome(req.accountId, req.amount, req.categoryId, req.note, req.timestamp, req.linkedCardId, req.cashback, req.discount);
   const newAccount = await connector.updateAccountAfterTransaction(
     req.accountId,
     oldAccount.balance + transaction.amount,
@@ -129,7 +129,9 @@ export const updateTransaction: RouteHandler<UpdateTransactionRequest, UpdateTra
     note: req.note,
     categoryId: req.categoryId,
     timestamp: req.timestamp,
-    linkedCardId: req.linkedCardId
+    linkedCardId: req.linkedCardId,
+    cashback: req.cashback,
+    discount: req.discount
   });
 
   return ok({ transaction, balanceChanges } satisfies UpdateTransactionResponse);

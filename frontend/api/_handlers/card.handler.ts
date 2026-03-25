@@ -12,31 +12,29 @@ export const getCardDetail: RouteHandler<undefined, GetCardDetailResponse> = asy
   const cardId = event.query['id']
   if (!cardId) throw new QueryError('id is required')
 
-  const [card, cardStatements] = await Promise.all([
-    connector.fetchCardById(cardId),
-    connector.fetchStatements(cardId)
-  ])
+  const card = await connector.fetchCardById(cardId)
 
   if (card.billingDay === null) {
-    return ok({ ...card, cycleStart: null, cycleEnd: null, currentCycleSpending: 0, currentCycleCashback: 0 } satisfies GetCardDetailResponse)
+    return ok({ ...card, cycleStart: null, cycleEnd: null, currentCycleSpending: 0, currentCycleCashback: 0, currentCycleDiscount: 0 } satisfies GetCardDetailResponse)
   }
 
   const { start, end } = getBillingCycleDates(card.billingDay)
   const cycleStart = toISODateStr(start)
   const cycleEnd = toISODateStr(end)
 
-  const stmt = cardStatements.find(s => {
-    const d = new Date(s.billingDate)
-    return d.getFullYear() === end.getFullYear()
-      && d.getMonth() === end.getMonth()
-      && d.getDate() === end.getDate()
-  })
+  const transactions = (await connector.fetchTransactionsByCard(cardId, `${cycleStart}T00:00:00`, `${cycleEnd}T23:59:59`))
+    .filter(t => t.fromAccountId !== undefined && t.toAccountId === undefined && t.categoryId !== process.env.NOTION_ADJUSTMENT_TRANSACTION_ID)
+
+  const currentCycleSpending = transactions.reduce((sum, t) => sum + t.amount, 0)
+  const currentCycleCashback = transactions.reduce((sum, t) => sum + (t.cashback ?? 0), 0)
+  const currentCycleDiscount = transactions.reduce((sum, t) => sum + (t.discount ?? 0), 0)
 
   return ok({
     ...card,
     cycleStart,
     cycleEnd,
-    currentCycleSpending: stmt?.spending ?? 0,
-    currentCycleCashback: stmt?.cashback ?? 0
+    currentCycleSpending,
+    currentCycleCashback,
+    currentCycleDiscount
   } satisfies GetCardDetailResponse)
 }

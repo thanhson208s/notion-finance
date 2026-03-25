@@ -13,9 +13,9 @@ export const getStatements: RouteHandler<undefined, GetStatementsResponse> = asy
 export const addStatement: RouteHandler<AddStatementRequest, AddStatementResponse> = async (event, connector) => {
   const req = event.body
   if (!req.cardId) throw new QueryError('cardId is required')
-  if (!req.billingDate) throw new QueryError('billingMonth is required')
-  if (req.spending == null || req.spending < 0) throw new QueryError('spending must be non-negative')
-  if (req.cashback == null || req.cashback < 0) throw new QueryError('cashback must be non-negative')
+  if (!req.startDate) throw new QueryError('startDate is required')
+  if (!req.endDate) throw new QueryError('endDate is required')
+  if (req.startDate >= req.endDate) throw new QueryError('startDate must be before endDate')
   const statement = await connector.addStatement(req)
   return ok(statement satisfies AddStatementResponse)
 }

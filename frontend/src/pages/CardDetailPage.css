@@ -1,6 +1,198 @@
-.detail-page {
-  padding-bottom: 16px;
+/* ---------- ADD EXPENSE MODAL ---------- */
+
+.expense-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
 }
+
+.expense-modal-sheet {
+  width: 100%;
+  background: #1e293b;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 20px calc(32px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: expense-sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@keyframes expense-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes expense-sheet-down {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+
+@keyframes expense-backdrop-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.expense-modal-backdrop--closing {
+  animation: expense-backdrop-out 0.24s ease forwards;
+  pointer-events: none;
+}
+
+.expense-modal-sheet--closing {
+  animation: expense-sheet-down 0.24s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.expense-modal-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.expense-modal-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.expense-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.expense-modal-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+}
+
+.expense-modal-input {
+  height: 42px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 16px;
+  padding: 0 12px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.expense-modal-input--amount {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.expense-modal-input:focus {
+  border-color: #3b82f6;
+}
+
+.expense-modal-select {
+  height: 42px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 15px;
+  padding: 0 12px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.expense-modal-select:focus {
+  border-color: #3b82f6;
+}
+
+.expense-modal-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.expense-modal-input-row .expense-modal-input {
+  flex: 1;
+}
+
+.expense-modal-mode-btn {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.expense-modal-mode-btn:hover {
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+.expense-modal-computed {
+  font-size: 12px;
+  color: #22c55e;
+  padding-left: 2px;
+}
+
+.expense-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.expense-modal-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.expense-modal-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.expense-modal-btn--cancel {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.expense-modal-btn--submit {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* ---------- HEADER ---------- */
 
 .detail-header {
   display: flex;
@@ -17,15 +209,31 @@
   border-bottom: 1px solid var(--border);
 }
 
-.detail-header-title {
+.header-select-wrapper {
   flex: 1;
-  margin: 0;
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.header-select {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
   font-size: 20px;
   font-weight: 700;
   color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  width: 100%;
 }
 
 .detail-header-number {
@@ -44,15 +252,18 @@
 /* ---------- CAROUSEL ---------- */
 
 .carousel-wrapper {
-  position: relative;
+  position: sticky;
+  top: calc(53px + env(safe-area-inset-top));
+  z-index: 9;
+  background: var(--bg);
   overflow: hidden;
   padding: 16px 0;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .carousel-track {
   display: flex;
-  gap: 14px;
+  gap: 6px;
   align-items: center;
   transition: transform 0.35s ease;
   will-change: transform;
@@ -69,8 +280,9 @@
 
 .carousel-item-active {
   opacity: 1;
-  transform: scale(1);
+  transform: scale(1.2);
   cursor: default;
+  margin: 0 12px;
 }
 
 .carousel-img {
@@ -135,6 +347,87 @@
   display: flex;
 }
 
+/* ---------- FLAT SECTION (no card background) ---------- */
+
+.detail-flat-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.detail-flat-section:last-of-type {
+  border-bottom: none;
+}
+
+.detail-flat-heading {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ---------- NEW EXPENSE BUTTON ---------- */
+
+.detail-new-expense-btn {
+  margin-top: 14px;
+  width: 100%;
+  height: 40px;
+  background: #1e3a5f;
+  border: 1px solid #2563eb44;
+  color: #60a5fa;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.detail-new-expense-btn:hover {
+  background: #1e40af33;
+  border-color: #3b82f6;
+}
+
+/* ---------- TABS ---------- */
+
+.detail-tabs {
+  display: flex;
+  align-items: center;
+  margin: 12px 24px;
+  height: 44px;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.detail-tab {
+  flex: 1;
+  height: 100%;
+  border: none;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+
+.detail-tab--active {
+  background: #334155;
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
 /* ---------- ANNUAL ---------- */
 
 .annual-dates {
@@ -165,7 +458,7 @@
 .detail-stat {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
   margin-top: 10px;
 }
 
@@ -183,6 +476,7 @@
 .detail-stat-value {
   font-size: 13px;
   color: #e2e8f0;
+  font-weight: 600;
 }
 
 .detail-bar-track {
@@ -220,7 +514,7 @@
   margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .annual-benefit-row {
@@ -306,6 +600,7 @@
   gap: 10px;
   margin-top: 6px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .benefit-bar-legend-item {
@@ -318,46 +613,30 @@
 
 .benefit-dot-fee { background: #ef4444; }
 
-.net-benefit-badge {
+.annual-net-benefit {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-.net-benefit-positive {
-  background: rgba(34, 197, 94, 0.08);
-  border-color: rgba(34, 197, 94, 0.3);
-}
-
-.net-benefit-negative {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.net-benefit-label {
-  font-size: 12px;
+.annual-net-label {
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #64748b;
+  letter-spacing: 0.08em;
+  color: #475569;
 }
 
-.net-benefit-value {
-  font-size: 16px;
+.annual-net-value {
+  font-size: 26px;
   font-weight: 700;
+  line-height: 1.1;
 }
 
-.net-benefit-positive .net-benefit-value {
-  color: #22c55e;
-}
-
-.net-benefit-negative .net-benefit-value {
-  color: #ef4444;
-}
+.annual-net-positive { color: #22c55e; }
+.annual-net-negative { color: #ef4444; }
 
 /* ---------- CURRENT CYCLE ---------- */
 
@@ -365,6 +644,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  margin-bottom: 10px;
 }
 
 .cycle-row {
@@ -470,7 +750,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 13px;
+  font-size: 16px;
   color: #22c55e;
   font-weight: 600;
 }
@@ -495,7 +775,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 13px;
+  font-size: 16px;
   color: #f59e0b;
   font-weight: 600;
 }

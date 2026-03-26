@@ -27,8 +27,9 @@ export default function AccountsPage() {
   const [ addSubmitting, setAddSubmitting ] = useState(false);
   const [ addError, setAddError ] = useState<string | null>(null);
   const [ filter, setFilter ] = useState<"all" | "assets" | "liabilities">("all");
-  const [ filteredType, setFilteredType ] = useState<AccountType | "all">("all");
+  const [ filteredTypes, setFilteredTypes ] = useState<AccountType[]>([]);
   const [ sort, setSort ] = useState<"relevance" | "balance" | "type">("relevance");
+  const [ typeDropdownOpen, setTypeDropdownOpen ] = useState(false);
   const [ hideEmpty, setHideEmpty ] = useState<boolean>(true);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const pageRef = useRef<HTMLElement>(null);
@@ -138,6 +139,12 @@ export default function AccountsPage() {
     }
   }
 
+  const toggleType = (type: AccountType) => {
+    setFilteredTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  }
+
   const toggleCard = (id: string) => {
     setActiveCard(prev => (prev === id ? null : id));
   }
@@ -223,18 +230,32 @@ export default function AccountsPage() {
           <option value="liabilities">Liabilities</option>
         </select>
 
-        <select className="account-select"
-          title="filter"
-          value={filteredType}
-          onChange={(e) => setFilteredType(e.target.value as "all" | AccountType)}
-        >
-          <option value='all'>All</option>
-          {displayedTypes.map(type => {
-            return (
-              <option value={type}>{type}</option>
-            )
-          })}
-        </select>
+        <div className="account-multiselect-wrapper">
+          <button
+            type="button"
+            className={`account-select account-multiselect-btn${filteredTypes.length > 0 ? ' account-multiselect-btn--active' : ''}`}
+            onClick={() => setTypeDropdownOpen(v => !v)}
+          >
+            {filteredTypes.length === 0 ? 'Type' : filteredTypes.length === 1 ? filteredTypes[0] : `${filteredTypes.length} types`}
+          </button>
+          {typeDropdownOpen && (
+            <>
+              <div className="account-multiselect-backdrop" onClick={() => setTypeDropdownOpen(false)} />
+              <div className="account-multiselect-dropdown">
+                {displayedTypes.map(type => (
+                  <label key={type} className="account-multiselect-option">
+                    <input
+                      type="checkbox"
+                      checked={filteredTypes.includes(type)}
+                      onChange={() => toggleType(type)}
+                    />
+                    <span>{type}</span>
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         <select className="account-select"
           title="sort"
@@ -268,7 +289,7 @@ export default function AccountsPage() {
       ) : (
       <div className="account-list">
         {displayedAccounts.filter(account => {
-          return filteredType === "all" || account.type === filteredType; 
+          return filteredTypes.length === 0 || filteredTypes.includes(account.type);
         }).sort((a, b) => {
           if (sort === 'relevance') {
             return b.priorityScore - a.priorityScore;

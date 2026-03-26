@@ -105,6 +105,63 @@
   cursor: pointer;
 }
 
+.account-multiselect-wrapper {
+  position: relative;
+}
+
+.account-multiselect-btn {
+  cursor: pointer;
+  background: rgba(30, 41, 59, 0.9);
+}
+
+.account-multiselect-btn--active {
+  border-color: rgba(59, 130, 246, 0.55);
+  color: #60a5fa;
+}
+
+.account-multiselect-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+}
+
+.account-multiselect-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  min-width: 130px;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 4px 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.account-multiselect-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+  color: var(--muted);
+  transition: background 0.15s;
+}
+
+.account-multiselect-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.account-multiselect-option input[type="checkbox"] {
+  accent-color: #3b82f6;
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+
 .account-checkbox {
   display: flex;
   align-items: center;

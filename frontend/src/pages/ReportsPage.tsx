@@ -395,7 +395,7 @@ export default function ReportsPage() {
                   value={txAccountFilter}
                   onChange={e => setTxAccountFilter(e.target.value)}
                 >
-                  <option value="all">All</option>
+                  <option value="all">All accounts</option>
                   {Object.entries(
                     accounts.filter(a => a.active).reduce<Record<string, typeof accounts>>((acc, a) => {
                       ;(acc[a.type] ??= []).push(a)
@@ -434,7 +434,7 @@ export default function ReportsPage() {
                   disabled={categoryOptions.length === 0}
                   onChange={e => setTxCategoryFilter(e.target.value)}
                 >
-                  <option value="all">All</option>
+                  <option value="all">All categories</option>
                   {categoryOptions.map(c => (
                     <option key={c.categoryId} value={c.categoryId}>{categories.find(x => x.id === c.categoryId)?.name ?? c.categoryId}</option>
                   ))}

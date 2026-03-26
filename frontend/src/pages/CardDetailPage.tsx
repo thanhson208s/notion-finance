@@ -3,7 +3,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAppContext } from '../contexts/AppContext'
 import { API_BASE, fmtVND, fmtShort } from '../App'
-import type { Card, CardWithSpending, Statement } from '../App'
+import type { Card, CardWithSpending, Statement, Category } from '../App'
+import { BadgePercent, CircleDollarSign, HandCoins, Info, List } from 'lucide-react';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -85,9 +86,6 @@ function BenefitBar({ cashback, discount, annualFee }: { cashback: number; disco
   const discountPct = grand > 0 ? (discount / grand) * 100 : 0
   const feePct = grand > 0 ? (annualFee / grand) * 100 : 100
 
-  const net = cashback + discount - annualFee
-  const positive = net >= 0
-
   return (
     <div className="benefit-bar-wrapper">
       <div className="benefit-bar-track">
@@ -107,12 +105,6 @@ function BenefitBar({ cashback, discount, annualFee }: { cashback: number; disco
         <span className="benefit-bar-legend-item">
           <span className="benefit-dot benefit-dot-fee" />
           {Math.round(feePct)}% fee
-        </span>
-      </div>
-      <div className={`net-benefit-badge ${positive ? 'net-benefit-positive' : 'net-benefit-negative'}`}>
-        <span className="net-benefit-label">Net benefit</span>
-        <span className="net-benefit-value">
-          {positive ? '+' : '−'}{fmtVND(Math.abs(net))}
         </span>
       </div>
     </div>
@@ -242,10 +234,167 @@ function AddStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, 
   )
 }
 
+function AddExpenseModal({ card, categories, onClose, onAdded }: {
+  card: Card
+  categories: Category[]
+  onClose: () => void
+  onAdded: () => void
+}) {
+  const [amount, setAmount] = useState(0)
+  const [categoryId, setCategoryId] = useState('')
+  const [note, setNote] = useState('')
+  const [cashback, setCashback] = useState(0)
+  const [cashbackMode, setCashbackMode] = useState<'flat' | 'pct'>('flat')
+  const [discount, setDiscount] = useState(0)
+  const [discountMode, setDiscountMode] = useState<'flat' | 'pct'>('flat')
+  const [saving, setSaving] = useState(false)
+  const [closing, setClosing] = useState(false)
+
+  const expenseCategories = categories.filter(c => c.type === 'Expense')
+  const parents = expenseCategories.filter(c => c.parentId === null)
+  const children = expenseCategories.filter(c => c.parentId !== null)
+
+  const cashbackValue = cashbackMode === 'pct' ? Math.round(amount * cashback / 100) : cashback
+  const discountValue = discountMode === 'pct' ? Math.round(amount * discount / 100) : discount
+
+  const fmtAmount = (n: number) => n > 0
+    ? n.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
+    : ''
+
+  const buildDigit = (setter: (fn: (prev: number) => number) => void) => (e: React.KeyboardEvent) => {
+    if (e.code === 'Backspace') setter(p => Math.floor(p / 10))
+    else if (e.code.match(/^Digit[0-9]$/)) setter(p => p * 10 + parseInt(e.code.slice(-1)))
+  }
+
+  const close = () => { setClosing(true); setTimeout(onClose, 240) }
+
+  const submit = async () => {
+    if (!amount || !categoryId) return
+    setSaving(true)
+    try {
+      const res = await fetch(`${API_BASE}/transactions?type=expense`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountId: card.linkedAccountId,
+          amount,
+          categoryId,
+          note,
+          linkedCardId: card.id,
+          cashback: cashbackValue,
+          discount: discountValue,
+        })
+      })
+      if (!res.ok) throw new Error('Failed')
+      onAdded()
+    } catch {
+      alert('Failed to save expense')
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className={`expense-modal-backdrop${closing ? ' expense-modal-backdrop--closing' : ''}`} onClick={close}>
+      <div className={`expense-modal-sheet${closing ? ' expense-modal-sheet--closing' : ''}`} onClick={e => e.stopPropagation()}>
+        <div className="expense-modal-handle" />
+        <h2 className="expense-modal-title">New Expense</h2>
+
+        <div className="expense-modal-field">
+          <label className="expense-modal-label">Amount</label>
+          <input
+            title="Amount" className="expense-modal-input expense-modal-input--amount"
+            type="text" inputMode="numeric" placeholder="0 ₫"
+            value={fmtAmount(amount)} onChange={() => {}}
+            onKeyDown={buildDigit(setAmount)}
+          />
+        </div>
+
+        <div className="expense-modal-field">
+          <label className="expense-modal-label">Category</label>
+          <select
+            title="Category" className="expense-modal-select"
+            value={categoryId} onChange={e => setCategoryId(e.target.value)}
+          >
+            <option value="">Select category</option>
+            {parents.map(p => {
+              const kids = children.filter(c => c.parentId === p.id)
+              if (kids.length === 0) return <option key={p.id} value={p.id}>{p.name}</option>
+              return (
+                <optgroup key={p.id} label={p.name}>
+                  {kids.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </optgroup>
+              )
+            })}
+          </select>
+        </div>
+
+        <div className="expense-modal-field">
+          <label className="expense-modal-label">Note</label>
+          <input
+            title="Note" className="expense-modal-input"
+            type="text" placeholder="Optional"
+            value={note} onChange={e => setNote(e.target.value)}
+          />
+        </div>
+
+        <div className="expense-modal-field">
+          <label className="expense-modal-label">Cashback</label>
+          <div className="expense-modal-input-row">
+            <input
+              title="Cashback" className="expense-modal-input"
+              type="text" inputMode="numeric"
+              placeholder={cashbackMode === 'flat' ? '0 ₫' : '0'}
+              value={cashbackMode === 'flat' ? fmtAmount(cashback) : (cashback > 0 ? cashback.toString() : '')}
+              onChange={() => {}}
+              onKeyDown={buildDigit(setCashback)}
+            />
+            <button type="button" className="expense-modal-mode-btn" onClick={() => { setCashbackMode(m => m === 'flat' ? 'pct' : 'flat'); setCashback(0) }}>
+              {cashbackMode === 'flat' ? '₫' : '%'}
+            </button>
+          </div>
+          {cashbackMode === 'pct' && cashback > 0 && amount > 0 && (
+            <span className="expense-modal-computed">= {fmtVND(cashbackValue)}</span>
+          )}
+        </div>
+
+        <div className="expense-modal-field">
+          <label className="expense-modal-label">Discount</label>
+          <div className="expense-modal-input-row">
+            <input
+              title="Discount" className="expense-modal-input"
+              type="text" inputMode="numeric"
+              placeholder={discountMode === 'flat' ? '0 ₫' : '0'}
+              value={discountMode === 'flat' ? fmtAmount(discount) : (discount > 0 ? discount.toString() : '')}
+              onChange={() => {}}
+              onKeyDown={buildDigit(setDiscount)}
+            />
+            <button type="button" className="expense-modal-mode-btn" onClick={() => { setDiscountMode(m => m === 'flat' ? 'pct' : 'flat'); setDiscount(0) }}>
+              {discountMode === 'flat' ? '₫' : '%'}
+            </button>
+          </div>
+          {discountMode === 'pct' && discount > 0 && amount > 0 && (
+            <span className="expense-modal-computed">= {fmtVND(discountValue)}</span>
+          )}
+        </div>
+
+        <div className="expense-modal-actions">
+          <button type="button" className="expense-modal-btn expense-modal-btn--cancel" onClick={close}>Cancel</button>
+          <button
+            type="button" className="expense-modal-btn expense-modal-btn--submit"
+            onClick={submit} disabled={saving || !amount || !categoryId}
+          >
+            {saving ? '…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CardDetailPage() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
-  const { cards, cardsLoading, accounts } = useAppContext()
+  const { cards, cardsLoading, accounts, categories } = useAppContext()
 
   const sortedCards = useMemo(() => {
     const accountMap = new Map(accounts.map(a => [a.id, a]))
@@ -264,6 +413,8 @@ export default function CardDetailPage() {
   const card = id ? (sortedCards.find(c => c.id === id) ?? null) : (sortedCards[0] ?? null)
   const effectiveId = card?.id ?? null
 
+  const [subPage, setSubPage] = useState<'overview' | 'statements'>('overview')
+  const [showAddExpense, setShowAddExpense] = useState(false)
   const [statementsCache, setStatementsCache] = useState<Record<string, Statement[]>>({})
   const [cardDetailCache, setCardDetailCache] = useState<Record<string, CardWithSpending>>({})
   const [showAddStatement, setShowAddStatement] = useState(false)
@@ -328,7 +479,18 @@ export default function CardDetailPage() {
   return (
     <main className="page detail-page">
       <div className="detail-header">
-        <h1 className="detail-header-title">{card!.name}</h1>
+        <div className="header-select-wrapper">
+          <select
+            title="Name"
+            className="header-select"
+            value={effectiveId ?? ''}
+            onChange={e => navigate(`/cards/${e.target.value}`)}
+          >
+            {sortedCards.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
         {maskedNumber && <span className="detail-header-number">{maskedNumber}</span>}
       </div>
 
@@ -338,153 +500,199 @@ export default function CardDetailPage() {
         onSelect={(cardId) => navigate(`/cards/${cardId}`)}
       />
 
-      {(card.annualFee || card.requiredSpending) && (
-        <div className="detail-section">
-          <div className="detail-section-title">
-            Annual
-            {annualStart && annualEnd && (
-              <span className="annual-dates">
-                {fmtDate(annualStart.getTime())} – {fmtDate(annualEnd.getTime())}
-              </span>
-            )}
-          </div>
-
-          {card.requiredSpending && (
-            <div className="detail-stat">
-              <div className="detail-stat-row">
-                <span className="detail-stat-label">
-                  Spending
-                  <span className="cycle-cap"> / {fmtShort(card.requiredSpending)} required</span>
-                </span>
-                <span className="detail-stat-value">
-                  {fmtShort(annualSpending)}
-                </span>
-              </div>
-              <ProgressBar value={annualSpending} max={card.requiredSpending} color="#22c55e" />
-            </div>
-          )}
-
-          <div className="annual-benefit-rows">
-            {card.annualFee && (
-              <div className="annual-benefit-row">
-                <span className="annual-benefit-label">
-                  <span className="benefit-dot benefit-dot-fee" />
-                  Annual fee
-                </span>
-                <span className="annual-benefit-fee">{fmtVND(card.annualFee)}</span>
-              </div>
-            )}
-            <div className="annual-benefit-row">
-              <span className="annual-benefit-label">
-                <span className="benefit-dot benefit-dot-cashback" />
-                Cashback
-              </span>
-              <span className="annual-benefit-cashback">{fmtVND(annualCashback)}</span>
-            </div>
-            <div className="annual-benefit-row">
-              <span className="annual-benefit-label">
-                <span className="benefit-dot benefit-dot-discount" />
-                Discount
-              </span>
-              <span className="annual-benefit-discount">{fmtVND(annualDiscount)}</span>
-            </div>
-          </div>
-
-          {card.annualFee && (
-            <BenefitBar
-              cashback={annualCashback}
-              discount={annualDiscount}
-              annualFee={card.annualFee}
-            />
-          )}
-        </div>
-      )}
-
-      {card.billingDay !== null && (
-        <div className="detail-section">
-          <div className="detail-section-title">
-            Current
-            {cycleData?.cycleStart && cycleData?.cycleEnd && (
-              <span className="annual-dates">
-                {fmtDate(new Date(cycleData.cycleStart).getTime())} – {fmtDate(new Date(cycleData.cycleEnd).getTime())}
-              </span>
-            )}
-          </div>
-
-          <div className="cycle-rows">
-            <div className="cycle-row">
-              <span className="cycle-label">Spending</span>
-              <span className={`cycle-value ${!cycleData ? 'cycle-calculating' : ''}`}>
-                {cycleData ? fmtVND(cycleData.currentCycleSpending) : 'Calculating…'}
-              </span>
-            </div>
-            <div className="cycle-row">
-              <span className="cycle-label">
-                Cashback
-                {card.cashbackCap
-                  ? <span className="cycle-cap"> / {fmtShort(card.cashbackCap)} cap</span>
-                  : <span className="cycle-cap"> / No limit</span>
-                }
-              </span>
-              <span className={`cycle-value cycle-cashback ${!cycleData ? 'cycle-calculating' : ''}`}>
-                {cycleData ? (
-                  <>
-                    {fmtVND(cycleData.currentCycleCashback)}
-                    {card.cashbackCap && cycleData.currentCycleCashback >= card.cashbackCap && (
-                      <span className="cycle-cap-reached"> (capped)</span>
-                    )}
-                  </>
-                ) : 'Calculating…'}
-              </span>
-            </div>
-            <div className="cycle-row cycle-row-mt">
-              <span className="cycle-label">Discount</span>
-              <span className={`cycle-value cycle-discount ${!cycleData ? 'cycle-calculating' : ''}`}>
-                {cycleData ? fmtVND(cycleData.currentCycleDiscount) : 'Calculating…'}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="detail-section">
-        <div className="detail-section-title">Statements</div>
-
-        {statementsLoading ? (
-          <div className="detail-sub-empty">Loading…</div>
-        ) : statements.length === 0 ? (
-          <div className="detail-sub-empty">No statements yet</div>
-        ) : (
-          <div className="stmt-list">
-            {statements.map(stmt => (
-              <div key={stmt.id} className="stmt-item">
-                <div className="stmt-header">
-                  <span className="stmt-period">
-                    {fmtDate(stmt.startDate)} – {fmtDate(stmt.endDate)}
-                  </span>
-                  <span className="stmt-spending">{fmtVND(stmt.spending)}</span>
-                </div>
-                <div className="stmt-benefits">
-                  <span className="stmt-cashback">
-                    <span className="stmt-icon stmt-icon-cash" />
-                    {fmtShort(stmt.cashback)}
-                  </span>
-                  <span className="stmt-discount">
-                    <span className="stmt-icon stmt-icon-discount" />
-                    {fmtShort(stmt.discount)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!statementsLoading && (card.billingDay === null || cycleData !== null) && (
-          <button type="button" className="detail-add-btn" onClick={() => setShowAddStatement(true)}>
-            + Add statement
-          </button>
-        )}
+      <div className="detail-tabs">
+        <button
+          type="button"
+          className={`detail-tab${subPage === 'overview' ? ' detail-tab--active' : ''}`}
+          onClick={() => setSubPage('overview')}
+        >
+          <Info size={20}/>
+          Overview
+        </button>
+        <button
+          type="button"
+          className={`detail-tab${subPage === 'statements' ? ' detail-tab--active' : ''}`}
+          onClick={() => setSubPage('statements')}
+        >
+          <List size={20}/>
+          Statements
+        </button>
       </div>
+
+      {subPage === 'overview' ? (
+        <>
+          {(card.annualFee || card.requiredSpending) && (
+            <div className="detail-flat-section">
+              <div className="detail-flat-heading">
+                Annual
+                {annualStart && annualEnd && (
+                  <span className="annual-dates">
+                    {fmtDate(annualStart.getTime())} – {fmtDate(annualEnd.getTime())}
+                  </span>
+                )}
+              </div>
+
+              {card.annualFee && (() => {
+                const net = annualCashback + annualDiscount - card.annualFee
+                const positive = net >= 0
+                return (
+                  <div className="annual-net-benefit">
+                    <span className="annual-net-label">Net benefit</span>
+                    <span className={`annual-net-value ${positive ? 'annual-net-positive' : 'annual-net-negative'}`}>
+                      {positive ? '+' : '−'}{fmtVND(Math.abs(net))}
+                    </span>
+                  </div>
+                )
+              })()}
+
+              {card.requiredSpending && (
+                <div className="detail-stat">
+                  <div className="detail-stat-row">
+                    <span className="detail-stat-label">
+                      Spending
+                      <span className="cycle-cap"> / {fmtShort(card.requiredSpending)} required</span>
+                    </span>
+                    <span className="detail-stat-value">{fmtVND(annualSpending)}</span>
+                  </div>
+                  <ProgressBar value={annualSpending} max={card.requiredSpending} color="#22c55e" />
+                </div>
+              )}
+
+              <div className="annual-benefit-rows">
+                {card.annualFee && (
+                  <div className="annual-benefit-row">
+                    <span className="annual-benefit-label">
+                      <CircleDollarSign size={16} color="#ef4444"/>
+                      Annual fee
+                    </span>
+                    <span className="annual-benefit-fee">{fmtVND(card.annualFee)}</span>
+                  </div>
+                )}
+                <div className="annual-benefit-row">
+                  <span className="annual-benefit-label">
+                    <HandCoins size={16} color="#22c55e"/>
+                    Cashback
+                  </span>
+                  <span className="annual-benefit-cashback">{fmtVND(annualCashback)}</span>
+                </div>
+                <div className="annual-benefit-row">
+                  <span className="annual-benefit-label">
+                    <BadgePercent size={16} color="#f59e0b"/>
+                    Discount
+                  </span>
+                  <span className="annual-benefit-discount">{fmtVND(annualDiscount)}</span>
+                </div>
+              </div>
+
+              {card.annualFee && (
+                <BenefitBar
+                  cashback={annualCashback}
+                  discount={annualDiscount}
+                  annualFee={card.annualFee}
+                />
+              )}
+            </div>
+          )}
+
+          {card.billingDay !== null && (
+            <div className="detail-flat-section">
+              <div className="detail-flat-heading">
+                Current
+                {cycleData?.cycleStart && cycleData?.cycleEnd && (
+                  <span className="annual-dates">
+                    {fmtDate(new Date(cycleData.cycleStart).getTime())} – {fmtDate(new Date(cycleData.cycleEnd).getTime())}
+                  </span>
+                )}
+              </div>
+
+              <div className="cycle-rows">
+                <div className="cycle-row">
+                  <span className="cycle-label">Spending</span>
+                  <span className={`cycle-value ${!cycleData ? 'cycle-calculating' : ''}`}>
+                    {cycleData ? fmtVND(cycleData.currentCycleSpending) : 'Calculating…'}
+                  </span>
+                </div>
+                <div className="cycle-row">
+                  <span className="cycle-label">
+                    Cashback
+                    {card.cashbackCap
+                      ? <span className="cycle-cap"> / {fmtShort(card.cashbackCap)} cap</span>
+                      : <span className="cycle-cap"> / No limit</span>
+                    }
+                  </span>
+                  <span className={`cycle-value cycle-cashback ${!cycleData ? 'cycle-calculating' : ''}`}>
+                    {cycleData ? (
+                      <>
+                        {fmtVND(cycleData.currentCycleCashback)}
+                        {card.cashbackCap && cycleData.currentCycleCashback >= card.cashbackCap && (
+                          <span className="cycle-cap-reached"> (capped)</span>
+                        )}
+                      </>
+                    ) : 'Calculating…'}
+                  </span>
+                </div>
+                <div className="cycle-row cycle-row-mt">
+                  <span className="cycle-label">Discount</span>
+                  <span className={`cycle-value cycle-discount ${!cycleData ? 'cycle-calculating' : ''}`}>
+                    {cycleData ? fmtVND(cycleData.currentCycleDiscount) : 'Calculating…'}
+                  </span>
+                </div>
+              </div>
+
+              <button type="button" className="detail-add-btn" onClick={() => setShowAddExpense(true)}>+ New expense</button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="detail-flat-section">
+          {statementsLoading ? (
+            <div className="detail-sub-empty">Loading…</div>
+          ) : statements.length === 0 ? (
+            <div className="detail-sub-empty">No statements yet</div>
+          ) : (
+            <div className="stmt-list">
+              {statements.map(stmt => (
+                <div key={stmt.id} className="stmt-item">
+                  <div className="stmt-header">
+                    <span className="stmt-period">
+                      {fmtDate(stmt.startDate)} – {fmtDate(stmt.endDate)}
+                    </span>
+                    <span className="stmt-spending">{fmtVND(stmt.spending)}</span>
+                  </div>
+                  <div className="stmt-benefits">
+                    <span className="stmt-cashback">
+                      <HandCoins size={16}/>
+                      {fmtShort(stmt.cashback)}
+                    </span>
+                    <span className="stmt-discount">
+                      <BadgePercent size={16}/>
+                      {fmtShort(stmt.discount)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!statementsLoading && (card.billingDay === null || cycleData !== null) && (
+            <button type="button" className="detail-add-btn" onClick={() => setShowAddStatement(true)}>
+              + Add statement
+            </button>
+          )}
+        </div>
+      )}
+
+      {showAddExpense && card.linkedAccountId && (
+        <AddExpenseModal
+          card={card}
+          categories={categories}
+          onClose={() => setShowAddExpense(false)}
+          onAdded={() => {
+            setCardDetailCache(prev => { const n = { ...prev }; delete n[card.id]; return n })
+            setShowAddExpense(false)
+          }}
+        />
+      )}
 
       {showAddStatement && (() => {
         // Last cycle: end = current cycle start - 1 day, start = same day one month earlier

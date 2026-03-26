@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { API_BASE } from '../App'
-import type { Account, Card, Category, ReportsData, DateRangePreset } from '../App'
+import type { Account, Card, Category, ReportsData, DateRangePreset, Promotion } from '../App'
 import { getDateParams } from '../App'
 
 type Totals = { total: number; totalOfAssets: number; totalOfLiabilities: number }
@@ -26,12 +26,16 @@ type AppContextValue = {
   customEnd: string
   cards: Card[]
   cardsLoading: boolean
+  promotions: Promotion[]
+  promotionsLoading: boolean
 
   updateAccount: (id: string, patch: Partial<Account>) => void
   addAccount: (account: Account) => void
   refetchAccounts: () => void
   refetchReports: (forced: boolean, reset: boolean, dateRange?: DateRangePreset, customStart?: string, customEnd?: string) => void
   refetchCards: () => void
+  addPromotion: (p: Promotion) => void
+  removePromotion: (id: string) => void
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -55,6 +59,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [customEnd, setCustomEnd] = useState("");
   const [cards, setCards] = useState<Card[]>([])
   const [cardsLoading, setCardsLoading] = useState(true)
+  const [promotions, setPromotions] = useState<Promotion[]>([])
+  const [promotionsLoading, setPromotionsLoading] = useState(true)
   
   const fetchAccounts = useCallback(async (signal?: AbortSignal) => {
     setAccountsLoading(true)
@@ -68,6 +74,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (e instanceof Error && e.name !== 'AbortError') console.log(e.message)
     } finally {
       if (!signal?.aborted) setAccountsLoading(false)
+    }
+  }, [])
+
+  const fetchPromotions = useCallback(async (signal?: AbortSignal) => {
+    setPromotionsLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/promotions`, { signal })
+      if (!res.ok) throw new Error('Failed to fetch promotions')
+      const data = await res.json()
+      setPromotions(data.promotions ?? [])
+    } catch (e) {
+      if (e instanceof Error && e.name !== 'AbortError') console.log(e.message)
+    } finally {
+      if (!signal?.aborted) setPromotionsLoading(false)
     }
   }, [])
 
@@ -138,8 +158,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     fetchAccounts(controller.signal)
     fetchCategories(controller.signal)
     fetchCards(controller.signal)
+    fetchPromotions(controller.signal)
     return () => controller.abort()
-  }, [fetchAccounts, fetchCategories, fetchCards])
+  }, [fetchAccounts, fetchCategories, fetchCards, fetchPromotions])
 
   const updateAccount = useCallback((id: string, patch: Partial<Account>) => {
     setAccounts(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a))
@@ -151,6 +172,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const refetchAccounts = useCallback(() => fetchAccounts(), [fetchAccounts])
   const refetchCards = useCallback(() => fetchCards(), [fetchCards])
+  const addPromotion = useCallback((p: Promotion) => setPromotions(prev => [p, ...prev]), [])
+  const removePromotion = useCallback((id: string) => setPromotions(prev => prev.filter(p => p.id !== id)), [])
 
   const refetchReports = useCallback((forced: boolean, reset: boolean, dateRange?: DateRangePreset, customStart?: string, customEnd?: string) => {
     if (dateRange) setDateRange(dateRange);
@@ -181,7 +204,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [fetchReports])
 
   return (
-    <AppContext.Provider value={{ accounts, totals, accountsLoading, categories, categoriesLoading, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, cards, cardsLoading, updateAccount, addAccount, refetchAccounts, refetchReports, refetchCards }}>
+    <AppContext.Provider value={{ accounts, totals, accountsLoading, categories, categoriesLoading, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, cards, cardsLoading, promotions, promotionsLoading, updateAccount, addAccount, refetchAccounts, refetchReports, refetchCards, addPromotion, removePromotion }}>
       {children}
     </AppContext.Provider>
   )

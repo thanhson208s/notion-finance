@@ -646,7 +646,7 @@ export default function CardDetailPage() {
       ) : (
         <div className="detail-flat-section">
           {statementsLoading ? (
-            <div className="detail-sub-empty">Loading…</div>
+            <div className="circle-loading"></div>
           ) : statements.length === 0 ? (
             <div className="detail-sub-empty">No statements yet</div>
           ) : (

@@ -34,7 +34,7 @@ function AddPromotionModal({ cards, onClose, onAdded }: {
   const [cardId, setCardId] = useState('')
   const [category, setCategory] = useState<PromotionCategory | ''>('')
   const [type, setType] = useState<PromotionType>('Cashback')
-  const [expiresAt, setExpiresAt] = useState('')
+  const [expiresAt, setExpiresAt] = useState(new Date().toISOString().slice(0,10))
   const [link, setLink] = useState('')
   const [loading, setLoading] = useState(false)
 

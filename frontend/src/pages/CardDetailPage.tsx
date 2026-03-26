@@ -426,7 +426,7 @@ export default function CardDetailPage() {
 
   useEffect(() => {
     if (!effectiveId || effectiveId in statementsCache) return
-    fetch(`${API_BASE}/statements?cardId=${effectiveId}`)
+    apiFetch(`${API_BASE}/statements?cardId=${effectiveId}`)
       .then(r => r.json())
       .then(d => setStatementsCache(prev => ({ ...prev, [effectiveId]: d.statements ?? [] })))
       .catch(() => setStatementsCache(prev => ({ ...prev, [effectiveId]: [] })))
@@ -434,7 +434,7 @@ export default function CardDetailPage() {
 
   useEffect(() => {
     if (!effectiveId || effectiveId in cardDetailCache) return
-    fetch(`${API_BASE}/cards?id=${effectiveId}`)
+    apiFetch(`${API_BASE}/cards?id=${effectiveId}`)
       .then(r => r.json())
       .then(d => setCardDetailCache(prev => ({ ...prev, [effectiveId]: d })))
       .catch(() => {})

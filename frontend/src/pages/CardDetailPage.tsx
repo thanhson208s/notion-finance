@@ -484,7 +484,7 @@ export default function CardDetailPage() {
             title="Name"
             className="header-select"
             value={effectiveId ?? ''}
-            onChange={e => navigate(`/cards/${e.target.value}`)}
+            onChange={e => navigate(`/cards/${e.target.value}`, { replace: true })}
           >
             {sortedCards.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -497,7 +497,7 @@ export default function CardDetailPage() {
       <CardCarousel
         cards={sortedCards}
         currentId={effectiveId!}
-        onSelect={(cardId) => navigate(`/cards/${cardId}`)}
+        onSelect={(cardId) => navigate(`/cards/${cardId}`, { replace: true })}
       />
 
       <div className="detail-tabs">

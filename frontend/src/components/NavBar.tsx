@@ -9,19 +9,19 @@ export default function NavBar() {
 
   return (
     <nav className="nav-bar">
-      <NavLink to="/" className={() => accountsActive ? 'nav-item active' : 'nav-item'} end>
+      <NavLink to="/" replace className={() => accountsActive ? 'nav-item active' : 'nav-item'} end>
         <Wallet size={22} />
       </NavLink>
 
-      <NavLink to="/reports" className="nav-item">
+      <NavLink to="/reports" replace className="nav-item">
         <ChartBarBig size={22} />
       </NavLink>
 
-      <NavLink to="/cards" className="nav-item">
+      <NavLink to="/cards" replace className="nav-item">
         <WalletCards size={22} />
       </NavLink>
 
-      <NavLink to="/promos" className="nav-item">
+      <NavLink to="/promos" replace className="nav-item">
         <TicketPercent size={22} />
       </NavLink>
     </nav>

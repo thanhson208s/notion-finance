@@ -331,7 +331,7 @@ export default function AccountsPage() {
                     title="Expense"
                     aria-label="Expense"
                     className="action-btn expense"
-                    onClick={() => navigate(`/expense/${account.id}`, { state: { account } })}
+                    onClick={() => navigate(`/expense/${account.id}`, { state: { account }, replace: true })}
                   >
                     <ArrowDownRight size={18}/>
                   </button>
@@ -339,7 +339,7 @@ export default function AccountsPage() {
                   <button
                     aria-label="Income"
                     className="action-btn income"
-                    onClick={() => navigate(`/income/${account.id}`, { state: { account } })}
+                    onClick={() => navigate(`/income/${account.id}`, { state: { account }, replace: true })}
                   >
                     <ArrowUpRight size={18}/>
                   </button>
@@ -347,7 +347,7 @@ export default function AccountsPage() {
                   <button
                     aria-label="Transfer"
                     className="action-btn transfer"
-                    onClick={() => navigate(`/transfer/${account.id}`, { state: { account } })}
+                    onClick={() => navigate(`/transfer/${account.id}`, { state: { account }, replace: true })}
                   >
                     <ArrowLeftRight size={18}/>
                   </button>
@@ -355,7 +355,7 @@ export default function AccountsPage() {
                   <button
                     aria-label="Adjustment"
                     className="action-btn adjustment"
-                    onClick={() => navigate(`/adjustment/${account.id}`, { state: { account } })}
+                    onClick={() => navigate(`/adjustment/${account.id}`, { state: { account }, replace: true })}
                   >
                     <Pencil size={18}/>
                   </button>

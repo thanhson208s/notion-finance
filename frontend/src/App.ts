@@ -117,12 +117,25 @@ export function fmtVND(n: number) {
 
 export function fmtTxDate(timestamp: number): { date: string; time: string } {
   const d = new Date(timestamp)
+  const now = new Date()
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  const time = `${hours}:${minutes}`
+
+  const sameDate = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+
+  if (sameDate(d, now)) return { date: 'Today', time }
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (sameDate(d, yesterday)) return { date: 'Yesterday', time }
+
   const day = String(d.getDate()).padStart(2, '0')
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const year = String(d.getFullYear()).slice(-2)
-  const hours = String(d.getHours()).padStart(2, '0')
-  const minutes = String(d.getMinutes()).padStart(2, '0')
-  return { date: `${day}/${month}/${year}`, time: `${hours}:${minutes}` }
+  return { date: `${day}/${month}/${year}`, time }
 }
 
 export function fmtShort(n: number): string {

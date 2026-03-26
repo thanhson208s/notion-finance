@@ -36,7 +36,7 @@ export default function AdjustmentPage() {
   return (
     <main className="transaction-page">
       <div className="transaction-header">
-        <button type="button" aria-label="Back" className="back-btn" onClick={() => navigate(-1)}>
+        <button type="button" aria-label="Back" className="back-btn" onClick={() => navigate('/', { replace: true })}>
           <ChevronLeft size={28} />
         </button>
         <h1 className="transaction-title">Adjustment</h1>

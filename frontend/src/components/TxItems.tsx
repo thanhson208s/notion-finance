@@ -1,8 +1,8 @@
 import {
-  ArrowLeftRight, BarChart2, Briefcase, Car,
-  Coins, Gift, Lamp, Palette, PawPrint, Bed,
-  Percent, TrendingDown, TrendingUp, Undo2, UtensilsCrossed,
-  Balloon,
+  ArrowLeftRight, BarChart2, BookOpen, Briefcase,
+  Building2, Car, Clapperboard, Coins,
+  Gift, HeartPulse, Home, PawPrint,
+  Percent, Plane, Sparkles, TrendingDown, TrendingUp, Undo2, UtensilsCrossed,
 } from 'lucide-react'
 import { type Account, type Card, type Category } from '../App'
 import {
@@ -17,33 +17,43 @@ type SwipeActions = {
 }
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  // Expense
+  'Entertainment':  <Clapperboard size={18} />,
   'Food':           <UtensilsCrossed size={18} />,
-  'Entertainment':  <Balloon size={18} />,
-  'Hobbies':        <Palette size={18} />,
-  'Transportation': <Car size={18} />,
+  'Gifts':          <Gift size={18} />,
+  'Health':         <HeartPulse size={18} />,
+  'Household':      <Home size={18} />,
+  'Housing':        <Building2 size={18} />,
+  'Personal care':  <Sparkles size={18} />,
   'Pet':            <PawPrint size={18} />,
-  'Household':      <Lamp size={18} />,
-  'Gift':           <Gift size={18} />,
-  'Salary':         <Briefcase size={18} />,
-  'Interest':       <Percent size={18} />,
+  'Productivity':   <BookOpen size={18} />,
+  'Transportation': <Car size={18} />,
+  'Travel':         <Plane size={18} />,
+  // Income
   'Cashback':       <Coins size={18} />,
+  'Interest':       <Percent size={18} />,
   'Refund':         <Undo2 size={18} />,
-  'Rent':           <Bed size={18} />,
+  'Salary':         <Briefcase size={18} />,
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Food':           '#f97316',
+  // Expense
   'Entertainment':  '#a855f7',
-  'Hobbies':        '#ec4899',
-  'Transportation': '#3b82f6',
-  'Pet':            '#10b981',
+  'Food':           '#f97316',
+  'Gifts':          '#f43f5e',
+  'Health':         '#ef4444',
   'Household':      '#14b8a6',
-  'Gift':           '#f43f5e',
-  'Salary':         '#22c55e',
-  'Interest':       '#60a5fa',
+  'Housing':        '#6366f1',
+  'Personal care':  '#ec4899',
+  'Pet':            '#10b981',
+  'Productivity':   '#8b5cf6',
+  'Transportation': '#3b82f6',
+  'Travel':         '#06b6d4',
+  // Income
   'Cashback':       '#fbbf24',
+  'Interest':       '#60a5fa',
   'Refund':         '#94a3b8',
-  'Rent':           '#ffff1a'
+  'Salary':         '#22c55e',
 }
 
 const TYPE_COLORS: Record<TxType, string> = {

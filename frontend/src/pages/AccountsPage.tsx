@@ -7,15 +7,25 @@ import {
   ArrowLeftRight,
   Pencil,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Power,
+  Plus
 } from "lucide-react"
-import { type AccountType } from '../App'
+import { type Account, type AccountType, API_BASE } from '../App'
 import { useAppContext } from '../contexts/AppContext'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 
 export default function AccountsPage() {
-  const { accounts, totals, accountsLoading, refetchAccounts } = useAppContext();
+  const { accounts, totals, accountsLoading, updateAccount, addAccount, refetchAccounts } = useAppContext();
   const [ activeCard, setActiveCard ] = useState<string | null>(null);
+  const [ activationView, setActivationView ] = useState(false);
+  const [ togglingId, setTogglingId ] = useState<string | null>(null);
+  const [ showAddModal, setShowAddModal ] = useState(false);
+  const [ addName, setAddName ] = useState('');
+  const [ addType, setAddType ] = useState<AccountType>('Cash');
+  const [ addNote, setAddNote ] = useState('');
+  const [ addSubmitting, setAddSubmitting ] = useState(false);
+  const [ addError, setAddError ] = useState<string | null>(null);
   const [ filter, setFilter ] = useState<"all" | "assets" | "liabilities">("all");
   const [ filteredType, setFilteredType ] = useState<AccountType | "all">("all");
   const [ sort, setSort ] = useState<"relevance" | "balance" | "type">("relevance");
@@ -101,15 +111,61 @@ export default function AccountsPage() {
     };
   }, [activeCard]);
 
+  const openAddModal = () => {
+    setAddName(''); setAddType('Cash'); setAddNote(''); setAddError(null);
+    setShowAddModal(true);
+  }
+
+  const handleAddAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addName.trim()) { setAddError('Name is required'); return; }
+    setAddSubmitting(true);
+    setAddError(null);
+    try {
+      const res = await fetch(`${API_BASE}/accounts?action=create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: addName.trim(), type: addType, note: addNote.trim() })
+      });
+      if (!res.ok) { setAddError('Failed to create account'); return; }
+      const account: Account = await res.json();
+      addAccount(account);
+      setShowAddModal(false);
+    } catch {
+      setAddError('Failed to create account');
+    } finally {
+      setAddSubmitting(false);
+    }
+  }
+
   const toggleCard = (id: string) => {
     setActiveCard(prev => (prev === id ? null : id));
+  }
+
+  const handleToggleActivation = async (account: Account) => {
+    if (togglingId) return;
+    setTogglingId(account.id);
+    try {
+      const res = await fetch(`${API_BASE}/accounts?action=set-active`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId: account.id, active: !account.active })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        updateAccount(account.id, { active: data.active });
+      }
+    } finally {
+      setTogglingId(null);
+    }
   }
 
   const displayedTotal = filter === 'assets' ? totals.totalOfAssets
     : filter === 'liabilities' ? totals.totalOfLiabilities
     : totals.total;
   const displayedAccounts = accounts.filter((account) => {
-    if (hideEmpty && account.balance === 0) return false;
+    if (!activationView && !account.active) return false;
+    if (!activationView && hideEmpty && account.balance === 0) return false;
     if (filter === 'assets' && type2Group[account.type] !== 'asset') return false;
     if (filter === 'liabilities' && type2Group[account.type] !== 'liability') return false;
     return true;
@@ -133,9 +189,27 @@ export default function AccountsPage() {
         }
       </div>
       <div className="balance-header">
+        <button
+          type="button"
+          className={`header-btn${activationView ? ' header-btn--active' : ''}`}
+          onClick={() => { setActivationView(v => !v); setActiveCard(null); }}
+          aria-label="Manage activation"
+        >
+          <Power size={17} />
+        </button>
+
         <div className="balance-pill">
           {displayedTotal.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
         </div>
+
+        <button
+          type="button"
+          className="header-btn"
+          onClick={openAddModal}
+          aria-label="Add account"
+        >
+          <Plus size={17} />
+        </button>
       </div>
 
       <div className="account-toolbar">
@@ -209,8 +283,8 @@ export default function AccountsPage() {
           return (
             <div
               key={account.id}
-              className='account-card'
-              onClick={() => toggleCard(account.id)}
+              className={`account-card${activationView ? (account.active ? ' account-card--on' : ' account-card--off') : ''}`}
+              onClick={() => activationView ? handleToggleActivation(account) : toggleCard(account.id)}
               ref={(el) => {cardRefs.current[account.id] = el}}
             >
               <div className="account-info">
@@ -227,7 +301,7 @@ export default function AccountsPage() {
                 </div>
               </div>
 
-              {activeCard === account.id && (
+              {!activationView && activeCard === account.id && (
                 <div
                   className="actions"
                   onClick={(e) => e.stopPropagation()}
@@ -270,6 +344,63 @@ export default function AccountsPage() {
           )
         })}
       </div>
+      )}
+
+      {showAddModal && (
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <h2 className="modal-title">New Account</h2>
+
+            <form onSubmit={handleAddAccount} className="modal-form">
+              <div className="modal-field">
+                <label className="modal-label">Name</label>
+                <input
+                  className={`modal-input${addError && !addName.trim() ? ' input-error' : ''}`}
+                  type="text"
+                  placeholder="e.g. Techcombank"
+                  value={addName}
+                  onChange={e => setAddName(e.target.value)}
+                />
+              </div>
+
+              <div className="modal-field">
+                <label className="modal-label">Type</label>
+                <select
+                  className="modal-select"
+                  title="Account type"
+                  value={addType}
+                  onChange={e => setAddType(e.target.value as AccountType)}
+                >
+                  {(['Cash','Bank','Credit','eWallet','Savings','PayLater','Prepaid','Gold','Loan','Fund','Bond','Stock','Debt','Crypto'] as AccountType[]).map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modal-field">
+                <label className="modal-label">Note <span className="modal-label-optional">(optional)</span></label>
+                <textarea
+                  className="modal-textarea"
+                  placeholder="Any notes…"
+                  rows={2}
+                  value={addNote}
+                  onChange={e => setAddNote(e.target.value)}
+                />
+              </div>
+
+              {addError && <p className="modal-error">{addError}</p>}
+
+              <div className="modal-actions">
+                <button type="button" className="modal-btn modal-btn--cancel" onClick={() => setShowAddModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="modal-btn modal-btn--submit" disabled={addSubmitting}>
+                  {addSubmitting ? <Loader2 size={16} className="ptr-spin" /> : 'Add'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </main>
   )

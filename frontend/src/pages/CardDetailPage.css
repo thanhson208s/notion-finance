@@ -47,6 +47,7 @@
   position: relative;
   overflow: hidden;
   padding: 16px 0;
+  margin-top: 12px;
 }
 
 .carousel-track {

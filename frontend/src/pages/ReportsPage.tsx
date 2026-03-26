@@ -397,7 +397,7 @@ export default function ReportsPage() {
                 >
                   <option value="all">All</option>
                   {Object.entries(
-                    accounts.reduce<Record<string, typeof accounts>>((acc, a) => {
+                    accounts.filter(a => a.active).reduce<Record<string, typeof accounts>>((acc, a) => {
                       ;(acc[a.type] ??= []).push(a)
                       return acc
                     }, {})

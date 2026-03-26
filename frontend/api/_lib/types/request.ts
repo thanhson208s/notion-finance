@@ -59,3 +59,14 @@ export type AddStatementRequest = {
   startDate: number
   endDate: number
 }
+
+export type SetAccountActiveRequest = {
+  accountId: string
+  active: boolean
+}
+
+export type CreateAccountRequest = {
+  name: string
+  type: string
+  note?: string
+}

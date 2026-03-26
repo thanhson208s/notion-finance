@@ -68,6 +68,8 @@ export type Account = {
   name: string
   type: AccountType
   balance: number
+  active: boolean
+  note: string
   totalTransactions: number | null
   lastTransactionDate: number | null
   priorityScore: number

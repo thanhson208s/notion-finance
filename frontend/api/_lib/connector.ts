@@ -610,10 +610,40 @@ export class Connector {
     return allPages
   }
 
+  async updateAccountActive(accountId: string, active: boolean): Promise<Account> {
+    const response = await this.notion.pages.update({
+      page_id: accountId,
+      properties: {
+        'Active': { type: 'checkbox', checkbox: active }
+      }
+    });
+    if (!("properties" in response))
+      throw new DatabaseError(`Account ${accountId} not updated`);
+    return this.mapPageToAccount(response as PageObjectResponse);
+  }
+
+  async createAccount(name: string, type: AccountType, note: string): Promise<Account> {
+    const response = await this.notion.pages.create({
+      parent: { data_source_id: process.env.NOTION_ACCOUNT_DATABASE_ID as string },
+      properties: {
+        "Name": { type: "title", title: [{ type: "text", text: { content: name } }] },
+        "Type": { type: "select", select: { name: type } },
+        "Balance": { type: "number", number: 0 },
+        "Active": { type: "checkbox", checkbox: true },
+        "Note": { type: "rich_text", rich_text: note ? [{ type: "text", text: { content: note } }] : [] }
+      }
+    });
+    if (!("properties" in response))
+      throw new DatabaseError(`Account not created`);
+    return this.mapPageToAccount(response as PageObjectResponse);
+  }
+
   private mapPageToAccount(page: PageObjectResponse): Account {
     const name = this.getTitleProperty(page, "Name");
     const type = this.getSelectProperty(page, "Type", true);
     const balance = this.getNumberProperty(page, "Balance", true);
+    const active = this.getCheckboxProperty(page, "Active");
+    const note = this.getTextProperty(page, "Note", false) ?? "";
     const totalTransactions = this.getNumberProperty(page, "Total Transactions", false);
     const lastTransactionDate = this.getDateProperty(page, "Last Transaction Date", false);
     const priorityScore = computePriorityScore(totalTransactions, lastTransactionDate);
@@ -621,6 +651,7 @@ export class Connector {
 
     return {
       id: page.id, name, type: type as AccountType, balance,
+      active, note,
       totalTransactions, lastTransactionDate, priorityScore,
       linkedCardIds
     } satisfies Account;
@@ -828,6 +859,12 @@ export class Connector {
     }
 
     return prop.date?.start ? new Date(prop.date.start).getTime() : null;
+  }
+
+  private getCheckboxProperty(page: PageObjectResponse, key: string): boolean {
+    const prop = page.properties[key];
+    if (!prop || prop.type !== 'checkbox') return false;
+    return prop.checkbox;
   }
 
   private getMultiSelectProperty(page: PageObjectResponse, key: string): string[] {

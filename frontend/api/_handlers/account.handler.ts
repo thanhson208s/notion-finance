@@ -1,6 +1,6 @@
-import { isAssetType } from '../_lib/types/account.type';
-import { AdjustBalanceRequest } from '../_lib/types/request';
-import { AdjustBalanceResponse, GetAccountsResponse } from '../_lib/types/response'
+import { isAssetType, type AccountType } from '../_lib/types/account.type';
+import { AdjustBalanceRequest, SetAccountActiveRequest, CreateAccountRequest } from '../_lib/types/request';
+import { AdjustBalanceResponse, GetAccountsResponse, SetAccountActiveResponse, CreateAccountResponse } from '../_lib/types/response'
 import { ok } from '../_lib/helper'
 import { RouteHandler } from '../_lib/router'
 
@@ -16,6 +16,21 @@ export const getAccounts: RouteHandler<undefined, GetAccountsResponse> = async(_
     totalOfAssets,
     totalOfLiabilities
   } satisfies GetAccountsResponse);
+}
+
+export const setAccountActive: RouteHandler<SetAccountActiveRequest, SetAccountActiveResponse> = async(event, connector) => {
+  const req = event.body;
+  const account = await connector.updateAccountActive(req.accountId, req.active);
+  return ok({
+    accountId: account.id,
+    active: account.active
+  } satisfies SetAccountActiveResponse);
+}
+
+export const createAccount: RouteHandler<CreateAccountRequest, CreateAccountResponse> = async(event, connector) => {
+  const req = event.body;
+  const account = await connector.createAccount(req.name, req.type as AccountType, req.note ?? "");
+  return ok(account satisfies CreateAccountResponse);
 }
 
 export const adjustBalance: RouteHandler<AdjustBalanceRequest, AdjustBalanceResponse> = async(event, connector) => {

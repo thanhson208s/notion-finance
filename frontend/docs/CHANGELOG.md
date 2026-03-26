@@ -9,6 +9,20 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.10.0] - 2026-03-25
+
+### Added
+
+- feat(accounts): `active` (boolean) and `note` (string) fields on `Account` type, synced with Notion `Active` (checkbox) and `Note` (rich_text) columns
+- feat(accounts): `POST /api/accounts?action=set-active` — activate or deactivate an account; deactivated accounts remain in `GET /api/accounts` response with `active: false`
+- feat(accounts): `POST /api/accounts?action=create` — create a new account with `name`, `type`, and optional `note`; initial `balance = 0`, `active = true`
+
+### Notes (manual Notion setup required)
+- Add `Active` (Checkbox) field to Account DB
+- Add `Note` (Text) field to Account DB
+
+---
+
 ## [FE-0.9.1] - 2026-03-24
 
 ### Changed

@@ -61,6 +61,8 @@ Returns all accounts with aggregated balance totals.
       "name": "string",
       "type": "Cash | Bank | eWallet | ...",
       "balance": 0,
+      "active": true,
+      "note": "string",
       "totalTransactions": 0,
       "lastTransactionDate": 0,
       "priorityScore": 0,
@@ -74,9 +76,11 @@ Returns all accounts with aggregated balance totals.
 ```
 
 **Notes**:
-- `total` = sum of ALL account balances
+- `total` = sum of ALL account balances (including inactive)
 - `totalOfAssets` = sum of asset-type accounts only
 - `totalOfLiabilities` = sum of liability-type accounts only
+- `active` — `false` for deactivated accounts; frontend should filter these from forms and selectors
+- `note` — free-text note; empty string if not set
 - `totalTransactions` — number of expense/income transactions logged against this account; `null` for accounts with no history yet
 - `lastTransactionDate` — Unix ms timestamp of the most recent expense/income transaction; `null` for unused accounts
 - `priorityScore` — computed ranking score: `0.4 * log(1 + totalTransactions) + 0.6 * 0.5^(daysSince / 30)`; `0` for unused accounts. Frontend can sort by this field descending to surface preferred accounts first.
@@ -207,6 +211,75 @@ Sets an account's balance to a target value, creating an audit transaction for t
 4. Set account balance to `targetBalance`
 
 **Note**: `delta` in the response is always the absolute value.
+
+---
+
+### POST /api/accounts?action=set-active
+
+**Status**: ✅ DONE
+
+Activates or deactivates an account. Deactivated accounts are still returned by `GET /api/accounts` with `active: false`; the frontend is responsible for hiding them from forms and selectors.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `action` | `"set-active"` | Yes | Must be `set-active` |
+
+**Request Body**:
+```json
+{
+  "accountId": "string (required)",
+  "active": "boolean (required)"
+}
+```
+
+**Response 200**:
+```json
+{
+  "accountId": "string",
+  "active": false
+}
+```
+
+---
+
+### POST /api/accounts?action=create
+
+**Status**: ✅ DONE
+
+Creates a new account in the Notion Account database. Initial `balance` is `0` and `active` is `true`.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `action` | `"create"` | Yes | Must be `create` |
+
+**Request Body**:
+```json
+{
+  "name": "string (required)",
+  "type": "AccountType (required)",
+  "note": "string (optional, defaults to empty)"
+}
+```
+
+**Response 200**: full `Account` object
+```json
+{
+  "id": "string",
+  "name": "string",
+  "type": "string",
+  "balance": 0,
+  "active": true,
+  "note": "string",
+  "totalTransactions": null,
+  "lastTransactionDate": null,
+  "priorityScore": 0,
+  "linkedCardIds": []
+}
+```
 
 ---
 

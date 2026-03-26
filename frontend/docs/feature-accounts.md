@@ -1,6 +1,6 @@
 # Feature: Accounts
 
-**Status**: ✅ DONE (backend + frontend)
+**Status**: ✅ DONE (backend + frontend, activation + creation added)
 
 ---
 
@@ -45,6 +45,8 @@ Accounts represent financial containers: cash wallets, bank accounts, credit car
 Each account returned by `GET /api/accounts` includes a computed `priorityScore` field. This allows the frontend to sort accounts by usage frequency and recency.
 
 **Notion columns** (must exist in the Account database):
+- `Active` — checkbox. Whether the account is active. Defaults to `true` on creation. Inactive accounts are still returned by `GET /api/accounts` (with `active: false`); frontend should filter them from forms and selectors.
+- `Note` — rich_text, optional. Free-text note about the account. Defaults to `""`.
 - `Total Transactions` — number, nullable. Incremented on every expense/income write.
 - `Last Transaction Date` — date, nullable. Set to the transaction timestamp on every expense/income write.
 
@@ -69,6 +71,26 @@ priority_score = 0.4 * log(1 + total_transactions) + 0.6 * 0.5^(days_since / 30)
 - `updateAccountAfterTransaction()` updates Balance, Total Transactions, and Last Transaction Date atomically in a single Notion `pages.update()` call.
 - Only expense and income transactions increment the stats. Transfers and adjustments use `updateAccountBalance()` and do **not** affect ranking.
 - `lastTransactionDate` is set to the request `timestamp` (when the transaction happened), not the API call time.
+
+### POST /api/accounts?action=set-active
+
+**Handler**: `api/_handlers/account.handler.ts` → `setAccountActive()`
+**Connector**: `connector.updateAccountActive(accountId, active)`
+
+Activates or deactivates an account. Deactivated accounts (`active: false`) should be hidden from forms and selectors on the frontend but are still returned by `GET /api/accounts`.
+
+**Request body**: `{ accountId: string, active: boolean }`
+**Response**: `{ accountId: string, active: boolean }`
+
+### POST /api/accounts?action=create
+
+**Handler**: `api/_handlers/account.handler.ts` → `createAccount()`
+**Connector**: `connector.createAccount(name, type, note)`
+
+Creates a new account in the Notion Account database. Initial `balance` is set to `0` and `active` to `true`.
+
+**Request body**: `{ name: string, type: AccountType, note?: string }`
+**Response**: full `Account` object
 
 ### POST /api/adjustment
 
@@ -128,6 +150,6 @@ All action pages receive the account object via `location.state`:
 
 ## Backlog
 
-- Account creation / editing from the UI
+- Account editing (name/type/note) from the UI
 - Transaction history view per account
 - Pagination for large account lists

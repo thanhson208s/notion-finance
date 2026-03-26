@@ -49,7 +49,7 @@ export default function TransferPage() {
       </div>
 
       <div className="transaction-body">
-        <TransferForm accountId={accountId!} accounts={accounts} onTransferSuccess={handleTransferSuccess} timestamp={timestamp} />
+        <TransferForm accountId={accountId!} accounts={accounts.filter(a => a.active)} onTransferSuccess={handleTransferSuccess} timestamp={timestamp} />
       </div>
     </main>
   )

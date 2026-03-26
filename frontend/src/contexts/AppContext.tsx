@@ -27,6 +27,8 @@ type AppContextValue = {
   cards: Card[]
   cardsLoading: boolean
 
+  updateAccount: (id: string, patch: Partial<Account>) => void
+  addAccount: (account: Account) => void
   refetchAccounts: () => void
   refetchReports: (forced: boolean, reset: boolean, dateRange?: DateRangePreset, customStart?: string, customEnd?: string) => void
   refetchCards: () => void
@@ -139,6 +141,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => controller.abort()
   }, [fetchAccounts, fetchCategories, fetchCards])
 
+  const updateAccount = useCallback((id: string, patch: Partial<Account>) => {
+    setAccounts(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a))
+  }, [])
+
+  const addAccount = useCallback((account: Account) => {
+    setAccounts(prev => [...prev, account])
+  }, [])
+
   const refetchAccounts = useCallback(() => fetchAccounts(), [fetchAccounts])
   const refetchCards = useCallback(() => fetchCards(), [fetchCards])
 
@@ -171,7 +181,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [fetchReports])
 
   return (
-    <AppContext.Provider value={{ accounts, totals, accountsLoading, categories, categoriesLoading, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, cards, cardsLoading, refetchAccounts, refetchReports, refetchCards }}>
+    <AppContext.Provider value={{ accounts, totals, accountsLoading, categories, categoriesLoading, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, cards, cardsLoading, updateAccount, addAccount, refetchAccounts, refetchReports, refetchCards }}>
       {children}
     </AppContext.Provider>
   )

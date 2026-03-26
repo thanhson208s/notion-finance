@@ -141,3 +141,10 @@ export type PreviewStatementResponse = {
 export type DeleteResponse = {
   id: string
 }
+
+export type SetAccountActiveResponse = {
+  accountId: string
+  active: boolean
+}
+
+export type CreateAccountResponse = Account

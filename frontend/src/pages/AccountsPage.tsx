@@ -283,7 +283,7 @@ export default function AccountsPage() {
           return (
             <div
               key={account.id}
-              className={`account-card${activationView ? (account.active ? ' account-card--on' : ' account-card--off') : ''}`}
+              className={`account-card${activationView ? (togglingId === account.id ? ' account-card--loading' : account.active ? ' account-card--on' : ' account-card--off') : ''}`}
               onClick={() => activationView ? handleToggleActivation(account) : toggleCard(account.id)}
               ref={(el) => {cardRefs.current[account.id] = el}}
             >

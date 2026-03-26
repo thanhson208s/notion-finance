@@ -1,3 +1,9 @@
+import type { LucideIcon } from 'lucide-react'
+import {
+  BookOpen, Briefcase, Building2, Car, Clapperboard, Coins,
+  Gift, HeartPulse, Home, PawPrint, Percent, Plane, Sparkles, Undo2, UtensilsCrossed,
+} from 'lucide-react'
+
 export const API_BASE = import.meta.env.VITE_API_BASE as string
 
 export type AccountType =
@@ -107,6 +113,55 @@ export type ReportsData = {
   transactions: Transaction[]
   expenseCategoryBreakdown: {categoryId: string, amount: number}[]
   incomeCategoryBreakdown: {categoryId: string, amount: number}[]
+}
+
+// --- Category config ---
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  // Expense
+  'Entertainment':  Clapperboard,
+  'Food':           UtensilsCrossed,
+  'Gifts':          Gift,
+  'Health':         HeartPulse,
+  'Household':      Home,
+  'Housing':        Building2,
+  'Personal care':  Sparkles,
+  'Pet':            PawPrint,
+  'Productivity':   BookOpen,
+  'Transportation': Car,
+  'Travel':         Plane,
+  // Income
+  'Cashback':       Coins,
+  'Interest':       Percent,
+  'Refund':         Undo2,
+  'Salary':         Briefcase,
+}
+
+export const CATEGORY_COLORS: Record<string, string> = {
+  // Expense
+  'Entertainment':  '#a855f7',
+  'Food':           '#f97316',
+  'Gifts':          '#f43f5e',
+  'Health':         '#ef4444',
+  'Household':      '#14b8a6',
+  'Housing':        '#6366f1',
+  'Personal care':  '#ec4899',
+  'Pet':            '#10b981',
+  'Productivity':   '#8b5cf6',
+  'Transportation': '#3b82f6',
+  'Travel':         '#06b6d4',
+  // Income
+  'Cashback':       '#fbbf24',
+  'Interest':       '#60a5fa',
+  'Refund':         '#94a3b8',
+  'Salary':         '#22c55e',
+}
+
+export function getCategoryConfig(catName: string): { Icon: LucideIcon; color: string } | null {
+  const Icon = CATEGORY_ICONS[catName]
+  const color = CATEGORY_COLORS[catName]
+  if (!Icon || !color) return null
+  return { Icon, color }
 }
 
 // --- Helpers ---

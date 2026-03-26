@@ -253,7 +253,16 @@
   opacity: 0.4;
 }
 
-/* Parent row: [body] [chevron] */
+/* Parent row: [icon] [body] [chevron] */
+
+.reports-cat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
 
 .reports-parent-row {
   display: flex;

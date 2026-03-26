@@ -7,7 +7,7 @@ import {
   ListOrdered, Search, TrendingDown, TrendingUp,
   Loader2, RefreshCw
 } from 'lucide-react'
-import { type Category, type DateRangePreset, API_BASE } from '../App'
+import { type Category, type DateRangePreset, API_BASE, CATEGORY_COLORS, getCategoryConfig } from '../App'
 import { useAppContext } from '../contexts/AppContext'
 import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
@@ -103,7 +103,9 @@ function buildGroups(categories: Category[], breakdown: {categoryId: string, amo
 
 function buildColorMap(groups: CategoryGroup[]): Record<string, string> {
   const map: Record<string, string> = {}
-  groups.forEach((g, i) => { map[g.parent.categoryId] = COLORS[i % COLORS.length] })
+  groups.forEach((g, i) => {
+    map[g.parent.categoryId] = CATEGORY_COLORS[g.parent.categoryName] ?? COLORS[i % COLORS.length]
+  })
   return map
 }
 
@@ -578,12 +580,14 @@ export default function ReportsPage() {
                   const isSelected = selectedGroup === g.parent.categoryId
                   const isDimmed = selectedGroup !== null && !isSelected && !isExpanded
                   const barPct = total > 0 ? (g.groupTotal / total) * 100 : 0
+                  const catName = catMap.get(g.parent.categoryId)?.name ?? g.parent.categoryName
+                  const catCfg = getCategoryConfig(catName)
 
                   return (
                     <div key={g.parent.categoryId}
                       className={`reports-group${isDimmed ? ' reports-group--dimmed' : ''}`}
                     >
-                      {/* Parent row: [content (name+amount+bar)] [chevron] */}
+                      {/* Parent row: [icon] [content (name+amount+bar)] [chevron] */}
                       <div className="reports-parent-row" onClick={() => {
                         if (g.children.length > 0) {
                           toggleSelect(g.parent.categoryId)
@@ -592,9 +596,12 @@ export default function ReportsPage() {
                           navigateToTransactions(g.parent.categoryId)
                         }
                       }}>
+                        {catCfg && (
+                          <div className="reports-cat-icon" style={{ color: catCfg.color }}><catCfg.Icon size={18} /></div>
+                        )}
                         <div className="reports-parent-body">
                           <div className="reports-parent-header">
-                            <span className="reports-parent-name">{catMap.get(g.parent.categoryId)?.name ?? g.parent.categoryName}</span>
+                            <span className="reports-parent-name">{catName}</span>
                             <span className="reports-parent-amount">{fmtVND(g.groupTotal)}</span>
                           </div>
                           <div className="reports-bar-track">

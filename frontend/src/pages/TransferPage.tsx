@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ChevronLeft, CalendarDays } from 'lucide-react'
 import TransferForm from '../components/TransferForm'
-import { useAppContext } from '../contexts/AppContext'
+import { useApp } from '../contexts/AppContext'
 
 const toDatetimeLocal = (ms: number) => {
   const d = new Date(ms)
@@ -20,7 +20,7 @@ const formatDateDisplay = (ms: number) =>
 export default function TransferPage() {
   const { accountId } = useParams()
   const navigate = useNavigate()
-  const { accounts, refetchAccounts, refetchReports } = useAppContext()
+  const { accounts, refetchAccounts, refetchReports } = useApp()
   const [timestamp, setTimestamp] = useState<number>(() => Date.now())
 
   const handleTransferSuccess = () => {

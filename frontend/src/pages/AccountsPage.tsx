@@ -12,11 +12,12 @@ import {
   Plus
 } from "lucide-react"
 import { type Account, type AccountType, API_BASE } from '../App'
-import { useAppContext } from '../contexts/AppContext'
+import { apiFetch } from '../lib/auth'
+import { useApp } from '../contexts/AppContext'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 
 export default function AccountsPage() {
-  const { accounts, totals, accountsLoading, updateAccount, addAccount, refetchAccounts } = useAppContext();
+  const { accounts, totals, accountsLoading, updateAccount, addAccount, refetchAccounts } = useApp();
   const [ activeCard, setActiveCard ] = useState<string | null>(null);
   const [ activationView, setActivationView ] = useState(false);
   const [ togglingId, setTogglingId ] = useState<string | null>(null);
@@ -123,7 +124,7 @@ export default function AccountsPage() {
     setAddSubmitting(true);
     setAddError(null);
     try {
-      const res = await fetch(`${API_BASE}/accounts?action=create`, {
+      const res = await apiFetch(`${API_BASE}/accounts?action=create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: addName.trim(), type: addType, note: addNote.trim() })
@@ -153,7 +154,7 @@ export default function AccountsPage() {
     if (togglingId) return;
     setTogglingId(account.id);
     try {
-      const res = await fetch(`${API_BASE}/accounts?action=set-active`, {
+      const res = await apiFetch(`${API_BASE}/accounts?action=set-active`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accountId: account.id, active: !account.active })

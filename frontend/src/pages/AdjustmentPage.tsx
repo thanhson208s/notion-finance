@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, CalendarDays } from 'lucide-react'
 import AdjustmentForm from '../components/AdjustmentForm'
 import type { Account } from '../App'
-import { useAppContext } from '../contexts/AppContext'
+import { useApp } from '../contexts/AppContext'
 
 const toDatetimeLocal = (ms: number) => {
   const d = new Date(ms)
@@ -25,7 +25,7 @@ export default function AdjustmentPage() {
   const account = state?.account as Account | undefined
   const [balance, setBalance] = useState<number>(account?.balance ?? 0)
   const [timestamp, setTimestamp] = useState<number>(() => Date.now())
-  const { refetchAccounts, refetchReports } = useAppContext()
+  const { refetchAccounts, refetchReports } = useApp()
 
   const handleSuccess = (newBalance: number) => {
     setBalance(newBalance)

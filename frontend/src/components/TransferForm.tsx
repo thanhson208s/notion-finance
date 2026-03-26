@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Account, AccountType } from '../App'
 import { API_BASE } from '../App'
+import { apiFetch } from '../lib/auth'
 import { ChevronDown, ArrowUpDown, ArrowLeftRight, Check, X, Loader2 } from 'lucide-react';
 
 type TransferResponse = {
@@ -92,7 +93,7 @@ export default function TransferForm({accountId, accounts, onTransferSuccess, ti
     if (!errorAmount && !errorFromAccountId && !errorToAccountId) {
       setStatus({status: 'loading'});
       try {
-        const response = await fetch(`${API_BASE}/accounts?action=transfer`, {
+        const response = await apiFetch(`${API_BASE}/accounts?action=transfer`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount, fromAccountId, toAccountId, timestamp, note })

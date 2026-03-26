@@ -8,7 +8,8 @@ import {
   Loader2, RefreshCw
 } from 'lucide-react'
 import { type Category, type DateRangePreset, API_BASE, CATEGORY_COLORS, getCategoryConfig } from '../App'
-import { useAppContext } from '../contexts/AppContext'
+import { apiFetch } from '../lib/auth'
+import { useApp } from '../contexts/AppContext'
 import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
 import { type Transaction, type TxType, fmtVND, fmtShort, getTxType, getDateParams } from '../App'
@@ -112,7 +113,7 @@ function buildColorMap(groups: CategoryGroup[]): Record<string, string> {
 // --- Component ---
 
 export default function ReportsPage() {
-  const { accounts, categories, cards, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, refetchAccounts, refetchReports } = useAppContext()
+  const { accounts, categories, cards, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, refetchAccounts, refetchReports } = useApp()
   const [tab, setTab] = useState<Tab>('expense')
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -134,7 +135,7 @@ export default function ReportsPage() {
   const data = dateRange === 'this-month' ? reports.thisMonthReport : (dateRange === 'last-month' ? reports.lastMonthReport : reports.customRangeReport)
 
   const handleDeleteTx = async (txId: string) => {
-    await fetch(`${API_BASE}/transactions?id=${txId}`, { method: 'DELETE' })
+    await apiFetch(`${API_BASE}/transactions?id=${txId}`, { method: 'DELETE' })
     refetchReports(true, true)
     refetchAccounts()
   }

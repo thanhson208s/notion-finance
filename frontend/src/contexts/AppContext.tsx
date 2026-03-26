@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { API_BASE } from '../App'
+import { apiFetch } from '../lib/auth'
 import type { Account, Card, Category, ReportsData, DateRangePreset, Promotion } from '../App'
 import { getDateParams } from '../App'
 
@@ -11,7 +12,7 @@ type Reports = {
   customRangeReport: ReportsData | null
 }
 
-type AppContextValue = {
+type AppState = {
   accounts: Account[]
   totals: Totals
   accountsLoading: boolean
@@ -38,7 +39,7 @@ type AppContextValue = {
   removePromotion: (id: string) => void
 }
 
-const AppContext = createContext<AppContextValue | null>(null)
+const AppContext = createContext<AppState | null>(null)
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -65,7 +66,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const fetchAccounts = useCallback(async (signal?: AbortSignal) => {
     setAccountsLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/accounts`, { signal })
+      const res = await apiFetch(`${API_BASE}/accounts`, { signal })
       if (!res.ok) throw new Error('Failed to fetch accounts')
       const data = await res.json()
       setAccounts(data.accounts)
@@ -80,7 +81,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const fetchPromotions = useCallback(async (signal?: AbortSignal) => {
     setPromotionsLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/promotions`, { signal })
+      const res = await apiFetch(`${API_BASE}/promotions`, { signal })
       if (!res.ok) throw new Error('Failed to fetch promotions')
       const data = await res.json()
       setPromotions(data.promotions ?? [])
@@ -94,7 +95,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const fetchCards = useCallback(async (signal?: AbortSignal) => {
     setCardsLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/cards`, { signal })
+      const res = await apiFetch(`${API_BASE}/cards`, { signal })
       if (!res.ok) throw new Error('Failed to fetch cards')
       const data = await res.json()
       setCards(data.cards)
@@ -108,7 +109,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const fetchCategories = useCallback(async (signal?: AbortSignal) => {
     setCategoriesLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/categories`, { signal })
+      const res = await apiFetch(`${API_BASE}/categories`, { signal })
       if (!res.ok) throw new Error('Failed to fetch categories')
       const data = await res.json()
       setCategories(data.categories)
@@ -133,7 +134,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (endDate) params.set('endDate', endDate)
     const query = params.size ? `?${params.toString()}` : '';
     try {
-      const res = await fetch(`${API_BASE}/reports${query}`)
+      const res = await apiFetch(`${API_BASE}/reports${query}`)
       if (!res.ok) throw new Error('Failed')
       const data = await res.json() as ReportsData
       setReports((cur) => ({
@@ -210,8 +211,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function useAppContext() {
+export function useApp() {
   const ctx = useContext(AppContext)
-  if (!ctx) throw new Error('useAppContext must be used inside AppProvider')
+  if (!ctx) throw new Error('useApp must be used inside AppProvider')
   return ctx
 }

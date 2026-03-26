@@ -1,8 +1,9 @@
 import './CardDetailPage.css'
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useAppContext } from '../contexts/AppContext'
+import { useApp } from '../contexts/AppContext'
 import { API_BASE, fmtVND, fmtShort } from '../App'
+import { apiFetch } from '../lib/auth'
 import type { Card, CardWithSpending, Statement, Category } from '../App'
 import { BadgePercent, CircleDollarSign, HandCoins, Info, List } from 'lucide-react';
 
@@ -140,7 +141,7 @@ function AddStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, 
     if (!datesValid) return
     setPreviewLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/statements?preview=1&cardId=${cardId}&startDate=${startMs}&endDate=${endMs}`)
+      const res = await apiFetch(`${API_BASE}/statements?preview=1&cardId=${cardId}&startDate=${startMs}&endDate=${endMs}`)
       if (!res.ok) throw new Error('Failed')
       setPreview(await res.json() as PreviewData)
     } catch {
@@ -157,7 +158,7 @@ function AddStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, 
     if (!datesValid) return
     setSaving(true)
     try {
-      const res = await fetch(`${API_BASE}/statements`, {
+      const res = await apiFetch(`${API_BASE}/statements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cardId, startDate: startMs, endDate: endMs })
@@ -272,7 +273,7 @@ function AddExpenseModal({ card, categories, onClose, onAdded }: {
     if (!amount || !categoryId) return
     setSaving(true)
     try {
-      const res = await fetch(`${API_BASE}/transactions?type=expense`, {
+      const res = await apiFetch(`${API_BASE}/transactions?type=expense`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -394,7 +395,7 @@ function AddExpenseModal({ card, categories, onClose, onAdded }: {
 export default function CardDetailPage() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
-  const { cards, cardsLoading, accounts, categories } = useAppContext()
+  const { cards, cardsLoading, accounts, categories } = useApp()
 
   const sortedCards = useMemo(() => {
     const accountMap = new Map(accounts.map(a => [a.id, a]))

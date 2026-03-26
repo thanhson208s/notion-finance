@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SlidersHorizontal, Equal, Plus, Minus, Check, X, Loader2 } from 'lucide-react'
 import { API_BASE } from '../App'
+import { apiFetch } from '../lib/auth'
 
 type AdjustmentResponse = {
   accountId: string,
@@ -49,7 +50,7 @@ export default function AdjustmentForm({accountId, accountBalance, onSuccess, ti
       setError(false);
       setStatus({status: 'loading'});
       try {
-        const response = await fetch(`${API_BASE}/accounts?action=adjustment`, {
+        const response = await apiFetch(`${API_BASE}/accounts?action=adjustment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

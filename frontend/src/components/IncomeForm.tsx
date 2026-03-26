@@ -1,8 +1,9 @@
 import type { Category, Card, AccountType } from '../App'
 import { API_BASE } from '../App'
+import { apiFetch } from '../lib/auth'
 import { useState } from 'react'
 import { TrendingUp, Check, X, Loader2 } from 'lucide-react'
-import { useAppContext } from '../contexts/AppContext'
+import { useApp } from '../contexts/AppContext'
 
 function EmptyCard() {
   return (
@@ -46,7 +47,7 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
   onSuccess?: (newBalance: number) => void
   timestamp?: number
 }) {
-  const { categories: allCategories } = useAppContext();
+  const { categories: allCategories } = useApp();
   const categories = allCategories.filter(c => c.type === 'Income');
   const [ status, setStatus ] = useState<LogIncomeStatus>({status: 'idle'});
   const [ amount, setAmount ] = useState<number>(0);
@@ -78,7 +79,7 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
       setStatus({status: 'loading'});
       const selectedCardId = cardIndex >= 0 ? cards[cardIndex].id : undefined;
       try {
-        const response = await fetch(`${API_BASE}/transactions?type=income`, {
+        const response = await apiFetch(`${API_BASE}/transactions?type=income`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

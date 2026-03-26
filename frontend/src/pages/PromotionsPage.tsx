@@ -1,7 +1,8 @@
 import './PromotionsPage.css'
 import { useState, useRef, useEffect } from 'react'
-import { useAppContext } from '../contexts/AppContext'
+import { useApp } from '../contexts/AppContext'
 import { API_BASE } from '../App'
+import { apiFetch } from '../lib/auth'
 import { SwipeableRow } from '../components/SwipeableRow'
 import type { Promotion, PromotionCategory, PromotionType } from '../App'
 import { Plane, Utensils, ShoppingBag, Tv, Smartphone, Tag, Plus, Loader2 } from 'lucide-react'
@@ -42,7 +43,7 @@ function AddPromotionModal({ cards, onClose, onAdded }: {
     if (!name.trim()) return
     setLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/promotions`, {
+      const res = await apiFetch(`${API_BASE}/promotions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -179,7 +180,7 @@ function PromotionItem({ promotion, cardName, now }: {
 }
 
 export default function PromotionsPage() {
-  const { cards, promotions, promotionsLoading, addPromotion, removePromotion } = useAppContext()
+  const { cards, promotions, promotionsLoading, addPromotion, removePromotion } = useApp()
   const [typeFilter, setTypeFilter] = useState<'all' | PromotionType>('all')
   const [cardFilter, setCardFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<PromotionCategory | 'all'>('all')
@@ -189,7 +190,7 @@ export default function PromotionsPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`${API_BASE}/promotions?id=${id}`, { method: 'DELETE' })
+      await apiFetch(`${API_BASE}/promotions?id=${id}`, { method: 'DELETE' })
       removePromotion(id)
     } catch {
       alert('Failed to delete')

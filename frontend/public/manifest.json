@@ -1,5 +1,5 @@
 {
-  "name": "Finance",
+  "name": "Fino",
   "display": "standalone",
-  "start_url": "/"
+  "start_url": "/#auth=APP_SECRET"
 }

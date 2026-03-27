@@ -4,7 +4,7 @@ import { Check, Loader2 } from 'lucide-react'
 import type { Account, Card, Category } from '../App'
 import { type Transaction, type TxType, fmtVND, fmtTxDate, getAccountLabel, getCategoryLabel } from '../App'
 
-const ANIM_MS = 240
+const ANIM_MS = 500
 const SUCCESS_MS = 1000
 
 type Props = {

@@ -6,21 +6,10 @@ import {
 
 export const API_BASE = import.meta.env.VITE_API_BASE as string
 
-export type AccountType =
-  | "Cash"
-  | "Bank"
-  | "Credit"
-  | "eWallet"
-  | "Savings"
-  | "PayLater"
-  | "Prepaid"
-  | "Gold"
-  | "Loan"
-  | "Fund"
-  | "Bond"
-  | "Stock"
-  | "Debt"
-  | "Crypto"
+export const ACCOUNT_TYPES = [
+  "Cash", "Bank", "Credit", "eWallet", "Savings", "PayLater", "Prepaid", "Gold", "Loan", "Fund", "Bond", "Stock", "Debt", "Crypto"
+] as const
+export type AccountType = typeof ACCOUNT_TYPES[number]
 
 export type Card = {
   id: string

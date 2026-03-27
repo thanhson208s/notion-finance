@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ secret }),
+            signal: AbortSignal.timeout(8000),
           })
           if (res.ok) {
             const { token } = await res.json()

@@ -38,12 +38,12 @@
 }
 
 .expense-modal-backdrop--closing {
-  animation: expense-backdrop-out 0.24s ease forwards;
+  animation: expense-backdrop-out 0.5s ease forwards;
   pointer-events: none;
 }
 
 .expense-modal-sheet--closing {
-  animation: expense-sheet-down 0.24s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: expense-sheet-down 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 .expense-modal-handle {

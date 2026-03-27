@@ -1,5 +1,6 @@
 import "./App.css"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { Toaster } from "sonner"
 import { AppProvider } from "./contexts/AppContext"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import NavBar from "./components/NavBar"
@@ -67,6 +68,19 @@ function AppShell() {
 export default function App() {
   return (
     <AuthProvider>
+      <Toaster
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            background: '#1e293b',
+            color: '#e2e8f0',
+            border: '1px solid #232733',
+            marginBottom: "calc(64px + env(safe-area-inset-bottom))",
+            justifyContent: "center",
+            fontSize: "16px"
+          },
+        }}
+      />
       <AppShell />
     </AuthProvider>
   )

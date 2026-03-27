@@ -1,5 +1,5 @@
 import './CardDetailPage.css'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../contexts/AppContext'
 import { API_BASE, fmtVND, fmtShort } from '../App'
@@ -132,12 +132,13 @@ function AddStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, 
   const [preview, setPreview] = useState<PreviewData | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [closing, setClosing] = useState(false)
 
   const startMs = startDate ? new Date(startDate).getTime() : NaN
   const endMs = endDate ? new Date(endDate).getTime() : NaN
   const datesValid = !isNaN(startMs) && !isNaN(endMs) && startMs < endMs
 
-  const fetchPreview = async () => {
+  const fetchPreview = useCallback(async () => {
     if (!datesValid) return
     setPreviewLoading(true)
     try {
@@ -149,10 +150,9 @@ function AddStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, 
     } finally {
       setPreviewLoading(false)
     }
-  }
+  }, [cardId, startMs, endMs, datesValid])
 
-  // Auto-fetch preview on first open
-  useEffect(() => { fetchPreview() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchPreview() }, [fetchPreview])
 
   const submit = async () => {
     if (!datesValid) return
@@ -173,9 +173,11 @@ function AddStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, 
     }
   }
 
+  const close = () => { setClosing(true); setTimeout(onClose, 500) }
+
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+    <div className={`expense-modal-backdrop ${closing ? 'expense-modal-backdrop--closing' : ''}`} onClick={close}>
+      <div className={`expense-modal-sheet ${closing ? 'expense-modal-sheet--closing' : ''}`} onClick={e => e.stopPropagation()}>
         <h2 className="modal-title">Add Statement</h2>
         <div className="modal-form">
           <div className="modal-field">
@@ -223,8 +225,8 @@ function AddStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, 
 
         <p className="modal-hint">Spending, cashback and discount will be tallied from transactions linked to this card within the selected period.</p>
         <div className="modal-actions">
-          <button type="button" className="modal-btn modal-btn-cancel" onClick={fetchPreview} disabled={previewLoading || !datesValid}>
-            {previewLoading ? '…' : 'Preview'}
+          <button type="button" className="modal-btn modal-btn-cancel" onClick={close} disabled={previewLoading || !datesValid}>
+            Cancel
           </button>
           <button type="button" className="modal-btn modal-btn-submit" onClick={submit} disabled={saving || !datesValid}>
             {saving ? '…' : 'Save'}
@@ -267,7 +269,7 @@ function AddExpenseModal({ card, categories, onClose, onAdded }: {
     else if (e.code.match(/^Digit[0-9]$/)) setter(p => p * 10 + parseInt(e.code.slice(-1)))
   }
 
-  const close = () => { setClosing(true); setTimeout(onClose, 240) }
+  const close = () => { setClosing(true); setTimeout(onClose, 500) }
 
   const submit = async () => {
     if (!amount || !categoryId) return

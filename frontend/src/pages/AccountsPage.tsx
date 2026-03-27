@@ -11,7 +11,7 @@ import {
   Power,
   Plus
 } from "lucide-react"
-import { type Account, type AccountType, API_BASE } from '../App'
+import { type Account, type AccountType, API_BASE, ACCOUNT_TYPES } from '../App'
 import { apiFetch } from '../lib/auth'
 import { useApp } from '../contexts/AppContext'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
@@ -393,7 +393,7 @@ export default function AccountsPage() {
                   value={addType}
                   onChange={e => setAddType(e.target.value as AccountType)}
                 >
-                  {(['Cash','Bank','Credit','eWallet','Savings','PayLater','Prepaid','Gold','Loan','Fund','Bond','Stock','Debt','Crypto'] as AccountType[]).map(t => (
+                  {(ACCOUNT_TYPES).map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>

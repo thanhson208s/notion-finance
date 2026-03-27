@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { toast } from 'sonner'
 import { API_BASE } from '../App'
 import { apiFetch } from '../lib/auth'
 import type { Account, Card, Category, ReportsData, DateRangePreset, Promotion } from '../App'
@@ -72,7 +73,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setAccounts(data.accounts)
       setTotals({ total: data.total, totalOfAssets: data.totalOfAssets, totalOfLiabilities: data.totalOfLiabilities })
     } catch (e) {
-      if (e instanceof Error && e.name !== 'AbortError') console.log(e.message)
+      if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load accounts')
     } finally {
       if (!signal?.aborted) setAccountsLoading(false)
     }
@@ -86,7 +87,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json()
       setPromotions(data.promotions ?? [])
     } catch (e) {
-      if (e instanceof Error && e.name !== 'AbortError') console.log(e.message)
+      if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load promotions')
     } finally {
       if (!signal?.aborted) setPromotionsLoading(false)
     }
@@ -100,7 +101,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json()
       setCards(data.cards)
     } catch (e) {
-      if (e instanceof Error && e.name !== 'AbortError') console.log(e.message)
+      if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load cards')
     } finally {
       if (!signal?.aborted) setCardsLoading(false)
     }
@@ -114,7 +115,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json()
       setCategories(data.categories)
     } catch (e) {
-      if (e instanceof Error && e.name !== 'AbortError') console.log(e.message)
+      if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load categories')
     } finally {
       if (!signal?.aborted) setCategoriesLoading(false)
     }
@@ -143,7 +144,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         customRangeReport: dateRange === 'custom' ? data : cur.customRangeReport
       }))  
     } catch (e) {
-      if (e instanceof Error && e.name !== 'AbortError') console.log(e.message);
+      if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load reports')
     } finally {
       switch(dateRange) {
         case 'this-month': setThisMonthLoading(false); break;

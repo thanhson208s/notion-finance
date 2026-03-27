@@ -487,9 +487,16 @@ export default function CardDetailPage() {
             value={effectiveId ?? ''}
             onChange={e => navigate(`/cards/${e.target.value}`, { replace: true })}
           >
-            {sortedCards.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
+            <optgroup label="Credit">
+              {sortedCards.filter(c => c.billingDay !== null).map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Debit">
+              {sortedCards.filter(c => c.billingDay === null).map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </optgroup>
           </select>
         </div>
         {maskedNumber && <span className="detail-header-number">{maskedNumber}</span>}

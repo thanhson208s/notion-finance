@@ -37,7 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (res.ok) {
             const { token } = await res.json()
             setToken(token)
-            // NOTE: intentionally keeping hash in URL so user can bookmark it
+            // Clean the secret from URL without adding to history                                    
+            history.replaceState(null, '', window.location.pathname + window.location.search)
             setState('authorized')
             return
           }

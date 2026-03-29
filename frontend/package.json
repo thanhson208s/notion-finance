@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@notionhq/client": "^5.9.0",
+    "@tanstack/react-virtual": "^3.13.23",
     "jose": "^6.2.2",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.574.0",

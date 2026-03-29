@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { API_BASE } from '../App'
 import { apiFetch } from '../lib/auth'
@@ -63,7 +63,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cardsLoading, setCardsLoading] = useState(true)
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [promotionsLoading, setPromotionsLoading] = useState(true)
-  
+  const thisMonthAbort = useRef<AbortController>(null)
+  const lastMonthAbort = useRef<AbortController>(null)
+  const customRangeAbort = useRef<AbortController>(null)
+
   const fetchAccounts = useCallback(async (signal?: AbortSignal) => {
     setAccountsLoading(true)
     try {
@@ -123,10 +126,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const fetchReports = useCallback(async () => {
     if (dateRange === 'custom' && (!customStart || !customEnd) || customEnd < customStart) return
+    let abortController
     switch(dateRange) {
-      case 'this-month': setThisMonthLoading(true); break;
-      case 'last-month': setLastMonthLoading(true); break;
-      case 'custom': setCustomRangeLoading(true); break;
+      case 'this-month': 
+        if (thisMonthAbort.current && !thisMonthAbort.current.signal.aborted)
+          thisMonthAbort.current.abort()
+        abortController = thisMonthAbort.current = new AbortController()
+        setThisMonthLoading(true); break;
+      case 'last-month':
+        if (lastMonthAbort.current && !lastMonthAbort.current.signal.aborted)
+          lastMonthAbort.current.abort()
+        abortController = lastMonthAbort.current = new AbortController()
+        setLastMonthLoading(true); break;
+      case 'custom':
+        if (customRangeAbort.current && !customRangeAbort.current.signal.aborted)
+          customRangeAbort.current.abort()
+        abortController = customRangeAbort.current = new AbortController()
+        setCustomRangeLoading(true); break;
     }
 
     const { startDate, endDate } = getDateParams(dateRange, customStart, customEnd)
@@ -135,7 +151,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (endDate) params.set('endDate', endDate)
     const query = params.size ? `?${params.toString()}` : '';
     try {
-      const res = await apiFetch(`${API_BASE}/reports${query}`)
+      // let abortController;
+      // switch(dateRange) {
+      //   case 'this-month':
+      //     abortController = thisMonthAbort.current = new AbortController()
+      //     break
+      //   case 'last-month':
+      //     abortController = lastMonthAbort.current = new AbortController()
+      //     break
+      //   case 'custom':
+      //     abortController = customRangeAbort.current = new AbortController()
+      //     break
+      // }
+
+      const res = await apiFetch(`${API_BASE}/reports${query}`, { signal: abortController?.signal })
       if (!res.ok) throw new Error('Failed')
       const data = await res.json() as ReportsData
       setReports((cur) => ({
@@ -146,11 +175,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load reports')
     } finally {
-      switch(dateRange) {
-        case 'this-month': setThisMonthLoading(false); break;
-        case 'last-month': setLastMonthLoading(false); break;
-        case 'custom': setCustomRangeLoading(false); break;
-      }
+      if (!abortController.signal.aborted)
+        switch(dateRange) {
+          case 'this-month': setThisMonthLoading(false); break;
+          case 'last-month': setLastMonthLoading(false); break;
+          case 'custom': setCustomRangeLoading(false); break;
+        }
     }
     
   }, [dateRange, customStart, customEnd])

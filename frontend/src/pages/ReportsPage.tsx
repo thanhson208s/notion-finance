@@ -1,5 +1,6 @@
 import './ReportsPage.css'
-import { useEffect, useMemo, useState, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide,
   BarChart2, Calendar, CalendarCheck,
@@ -130,7 +131,11 @@ export default function ReportsPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ tx: Transaction; type: TxType } | null>(null)
   
   const pageRef = useRef<HTMLElement>(null)
-  const { pullDistance, refreshing } = usePullToRefresh(() => {refetchReports(true, false)}, pageRef)
+  const listRef = useRef<HTMLDivElement>(null)
+  const searchRowRef = useRef<HTMLDivElement>(null)
+  const filtersRowRef = useRef<HTMLDivElement>(null)
+  const [listHeight, setListHeight] = useState(0)
+  const { pullDistance, refreshing } = usePullToRefresh(() => {refetchReports(true, false)}, pageRef, listRef)
 
   const data = dateRange === 'this-month' ? reports.thisMonthReport : (dateRange === 'last-month' ? reports.lastMonthReport : reports.customRangeReport)
 
@@ -287,6 +292,29 @@ export default function ReportsPage() {
     return txs.map(tx => ({ tx, type: getTxType(tx, expenseCatIds, incomeCatIds) }))
   }, [data, txTypeFilter, txCategoryFilter, txAccountFilter, txSearchQuery, txSort, txAmountDir, expenseCatIds, incomeCatIds, catMap])
 
+  useLayoutEffect(() => {
+    if (!showTxView) return
+    const filterBar = document.querySelector('.reports-filter-bar') as HTMLElement | null
+    const searchRow = searchRowRef.current
+    const filtersRow = filtersRowRef.current
+    if (!filterBar || !searchRow || !filtersRow) return
+    const available = window.innerHeight
+      - filterBar.getBoundingClientRect().height
+      - searchRow.getBoundingClientRect().height
+      - filtersRow.getBoundingClientRect().height
+      - 64 // navbar
+    setListHeight(available)
+  }, [showTxView])
+
+  const virtualizer = useVirtualizer({
+    count: filteredTxs.length,
+    getScrollElement: () => listRef.current,
+    estimateSize: () => 82,
+    overscan: 5,
+    paddingEnd: 60,
+    measureElement: (el) => el.getBoundingClientRect().height,
+  })
+
   return (
     <main className="page reports-page" ref={pageRef}>
       <div
@@ -347,7 +375,7 @@ export default function ReportsPage() {
             /* ── Transaction history view ── */
             <>
               {/* Search + Sort row */}
-              <div className="tx-search-row">
+              <div className="tx-search-row" ref={searchRowRef}>
                 <input
                   className="tx-search-input"
                   type="text"
@@ -392,7 +420,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Filters */}
-              <div className="tx-filters">
+              <div className="tx-filters" ref={filtersRowRef}>
                 <select
                   title="Account"
                   className="tx-select"
@@ -447,17 +475,39 @@ export default function ReportsPage() {
               </div>
 
               {/* Transaction list */}
-              <div className="tx-list">
+              <div
+                className="tx-list"
+                ref={listRef}
+                style={{ height: listHeight > 0 ? listHeight : undefined }}
+              >
                 {filteredTxs.length === 0 && (
                   <div className="reports-empty">No transactions for this filter</div>
                 )}
-                {filteredTxs.map(({ tx, type }) => {
-                  if (type === 'Transfer')
-                    return <TransferTxItem key={tx.id} tx={tx} accounts={accounts} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
-                  if (type === 'Adjustment')
-                    return <AdjustmentTxItem key={tx.id} tx={tx} accounts={accounts} cards={cards} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
-                  return <TxItem key={tx.id} tx={tx} type={type} accounts={accounts} cards={cards} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
-                })}
+                {filteredTxs.length > 0 && (
+                  <div style={{ height: virtualizer.getTotalSize(), width: '100%', position: 'relative' }}>
+                    {virtualizer.getVirtualItems().map((virtualRow) => {
+                      const { tx, type } = filteredTxs[virtualRow.index]
+                      return (
+                        <div
+                          key={tx.id}
+                          data-index={virtualRow.index}
+                          ref={virtualizer.measureElement}
+                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${virtualRow.start}px)` }}
+                        >
+                          {type === 'Transfer' && (
+                            <TransferTxItem tx={tx} accounts={accounts} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
+                          )}
+                          {type === 'Adjustment' && (
+                            <AdjustmentTxItem tx={tx} accounts={accounts} cards={cards} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
+                          )}
+                          {type !== 'Transfer' && type !== 'Adjustment' && (
+                            <TxItem tx={tx} type={type} accounts={accounts} cards={cards} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </>
           ) : (

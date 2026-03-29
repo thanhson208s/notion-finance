@@ -507,9 +507,9 @@
 }
 
 .tx-list {
-  display: flex;
-  flex-direction: column;
-  padding: 0 24px 60px;
+  padding: 0 24px;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 .tx-row {

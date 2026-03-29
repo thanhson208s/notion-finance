@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 const THRESHOLD = 80
 const MAX_PULL = 110
 
-export function usePullToRefresh(onRefresh: () => void, containerRef: React.RefObject<HTMLElement | null>) {
+export function usePullToRefresh(onRefresh: () => void, containerRef: React.RefObject<HTMLElement | null>, innerScrollRef?: React.RefObject<HTMLElement | null>) {
   const [pullDistance, setPullDistance] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const startY = useRef(0)
@@ -15,7 +15,7 @@ export function usePullToRefresh(onRefresh: () => void, containerRef: React.RefO
     if (!el) return
 
     const onTouchStart = (e: TouchEvent) => {
-      if (window.scrollY > 0) return
+      if (window.scrollY > 0 || (innerScrollRef?.current?.scrollTop ?? 0) > 0) return
       startY.current = e.touches[0].clientY
       pulling.current = true
     }
@@ -49,7 +49,7 @@ export function usePullToRefresh(onRefresh: () => void, containerRef: React.RefO
       el.removeEventListener('touchmove', onTouchMove)
       el.removeEventListener('touchend', onTouchEnd)
     }
-  }, [onRefresh, containerRef])
+  }, [onRefresh, containerRef, innerScrollRef])
 
   return { pullDistance, refreshing }
 }

@@ -260,9 +260,7 @@ function AddExpenseModal({ card, categories, onClose, onAdded }: {
   const cashbackValue = cashbackMode === 'pct' ? Math.round(amount * cashback / 100) : cashback
   const discountValue = discountMode === 'pct' ? Math.round(amount * discount / 100) : discount
 
-  const fmtAmount = (n: number) => n > 0
-    ? n.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
-    : ''
+  const fmtAmount = (n: number) => n > 0 ? fmtVND(n) : ''
 
   const buildDigit = (setter: (fn: (prev: number) => number) => void) => (e: React.KeyboardEvent) => {
     if (e.code === 'Backspace') setter(p => Math.floor(p / 10))
@@ -288,7 +286,7 @@ function AddExpenseModal({ card, categories, onClose, onAdded }: {
           discount: discountValue,
         })
       })
-      if (!res.ok) throw new Error('Failed')
+      if (!res.ok) throw new Error('Failed ')
       onAdded()
     } catch {
       alert('Failed to save expense')

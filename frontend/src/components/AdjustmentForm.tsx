@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { SlidersHorizontal, Equal, Plus, Minus, Check, X, Loader2 } from 'lucide-react'
-import { API_BASE } from '../App'
+import { API_BASE, fmtVND } from '../App'
 import { apiFetch } from '../lib/auth'
 
 type AdjustmentResponse = {
@@ -89,7 +89,7 @@ export default function AdjustmentForm({accountId, accountBalance, onSuccess, ti
       <div className="amount-display">
         <input
           type="text"
-          value={Math.abs(accountBalance - balance).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+          value={fmtVND(Math.abs(accountBalance - balance))}
           onChange={() => {}}
           onKeyDown={(e) => {
             if (loading) return
@@ -115,7 +115,7 @@ export default function AdjustmentForm({accountId, accountBalance, onSuccess, ti
         <div className="amount-display">
           <input
             type="text"
-            value={balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+            value={fmtVND(balance)}
             onChange={() => {}}
             onKeyDown={(e) => {
               if (loading) return

@@ -11,7 +11,7 @@ import {
   Power,
   Plus
 } from "lucide-react"
-import { type Account, type AccountType, API_BASE, ACCOUNT_TYPES } from '../App'
+import { type Account, type AccountType, API_BASE, ACCOUNT_TYPES, fmtVND } from '../App'
 import { apiFetch } from '../lib/auth'
 import { useApp } from '../contexts/AppContext'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
@@ -207,7 +207,7 @@ export default function AccountsPage() {
         </button>
 
         <div className="balance-pill">
-          {displayedTotal.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+          {fmtVND(displayedTotal)}
         </div>
 
         <button
@@ -316,10 +316,7 @@ export default function AccountsPage() {
                 </div>
 
                 <div className="account-balance">
-                  {account.balance.toLocaleString("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  })}
+                  {fmtVND(account.balance)}
                 </div>
               </div>
 

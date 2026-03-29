@@ -167,12 +167,13 @@ export default function ReportsPage() {
     return map
   }, [categories])
 
-  const breakdown = tab === 'expense'
+  const breakdown = useMemo(() => tab === 'expense'
     ? (data?.expenseCategoryBreakdown ?? [])
     : (data?.incomeCategoryBreakdown ?? [])
-  const total = tab === 'expense' ? (data?.totalExpense ?? 0) : (data?.totalIncome ?? 0)
-  const groups = buildGroups(categories.filter(c => (tab === 'expense' && c.type === 'Expense' || tab === 'income' && c.type === 'Income')), breakdown)
-  const colorMap = buildColorMap(groups)
+  , [tab, data])
+  const total = useMemo(() => tab === 'expense' ? (data?.totalExpense ?? 0) : (data?.totalIncome ?? 0), [tab, data])
+  const groups = useMemo(() => buildGroups(categories.filter(c => (tab === 'expense' && c.type === 'Expense' || tab === 'income' && c.type === "Income")), breakdown), [categories, tab, breakdown])
+  const colorMap = useMemo(() => buildColorMap(groups), [groups])
 
   const setDateRange = (dateRange: DateRangePreset) => {
     switch(dateRange) {

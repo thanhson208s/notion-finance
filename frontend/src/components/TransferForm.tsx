@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Account, AccountType } from '../App'
-import { API_BASE } from '../App'
+import { API_BASE, fmtVND } from '../App'
 import { apiFetch } from '../lib/auth'
 import { ChevronDown, ArrowUpDown, ArrowLeftRight, Check, X, Loader2 } from 'lucide-react';
 
@@ -139,7 +139,7 @@ export default function TransferForm({accountId, accounts, onTransferSuccess, ti
                 )}
               </div>
               <span className="transfer-card-balance">
-                {(fromAccount?.balance ?? 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+                {fmtVND(fromAccount?.balance ?? 0)}
               </span>
             </div>
             <ChevronDown size={20} className={`transfer-card-chevron${openDropdown === 'from' ? ' transfer-card-chevron-open' : ''}`} />
@@ -158,7 +158,7 @@ export default function TransferForm({accountId, accounts, onTransferSuccess, ti
                   <span className={`account-type account-${a.type.toLowerCase()}`}>{a.type}</span>
                 </div>
                 <span className="transfer-dropdown-balance">
-                  {a.balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+                  {fmtVND(a.balance)}
                 </span>
               </div>
             ))}
@@ -195,7 +195,7 @@ export default function TransferForm({accountId, accounts, onTransferSuccess, ti
                 )}
               </div>
               <span className="transfer-card-balance">
-                {(toAccount?.balance ?? 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+                {fmtVND(toAccount?.balance ?? 0)}
               </span>
             </div>
             <ChevronDown size={20} className={`transfer-card-chevron${openDropdown === 'to' ? ' transfer-card-chevron-open' : ''}`} />
@@ -214,7 +214,7 @@ export default function TransferForm({accountId, accounts, onTransferSuccess, ti
                   <span className={`account-type account-${a.type.toLowerCase()}`}>{a.type}</span>
                 </div>
                 <span className="transfer-dropdown-balance">
-                  {a.balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+                  {fmtVND(a.balance)}
                 </span>
               </div>
             ))}
@@ -226,7 +226,7 @@ export default function TransferForm({accountId, accounts, onTransferSuccess, ti
         <div className="amount-display">
           <input
             type="text"
-            value={amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+            value={fmtVND(amount)}
             onChange={() => {}}
             onKeyDown={(e) => {
               if (loading) return

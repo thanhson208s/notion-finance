@@ -1,5 +1,5 @@
 import type { Category, Card, AccountType } from '../App'
-import { API_BASE } from '../App'
+import { API_BASE, fmtVND } from '../App'
 import { apiFetch } from '../lib/auth'
 import { useState } from 'react'
 import { TrendingUp, Check, X, Loader2 } from 'lucide-react'
@@ -115,7 +115,7 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
         <div className="amount-display">
           <input
             type="text"
-            value={amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+            value={fmtVND(amount)}
             onChange={() => {}}
             onKeyDown={(e) => {
               if (loading) return;

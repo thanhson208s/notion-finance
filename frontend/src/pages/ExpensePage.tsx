@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, CalendarDays } from 'lucide-react'
 import ExpenseForm from '../components/ExpenseForm'
-import type { Account } from '../App'
+import { fmtVND, type Account } from '../App'
 import { useApp } from '../contexts/AppContext'
 
 const toDatetimeLocal = (ms: number) => {
@@ -60,7 +60,7 @@ export default function ExpensePage() {
             <span className={`account-type account-${account.type.toLowerCase()}`}>{account.type}</span>
           </div>
           <div className="account-balance">
-            {balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+            {fmtVND(balance)}
           </div>
         </div>
       )}

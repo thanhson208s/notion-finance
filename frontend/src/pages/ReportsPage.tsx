@@ -133,8 +133,6 @@ export default function ReportsPage() {
   
   const pageRef = useRef<HTMLElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
-  const searchRowRef = useRef<HTMLDivElement>(null)
-  const filtersRowRef = useRef<HTMLDivElement>(null)
   const [listHeight, setListHeight] = useState(0)
   const { pullDistance, refreshing } = usePullToRefresh(() => {refetchReports(true, false)}, pageRef, listRef)
 
@@ -301,14 +299,11 @@ export default function ReportsPage() {
   useLayoutEffect(() => {
     if (!showTxView) return
     const filterBar = document.querySelector('.reports-filter-bar') as HTMLElement | null
-    const searchRow = searchRowRef.current
-    const filtersRow = filtersRowRef.current
-    if (!filterBar || !searchRow || !filtersRow) return
+    const navbar = document.querySelector('.nav-bar') as HTMLElement | null
+    if (!filterBar) return
     const available = window.innerHeight
       - filterBar.getBoundingClientRect().height
-      - searchRow.getBoundingClientRect().height
-      - filtersRow.getBoundingClientRect().height
-      - 64 // navbar
+      - (navbar?.getBoundingClientRect().height ?? 64)
     setListHeight(available)
   }, [showTxView])
 
@@ -365,6 +360,109 @@ export default function ReportsPage() {
             onChange={e => setCustomEnd(e.target.value)}
           />
         </div>
+
+        {showTxView && (
+          <>
+            {/* Search + Sort row */}
+            <div className="tx-search-row">
+              <input
+                className="tx-search-input"
+                type="text"
+                placeholder="Search notes…"
+                value={txSearchInput}
+                onChange={e => setTxSearchInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') setTxSearchQuery(txSearchInput) }}
+              />
+              <button
+                title="Search"
+                className="tx-search-btn"
+                onClick={() => setTxSearchQuery(txSearchInput)}
+              >
+                <Search size={16} />
+              </button>
+              <div className="tx-sort-group">
+                <button
+                  title="Sort by date"
+                  className={`tx-sort-btn${txSort === 'date' ? ' tx-sort-btn--active' : ''}`}
+                  onClick={() => setTxSort('date')}
+                >
+                  {txSort === 'date' ? <CalendarCheck size={15} /> : <Calendar size={15} />}
+                </button>
+                <button
+                  title="Sort by amount"
+                  className={`tx-sort-btn${txSort === 'amount' ? ' tx-sort-btn--active' : ''}`}
+                  onClick={() => {
+                    if (txSort === 'amount') {
+                      setTxAmountDir(d => d === 'desc' ? 'asc' : 'desc')
+                    } else {
+                      setTxSort('amount')
+                      setTxAmountDir('desc')
+                    }
+                  }}
+                >
+                  {txSort === 'amount'
+                    ? (txAmountDir === 'desc' ? <ArrowDownWideNarrow size={16} /> : <ArrowUpNarrowWide size={16} />)
+                    : <ArrowUpDown size={16} />
+                  }
+                </button>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="tx-filters">
+              <select
+                title="Account"
+                className="tx-select"
+                value={txAccountFilter}
+                onChange={e => setTxAccountFilter(e.target.value)}
+              >
+                <option value="all">All accounts</option>
+                {Object.entries(
+                  accounts.filter(a => a.active).reduce<Record<string, typeof accounts>>((acc, a) => {
+                    ;(acc[a.type] ??= []).push(a)
+                    return acc
+                  }, {})
+                ).map(([type, accs]) => (
+                  <optgroup key={type} label={type}>
+                    {accs.map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+
+              <select
+                title="Type"
+                className="tx-select"
+                value={txTypeFilter}
+                onChange={e => {
+                  setTxTypeFilter(e.target.value as TxType)
+                  setTxCategoryFilter('all')
+                  setTxAccountFilter('all')
+                }}
+              >
+                <option value="Expense">Expense</option>
+                <option value="Income">Income</option>
+                <option value="System">System</option>
+              </select>
+
+              <select
+                title="Category"
+                className="tx-select"
+                value={txCategoryFilter}
+                disabled={categoryOptions.length === 0}
+                onChange={e => setTxCategoryFilter(e.target.value)}
+              >
+                <option value="all">All categories</option>
+                {categoryOptions.map(c => (
+                  <option key={c.categoryId} value={c.categoryId}>{categories.find(x => x.id === c.categoryId)?.name ?? c.categoryId}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Loading ── */}
@@ -380,106 +478,6 @@ export default function ReportsPage() {
           {showTxView ? (
             /* ── Transaction history view ── */
             <>
-              {/* Search + Sort row */}
-              <div className="tx-search-row" ref={searchRowRef}>
-                <input
-                  className="tx-search-input"
-                  type="text"
-                  placeholder="Search notes…"
-                  value={txSearchInput}
-                  onChange={e => setTxSearchInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') setTxSearchQuery(txSearchInput) }}
-                />
-                <button
-                  title="Search"
-                  className="tx-search-btn"
-                  onClick={() => setTxSearchQuery(txSearchInput)}
-                >
-                  <Search size={16} />
-                </button>
-                <div className="tx-sort-group">
-                  <button
-                    title="Sort by date"
-                    className={`tx-sort-btn${txSort === 'date' ? ' tx-sort-btn--active' : ''}`}
-                    onClick={() => setTxSort('date')}
-                  >
-                    {txSort === 'date' ? <CalendarCheck size={15} /> : <Calendar size={15} />}
-                  </button>
-                  <button
-                    title="Sort by amount"
-                    className={`tx-sort-btn${txSort === 'amount' ? ' tx-sort-btn--active' : ''}`}
-                    onClick={() => {
-                      if (txSort === 'amount') {
-                        setTxAmountDir(d => d === 'desc' ? 'asc' : 'desc')
-                      } else {
-                        setTxSort('amount')
-                        setTxAmountDir('desc')
-                      }
-                    }}
-                  >
-                    {txSort === 'amount'
-                      ? (txAmountDir === 'desc' ? <ArrowDownWideNarrow size={16} /> : <ArrowUpNarrowWide size={16} />)
-                      : <ArrowUpDown size={16} />
-                    }
-                  </button>
-                </div>
-              </div>
-
-              {/* Filters */}
-              <div className="tx-filters" ref={filtersRowRef}>
-                <select
-                  title="Account"
-                  className="tx-select"
-                  value={txAccountFilter}
-                  onChange={e => setTxAccountFilter(e.target.value)}
-                >
-                  <option value="all">All accounts</option>
-                  {Object.entries(
-                    accounts.filter(a => a.active).reduce<Record<string, typeof accounts>>((acc, a) => {
-                      ;(acc[a.type] ??= []).push(a)
-                      return acc
-                    }, {})
-                  ).map(([type, accs]) => (
-                    <optgroup key={type} label={type}>
-                      {accs.map(a => (
-                        <option key={a.id} value={a.id}>
-                          {a.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-
-                <select
-                  title="Type"
-                  className="tx-select"
-                  value={txTypeFilter}
-                  onChange={e => {
-                    setTxTypeFilter(e.target.value as TxType)
-                    setTxCategoryFilter('all')
-                    setTxAccountFilter('all')
-                  }}
-                >
-                  <option value="Expense">Expense</option>
-                  <option value="Income">Income</option>
-                  <option value="System">System</option>
-                </select>
-
-                <select
-                  title="Category"
-                  className="tx-select"
-                  value={txCategoryFilter}
-                  disabled={categoryOptions.length === 0}
-                  onChange={e => setTxCategoryFilter(e.target.value)}
-                >
-                  <option value="all">All categories</option>
-                  {categoryOptions.map(c => (
-                    <option key={c.categoryId} value={c.categoryId}>{categories.find(x => x.id === c.categoryId)?.name ?? c.categoryId}</option>
-                  ))}
-                </select>
-
-              </div>
-
               {/* Transaction list */}
               <div
                 className="tx-list"

@@ -3,7 +3,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../contexts/AppContext'
 import { API_BASE, fmtVND, fmtShort } from '../App'
-import { apiFetch } from '../lib/auth'
+import { apiFetch, parseApiResponse } from '../lib/auth'
+import { toast } from 'sonner'
 import type { Card, CardWithSpending, Statement, Category } from '../App'
 import { BadgePercent, CircleDollarSign, HandCoins, Info, List } from 'lucide-react';
 
@@ -163,11 +164,10 @@ function AddStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cardId, startDate: startMs, endDate: endMs })
       })
-      if (!res.ok) throw new Error('Failed')
-      const data = await res.json() as Statement
+      const data = await parseApiResponse<Statement>(res, 'Failed to add statement')
       onAdded(data)
-    } catch {
-      alert('Failed to add statement')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
       setSaving(false)
     }
@@ -286,10 +286,10 @@ function AddExpenseModal({ card, categories, onClose, onAdded }: {
           discount: discountValue,
         })
       })
-      if (!res.ok) throw new Error('Failed ')
+      await parseApiResponse(res, 'Failed to save expense')
       onAdded()
-    } catch {
-      alert('Failed to save expense')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Something went wrong')
       setSaving(false)
     }
   }
@@ -427,17 +427,17 @@ export default function CardDetailPage() {
   useEffect(() => {
     if (!effectiveId || effectiveId in statementsCache) return
     apiFetch(`${API_BASE}/statements?cardId=${effectiveId}`)
-      .then(r => r.json())
+      .then(r => parseApiResponse<{ statements: Statement[] }>(r, 'Failed to load statements'))
       .then(d => setStatementsCache(prev => ({ ...prev, [effectiveId]: d.statements ?? [] })))
-      .catch(() => setStatementsCache(prev => ({ ...prev, [effectiveId]: [] })))
+      .catch((e: unknown) => { toast.error(e instanceof Error ? e.message : 'Something went wrong') })
   }, [effectiveId, statementsCache])
 
   useEffect(() => {
     if (!effectiveId || effectiveId in cardDetailCache) return
     apiFetch(`${API_BASE}/cards?id=${effectiveId}`)
-      .then(r => r.json())
+      .then(r => parseApiResponse<CardWithSpending>(r, 'Failed to load card details'))
       .then(d => setCardDetailCache(prev => ({ ...prev, [effectiveId]: d })))
-      .catch(() => {})
+      .catch((e: unknown) => { toast.error(e instanceof Error ? e.message : 'Something went wrong') })
   }, [effectiveId, cardDetailCache])
 
   if (cardsLoading || !card) {

@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { SlidersHorizontal, Equal, Plus, Minus, Check, X, Loader2 } from 'lucide-react'
 import { API_BASE, fmtVND } from '../App'
-import { apiFetch } from '../lib/auth'
+import { apiFetch, parseApiResponse } from '../lib/auth'
 
 type AdjustmentResponse = {
   accountId: string,
@@ -11,18 +12,10 @@ type AdjustmentResponse = {
   note: string
 }
 
-type AdjustmentError = {
-  code: string,
-  message: string
-}
-
 type AdjustmentStatus = {
   status: 'success',
   data: AdjustmentResponse
-} | {
-  status: 'error',
-  data: AdjustmentError
-} | { status: 'idle' } | { status: 'loading' }
+} | { status: 'error' } | { status: 'idle' } | { status: 'loading' }
 
 export default function AdjustmentForm({accountId, accountBalance, onSuccess, timestamp}: {
   accountId: string
@@ -60,18 +53,13 @@ export default function AdjustmentForm({accountId, accountBalance, onSuccess, ti
           })
         });
 
-        if (!response.ok) {
-          setStatus({status: 'error', data: await response.json() as AdjustmentError})
-          return;
-        }
-
-        const data = await response.json() as AdjustmentResponse;
+        const data = await parseApiResponse<AdjustmentResponse>(response, 'Something went wrong')
         setStatus({status: 'success', data});
         onSuccess?.(data.newBalance);
       } catch(e) {
-        if (e instanceof Error)
-          console.log(e.message);
-        setStatus({status: 'idle'});
+        const msg = e instanceof Error ? e.message : 'Something went wrong'
+        toast.error(msg)
+        setStatus({status: 'error'});
       }
     } else setError(true);
   }

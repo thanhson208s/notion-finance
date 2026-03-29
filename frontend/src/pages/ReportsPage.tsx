@@ -9,7 +9,8 @@ import {
   Loader2, RefreshCw
 } from 'lucide-react'
 import { type Category, type DateRangePreset, API_BASE, CATEGORY_COLORS, getCategoryConfig } from '../App'
-import { apiFetch } from '../lib/auth'
+import { apiFetch, parseApiResponse } from '../lib/auth'
+import { toast } from 'sonner'
 import { useApp } from '../contexts/AppContext'
 import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
@@ -140,9 +141,14 @@ export default function ReportsPage() {
   const data = dateRange === 'this-month' ? reports.thisMonthReport : (dateRange === 'last-month' ? reports.lastMonthReport : reports.customRangeReport)
 
   const handleDeleteTx = async (txId: string) => {
-    await apiFetch(`${API_BASE}/transactions?id=${txId}`, { method: 'DELETE' })
-    refetchReports(true, true)
-    refetchAccounts()
+    try {
+      const res = await apiFetch(`${API_BASE}/transactions?id=${txId}`, { method: 'DELETE' })
+      await parseApiResponse(res, 'Failed to delete transaction')
+      refetchReports(true, true)
+      refetchAccounts()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Something went wrong')
+    }
   }
 
   const isCustom = dateRange === 'custom'

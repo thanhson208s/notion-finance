@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { API_BASE } from '../App'
-import { apiFetch } from '../lib/auth'
+import { apiFetch, parseApiResponse } from '../lib/auth'
 import type { Account, Card, Category, ReportsData, DateRangePreset, Promotion } from '../App'
 import { getDateParams } from '../App'
 
@@ -71,12 +71,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAccountsLoading(true)
     try {
       const res = await apiFetch(`${API_BASE}/accounts`, { signal })
-      if (!res.ok) throw new Error('Failed to fetch accounts')
-      const data = await res.json()
+      const data = await parseApiResponse<{ accounts: Account[]; total: number; totalOfAssets: number; totalOfLiabilities: number }>(res, 'Failed to load accounts')
       setAccounts(data.accounts)
       setTotals({ total: data.total, totalOfAssets: data.totalOfAssets, totalOfLiabilities: data.totalOfLiabilities })
     } catch (e) {
-      if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load accounts')
+      if (e instanceof Error && e.name !== 'AbortError') toast.error(e.message)
     } finally {
       if (!signal?.aborted) setAccountsLoading(false)
     }
@@ -86,11 +85,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPromotionsLoading(true)
     try {
       const res = await apiFetch(`${API_BASE}/promotions`, { signal })
-      if (!res.ok) throw new Error('Failed to fetch promotions')
-      const data = await res.json()
+      const data = await parseApiResponse<{ promotions: Promotion[] }>(res, 'Failed to load promotions')
       setPromotions(data.promotions ?? [])
     } catch (e) {
-      if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load promotions')
+      if (e instanceof Error && e.name !== 'AbortError') toast.error(e.message)
     } finally {
       if (!signal?.aborted) setPromotionsLoading(false)
     }
@@ -100,11 +98,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCardsLoading(true)
     try {
       const res = await apiFetch(`${API_BASE}/cards`, { signal })
-      if (!res.ok) throw new Error('Failed to fetch cards')
-      const data = await res.json()
+      const data = await parseApiResponse<{ cards: Card[] }>(res, 'Failed to load cards')
       setCards(data.cards)
     } catch (e) {
-      if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load cards')
+      if (e instanceof Error && e.name !== 'AbortError') toast.error(e.message)
     } finally {
       if (!signal?.aborted) setCardsLoading(false)
     }
@@ -114,11 +111,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCategoriesLoading(true)
     try {
       const res = await apiFetch(`${API_BASE}/categories`, { signal })
-      if (!res.ok) throw new Error('Failed to fetch categories')
-      const data = await res.json()
+      const data = await parseApiResponse<{ categories: Category[] }>(res, 'Failed to load categories')
       setCategories(data.categories)
     } catch (e) {
-      if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load categories')
+      if (e instanceof Error && e.name !== 'AbortError') toast.error(e.message)
     } finally {
       if (!signal?.aborted) setCategoriesLoading(false)
     }
@@ -151,29 +147,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (endDate) params.set('endDate', endDate)
     const query = params.size ? `?${params.toString()}` : '';
     try {
-      // let abortController;
-      // switch(dateRange) {
-      //   case 'this-month':
-      //     abortController = thisMonthAbort.current = new AbortController()
-      //     break
-      //   case 'last-month':
-      //     abortController = lastMonthAbort.current = new AbortController()
-      //     break
-      //   case 'custom':
-      //     abortController = customRangeAbort.current = new AbortController()
-      //     break
-      // }
-
       const res = await apiFetch(`${API_BASE}/reports${query}`, { signal: abortController?.signal })
-      if (!res.ok) throw new Error('Failed')
-      const data = await res.json() as ReportsData
+      const data = await parseApiResponse<ReportsData>(res, 'Failed to load reports')
       setReports((cur) => ({
         thisMonthReport: dateRange === 'this-month' ? data : cur.thisMonthReport,
         lastMonthReport: dateRange === 'last-month' ? data : cur.lastMonthReport,
         customRangeReport: dateRange === 'custom' ? data : cur.customRangeReport
       }))  
     } catch (e) {
-      if (e instanceof Error && e.name !== 'AbortError') toast.error('Failed to load reports')
+      if (e instanceof Error && e.name !== 'AbortError') toast.error(e.message)
     } finally {
       if (!abortController.signal.aborted)
         switch(dateRange) {

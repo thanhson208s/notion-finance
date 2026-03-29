@@ -34,3 +34,19 @@ export function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
     },
   })
 }
+
+async function getApiErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const data = await res.json()
+    return (typeof data?.message === 'string' && data.message) ||
+           (typeof data?.error === 'string' && data.error) ||
+           fallback
+  } catch {
+    return fallback
+  }
+}
+
+export async function parseApiResponse<T = unknown>(res: Response, fallback = 'Something went wrong'): Promise<T> {
+  if (!res.ok) throw new Error(await getApiErrorMessage(res, fallback))
+  return res.json() as Promise<T>
+}

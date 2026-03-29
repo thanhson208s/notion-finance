@@ -2,7 +2,8 @@ import './PromotionsPage.css'
 import { useState, useRef, useEffect } from 'react'
 import { useApp } from '../contexts/AppContext'
 import { API_BASE } from '../App'
-import { apiFetch } from '../lib/auth'
+import { apiFetch, parseApiResponse } from '../lib/auth'
+import { toast } from 'sonner'
 import { SwipeableRow } from '../components/SwipeableRow'
 import type { Promotion, PromotionCategory, PromotionType } from '../App'
 import { Plane, Utensils, ShoppingBag, Tv, Smartphone, Tag, Plus, Loader2 } from 'lucide-react'
@@ -55,11 +56,10 @@ function AddPromotionModal({ cards, onClose, onAdded }: {
           link: link.trim() || undefined
         })
       })
-      if (!res.ok) throw new Error('Failed')
-      const data = await res.json() as Promotion
+      const data = await parseApiResponse<Promotion>(res, 'Failed to add promotion')
       onAdded(data)
-    } catch {
-      alert('Failed to add promotion')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
@@ -190,10 +190,11 @@ export default function PromotionsPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await apiFetch(`${API_BASE}/promotions?id=${id}`, { method: 'DELETE' })
+      const res = await apiFetch(`${API_BASE}/promotions?id=${id}`, { method: 'DELETE' })
+      await parseApiResponse(res, 'Failed to delete promotion')
       removePromotion(id)
-    } catch {
-      alert('Failed to delete')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Something went wrong')
     }
   }
 

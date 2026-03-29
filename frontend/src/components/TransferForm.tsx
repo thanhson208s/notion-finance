@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { Account, AccountType } from '../App'
 import { API_BASE, fmtVND } from '../App'
-import { apiFetch } from '../lib/auth'
+import { apiFetch, parseApiResponse } from '../lib/auth'
+import { toast } from 'sonner'
 import { ChevronDown, ArrowUpDown, ArrowLeftRight, Check, X, Loader2 } from 'lucide-react';
 
 type TransferResponse = {
@@ -14,18 +15,10 @@ type TransferResponse = {
   newToAccountBalance: number,
 }
 
-type TransferError = {
-  code: string,
-  message: string
-}
-
 type TransferStatus = {
   status: 'success'
   data: TransferResponse
-} | {
-  status: 'error',
-  data: TransferError
-} | { status: 'idle' } | { status: 'loading' }
+} | { status: 'error' } | { status: 'idle' } | { status: 'loading' }
 
 export default function TransferForm({accountId, accounts, onTransferSuccess, timestamp}: {
   accountId: string,
@@ -99,17 +92,13 @@ export default function TransferForm({accountId, accounts, onTransferSuccess, ti
           body: JSON.stringify({ amount, fromAccountId, toAccountId, timestamp, note })
         });
 
-        if (!response.ok) {
-          setStatus({status: 'error', data: await response.json() as TransferError});
-          return;
-        }
-
-        const data = await response.json() as TransferResponse;
+        const data = await parseApiResponse<TransferResponse>(response, 'Something went wrong')
         setStatus({status: 'success', data});
         onTransferSuccess?.();
       } catch(e) {
-        if (e instanceof Error) console.log(e.message);
-        setStatus({status: 'idle'});
+        const msg = e instanceof Error ? e.message : 'Something went wrong'
+        toast.error(msg)
+        setStatus({status: 'error'});
       }
     }
   }

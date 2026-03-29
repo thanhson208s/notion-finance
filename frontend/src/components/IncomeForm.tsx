@@ -1,7 +1,8 @@
 import type { Category, Card, AccountType } from '../App'
 import { API_BASE, fmtVND } from '../App'
-import { apiFetch } from '../lib/auth'
+import { apiFetch, parseApiResponse } from '../lib/auth'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { TrendingUp, Check, X, Loader2 } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
 
@@ -27,18 +28,10 @@ type LogIncomeResponse = {
   note: string
 }
 
-type LogIncomeError = {
-  code: string,
-  message: string
-}
-
 type LogIncomeStatus = {
   status: 'success',
   data: LogIncomeResponse
-} | {
-  status: 'error',
-  data: LogIncomeError
-} | { status: 'idle' } | { status: 'loading' };
+} | { status: 'error' } | { status: 'idle' } | { status: 'loading' };
 
 export default function IncomeForm({accountId, cards, accountType, onSuccess, timestamp}: {
   accountId: string
@@ -89,18 +82,13 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
           })
         });
 
-        if (!response.ok) {
-          setStatus({status: 'error', data: await response.json() as LogIncomeError})
-          return;
-        }
-
-        const data = await response.json() as LogIncomeResponse;
+        const data = await parseApiResponse<LogIncomeResponse>(response, 'Something went wrong')
         setStatus({status: 'success', data});
         onSuccess?.(data.newBalance);
       } catch(e) {
-        if (e instanceof Error)
-          console.log(e.message);
-        setStatus({status: 'idle'});
+        const msg = e instanceof Error ? e.message : 'Something went wrong'
+        toast.error(msg)
+        setStatus({status: 'error'});
       }
     }
   }

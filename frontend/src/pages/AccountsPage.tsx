@@ -12,7 +12,8 @@ import {
   Plus
 } from "lucide-react"
 import { type Account, type AccountType, API_BASE, ACCOUNT_TYPES, fmtVND } from '../App'
-import { apiFetch } from '../lib/auth'
+import { apiFetch, parseApiResponse } from '../lib/auth'
+import { toast } from 'sonner'
 import { useApp } from '../contexts/AppContext'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 
@@ -26,7 +27,6 @@ export default function AccountsPage() {
   const [ addType, setAddType ] = useState<AccountType>('Cash');
   const [ addNote, setAddNote ] = useState('');
   const [ addSubmitting, setAddSubmitting ] = useState(false);
-  const [ addError, setAddError ] = useState<string | null>(null);
   const [ filter, setFilter ] = useState<"all" | "assets" | "liabilities">("all");
   const [ filteredTypes, setFilteredTypes ] = useState<AccountType[]>([]);
   const [ sort, setSort ] = useState<"relevance" | "balance" | "type">("relevance");
@@ -114,27 +114,24 @@ export default function AccountsPage() {
   }, [activeCard]);
 
   const openAddModal = () => {
-    setAddName(''); setAddType('Cash'); setAddNote(''); setAddError(null);
+    setAddName(''); setAddType('Cash'); setAddNote('');
     setShowAddModal(true);
   }
 
   const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addName.trim()) { setAddError('Name is required'); return; }
     setAddSubmitting(true);
-    setAddError(null);
     try {
       const res = await apiFetch(`${API_BASE}/accounts?action=create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: addName.trim(), type: addType, note: addNote.trim() })
       });
-      if (!res.ok) { setAddError('Failed to create account'); return; }
-      const account: Account = await res.json();
+      const account = await parseApiResponse<Account>(res, 'Failed to create account');
       addAccount(account);
       setShowAddModal(false);
-    } catch {
-      setAddError('Failed to create account');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
       setAddSubmitting(false);
     }
@@ -159,10 +156,10 @@ export default function AccountsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accountId: account.id, active: !account.active })
       });
-      if (res.ok) {
-        const data = await res.json();
-        updateAccount(account.id, { active: data.active });
-      }
+      const data = await parseApiResponse<{ active: boolean }>(res, 'Failed to set account activation');
+      updateAccount(account.id, { active: data.active });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
       setTogglingId(null);
     }
@@ -374,7 +371,7 @@ export default function AccountsPage() {
               <div className="modal-field">
                 <label className="modal-label">Name</label>
                 <input
-                  className={`modal-input${addError && !addName.trim() ? ' input-error' : ''}`}
+                  className={`modal-input`}
                   type="text"
                   placeholder="e.g. Techcombank"
                   value={addName}
@@ -407,13 +404,11 @@ export default function AccountsPage() {
                 />
               </div>
 
-              {addError && <p className="modal-error">{addError}</p>}
-
               <div className="modal-actions">
                 <button type="button" className="modal-btn modal-btn--cancel" onClick={() => setShowAddModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="modal-btn modal-btn--submit" disabled={addSubmitting}>
+                <button type="submit" className="modal-btn modal-btn--submit" disabled={addSubmitting || !addName.trim()}>
                   {addSubmitting ? <Loader2 size={16} className="ptr-spin" /> : 'Add'}
                 </button>
               </div>

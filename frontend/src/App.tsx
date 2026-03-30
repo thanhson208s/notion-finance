@@ -8,8 +8,7 @@ import AccountsPage from "./pages/AccountsPage"
 import ReportsPage from "./pages/ReportsPage"
 import CardDetailPage from "./pages/CardDetailPage"
 import PromotionsPage from "./pages/PromotionsPage"
-import ExpensePage from "./pages/ExpensePage"
-import IncomePage from "./pages/IncomePage"
+import TransactionPage from "./pages/TransactionPage"
 import TransferPage from "./pages/TransferPage"
 import AdjustmentPage from "./pages/AdjustmentPage"
 
@@ -53,8 +52,8 @@ function AppShell() {
             <Route path="/cards" element={<CardDetailPage/>}/>
             <Route path="/cards/:id" element={<CardDetailPage/>}/>
             <Route path="/promos" element={<PromotionsPage/>}/>
-            <Route path="/expense/:accountId" element={<ExpensePage/>}/>
-            <Route path="/income/:accountId" element={<IncomePage/>}/>
+            <Route path="/expense/:accountId" element={<TransactionPage type="Expense"/>}/>
+            <Route path="/income/:accountId" element={<TransactionPage type="Income"/>}/>
             <Route path="/transfer/:accountId" element={<TransferPage/>}/>
             <Route path="/adjustment/:accountId" element={<AdjustmentPage/>}/>
           </Routes>

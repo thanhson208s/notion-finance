@@ -2,8 +2,8 @@ import './TransactionPage.css'
 import { useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, CalendarDays } from 'lucide-react'
-import IncomeForm from '../components/IncomeForm'
-import type { Account } from '../App'
+import TransactionForm from '../components/TransactionForm'
+import { fmtVND, type Account } from '../App'
 import { useApp } from '../contexts/AppContext'
 
 const toDatetimeLocal = (ms: number) => {
@@ -18,7 +18,7 @@ const formatDateDisplay = (ms: number) =>
     hour: '2-digit', minute: '2-digit', hour12: false
   })
 
-export default function IncomePage() {
+export default function TransactionPage({ type }: { type: 'Income' | 'Expense' }) {
   const { accountId } = useParams()
   const navigate = useNavigate()
   const { state } = useLocation()
@@ -39,7 +39,7 @@ export default function IncomePage() {
         <button type="button" aria-label="Back" className="back-btn" onClick={() => navigate('/', { replace: true })}>
           <ChevronLeft size={28} />
         </button>
-        <h1 className="transaction-title">Income</h1>
+        <h1 className="transaction-title">{type}</h1>
 
         <label className="header-datetime">
           <span className="datetime-label">{formatDateDisplay(timestamp)}</span>
@@ -60,13 +60,13 @@ export default function IncomePage() {
             <span className={`account-type account-${account.type.toLowerCase()}`}>{account.type}</span>
           </div>
           <div className="account-balance">
-            {balance.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+            {fmtVND(balance)}
           </div>
         </div>
       )}
 
       <div className="transaction-body">
-        <IncomeForm accountId={accountId!} cards={cards.filter(c => account?.linkedCardIds.includes(c.id))} accountType={account?.type} onSuccess={handleSuccess} timestamp={timestamp} />
+        <TransactionForm type={type} accountId={accountId!} cards={cards.filter(c => account?.linkedCardIds.includes(c.id))} accountType={account?.type} onSuccess={handleSuccess} timestamp={timestamp} />
       </div>
     </main>
   )

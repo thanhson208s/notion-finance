@@ -3,7 +3,7 @@ import { API_BASE, fmtVND } from '../App'
 import { apiFetch, parseApiResponse } from '../lib/auth'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { TrendingUp, Check, X, Loader2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, Check, X, Loader2 } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
 
 function EmptyCard() {
@@ -19,7 +19,7 @@ function EmptyCard() {
   )
 }
 
-type LogIncomeResponse = {
+type TransactionResponse = {
   accountId: string,
   oldBalance: number,
   newBalance: number,
@@ -28,21 +28,22 @@ type LogIncomeResponse = {
   note: string
 }
 
-type LogIncomeStatus = {
+type TransactionStatus = {
   status: 'success',
-  data: LogIncomeResponse
+  data: TransactionResponse
 } | { status: 'error' } | { status: 'idle' } | { status: 'loading' };
 
-export default function IncomeForm({accountId, cards, accountType, onSuccess, timestamp}: {
+export default function TransactionForm({accountId, cards, accountType, type, onSuccess, timestamp}: {
   accountId: string
   cards: Card[]
   accountType?: AccountType
+  type: 'Income' | 'Expense'
   onSuccess?: (newBalance: number) => void
   timestamp?: number
 }) {
   const { categories: allCategories } = useApp();
-  const categories = allCategories.filter(c => c.type === 'Income');
-  const [ status, setStatus ] = useState<LogIncomeStatus>({status: 'idle'});
+  const categories = allCategories.filter(c => c.type === type);
+  const [ status, setStatus ] = useState<TransactionStatus>({status: 'idle'});
   const [ amount, setAmount ] = useState<number>(0);
   const [ categoryId, setCategoryId ] = useState<string>("");
   const [ note, setNote ] = useState<string>("");
@@ -53,7 +54,6 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
   const [ cardIndex, setCardIndex ] = useState<number>(() =>
     accountType === 'Credit' && cards.length > 0 ? 0 : -1
   );
-
   const resetToIdle = () => {
     if (status.status !== 'loading') setStatus({status: 'idle'});
   }
@@ -72,7 +72,7 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
       setStatus({status: 'loading'});
       const selectedCardId = cardIndex >= 0 ? cards[cardIndex].id : undefined;
       try {
-        const response = await apiFetch(`${API_BASE}/transactions?type=income`, {
+        const response = await apiFetch(`${API_BASE}/transactions?type=${type.toLowerCase()}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -82,7 +82,7 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
           })
         });
 
-        const data = await parseApiResponse<LogIncomeResponse>(response, 'Something went wrong')
+        const data = await parseApiResponse<TransactionResponse>(response, 'Something went wrong')
         setStatus({status: 'success', data});
         onSuccess?.(data.newBalance);
       } catch(e) {
@@ -96,6 +96,7 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
   const loading = status.status === 'loading';
   const prevIndex = cardIndex === -1 ? cards.length - 1 : cardIndex - 1
   const nextIndex = cardIndex === cards.length - 1 ? -1 : cardIndex + 1
+  const Icon = type === 'Income' ? TrendingUp : TrendingDown
 
   return (
     <form className="form-main">
@@ -172,17 +173,17 @@ export default function IncomeForm({accountId, cards, accountType, onSuccess, ti
       </div>
 
       <div className="form-buttons">
-        <button type="button" className="form-btn submit-btn-income" onClick={submit} disabled={loading}>
+        <button type="button" className={`form-btn submit-btn-${type.toLowerCase()}`} onClick={submit} disabled={loading}>
           <span key={status.status} className="submit-btn-content">
             {status.status === 'loading' && <Loader2 size={20} className="icon-spin" />}
             {status.status === 'success' && <Check size={20} />}
             {status.status === 'error'   && <X size={20} />}
-            {status.status === 'idle'    && <TrendingUp size={20} />}
+            {status.status === 'idle'    && <Icon size={20} />}
             <span>
               {status.status === 'loading' ? 'Processing...' :
                status.status === 'success' ? 'Success' :
                status.status === 'error'   ? 'Error' :
-               'Income'}
+               type}
             </span>
           </span>
         </button>

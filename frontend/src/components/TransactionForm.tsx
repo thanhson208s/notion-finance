@@ -1,4 +1,4 @@
-import type { Category, Card, AccountType } from '../App'
+import type { Card, AccountType } from '../App'
 import { API_BASE, fmtVND } from '../App'
 import { apiFetch, parseApiResponse } from '../lib/auth'
 import { useState } from 'react'
@@ -78,7 +78,7 @@ export default function TransactionForm({accountId, cards, accountType, type, on
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            accountId, amount, categoryId, note, linkedCardId: selectedCardId, timestamp
+            accountId, amount, categoryId, note: note.trim(), linkedCardId: selectedCardId, timestamp
           })
         });
 
@@ -131,12 +131,6 @@ export default function TransactionForm({accountId, cards, accountType, type, on
           {categories.filter(category => category.parentId === null).map(category => {
             const subCategories = categories.filter(sub => sub.parentId === category.id);
             if (subCategories.length > 0) {
-              subCategories.push({
-                id: category.id,
-                name: category.name,
-                type: category.type,
-                parentId: category.id
-              } satisfies Category);
               return (<optgroup label={category.name} key={category.id}>
                 {subCategories.map(sub => (<option value={sub.id} key={sub.id}>{sub.name}</option>))}
               </optgroup>);

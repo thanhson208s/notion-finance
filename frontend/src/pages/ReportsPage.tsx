@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { useApp } from '../contexts/AppContext'
 import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
+import { EditTxModal } from '../components/EditTxModal'
 import { type Transaction, type TxType, fmtVND, fmtShort, getTxType, getDateParams } from '../App'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 
@@ -88,18 +89,6 @@ function buildGroups(categories: Category[], breakdown: {categoryId: string, amo
     }
   })
 
-  // Inject synthetic "Other" child for top-level groups that have real children
-  grouped.forEach(g => {
-    if (g.parent.categoryId === g.parent.parentId && g.children.length > 0) {
-      g.children.push({
-        categoryId: `${g.parent.categoryId}__other`,
-        categoryName: 'Other',
-        parentId: g.parent.categoryId,
-        amount: g.parent.amount,
-      })
-    }
-  })
-
   return Array.from(grouped.values())
     .sort((a, b) => b.groupTotal - a.groupTotal)
 }
@@ -130,6 +119,7 @@ export default function ReportsPage() {
   const [txSort, setTxSort] = useState<SortKey>('date')
   const [txAmountDir, setTxAmountDir] = useState<'desc' | 'asc'>('desc')
   const [deleteTarget, setDeleteTarget] = useState<{ tx: Transaction; type: TxType } | null>(null)
+  const [editTarget, setEditTarget] = useState<{ tx: Transaction; type: TxType } | null>(null)
   
   const pageRef = useRef<HTMLElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -212,14 +202,9 @@ export default function ReportsPage() {
     setSelectedGroup(prev => prev === parentId ? null : parentId)
 
   const navigateToTransactions = (categoryId: string) => {
-    // Strip synthetic "__other" suffix — those map to the parent's real ID
-    const realId = categoryId.endsWith('__other')
-      ? categoryId.replace('__other', '')
-      : categoryId
-
     // Map child category → parent so the dropdown filter (top-level only) works correctly
-    const cat = catMap.get(realId)
-    const filterCategoryId = cat?.parentId ?? realId
+    const cat = catMap.get(categoryId)
+    const filterCategoryId = cat?.parentId ?? categoryId
 
     setShowTxView(true)
     setTxTypeFilter(tab === 'expense' ? 'Expense' : 'Income')
@@ -499,13 +484,13 @@ export default function ReportsPage() {
                           style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${virtualRow.start}px)` }}
                         >
                           {type === 'Transfer' && (
-                            <TransferTxItem tx={tx} accounts={accounts} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
+                            <TransferTxItem tx={tx} accounts={accounts} catMap={catMap} onEdit={() => setEditTarget({ tx, type })} onDelete={() => setDeleteTarget({ tx, type })} />
                           )}
                           {type === 'Adjustment' && (
-                            <AdjustmentTxItem tx={tx} accounts={accounts} cards={cards} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
+                            <AdjustmentTxItem tx={tx} accounts={accounts} cards={cards} catMap={catMap} onEdit={() => setEditTarget({ tx, type })} onDelete={() => setDeleteTarget({ tx, type })} />
                           )}
                           {type !== 'Transfer' && type !== 'Adjustment' && (
-                            <TxItem tx={tx} type={type} accounts={accounts} cards={cards} catMap={catMap} onDelete={() => setDeleteTarget({ tx, type })} />
+                            <TxItem tx={tx} type={type} accounts={accounts} cards={cards} catMap={catMap} onEdit={() => setEditTarget({ tx, type })} onDelete={() => setDeleteTarget({ tx, type })} />
                           )}
                         </div>
                       )
@@ -520,7 +505,7 @@ export default function ReportsPage() {
               {/* Summary card */}
               <div className="reports-summary">
                 <div className="reports-summary-label">NET SAVINGS</div>
-                <div className={`reports-summary-amount${data?.netSavings ?? 0 < 0 ? ' reports-summary-amount--neg' : ''}`}>
+                <div className={`reports-summary-amount${(data?.netSavings ?? 0) < 0 ? ' reports-summary-amount--neg' : ''}`}>
                   {fmtVND(data?.netSavings ?? 0)}
                 </div>
                 <div className="reports-summary-sub">
@@ -723,6 +708,19 @@ export default function ReportsPage() {
           catMap={catMap}
           onConfirm={() => handleDeleteTx(deleteTarget.tx.id)}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {editTarget && (
+        <EditTxModal
+          tx={editTarget.tx}
+          type={editTarget.type}
+          accounts={accounts}
+          cards={cards}
+          catMap={catMap}
+          categories={categories}
+          onSave={() => { setEditTarget(null); refetchReports(true, true); refetchAccounts() }}
+          onCancel={() => setEditTarget(null)}
         />
       )}
     </main>

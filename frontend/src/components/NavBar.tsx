@@ -7,22 +7,29 @@ export default function NavBar() {
   const accountsActive = pathname === '/' ||
     /^\/(expense|income|transfer|adjustment)\//.test(pathname);
 
+  const reportsActive = pathname === '/reports'
+  const cardsActive = pathname === '/cards'
+  const promosActive = pathname === '/promos'
+
+  const activeIndex = accountsActive ? 0 : reportsActive ? 1 : cardsActive ? 2 : 3
+
   return (
     <nav className="nav-bar">
+      <div className="nav-pill" style={{ left: `${activeIndex * 25}%` }} />
       <NavLink to="/" replace className={() => accountsActive ? 'nav-item active' : 'nav-item'} end>
-        <Wallet size={22} />
+        <Wallet size={accountsActive ? 24 : 20} />
       </NavLink>
 
       <NavLink to="/reports" replace className="nav-item">
-        <ChartBarBig size={22} />
+        <ChartBarBig size={reportsActive ? 24 : 20} />
       </NavLink>
 
       <NavLink to="/cards" replace className="nav-item">
-        <WalletCards size={22} />
+        <WalletCards size={cardsActive ? 24 : 20} />
       </NavLink>
 
       <NavLink to="/promos" replace className="nav-item">
-        <TicketPercent size={22} />
+        <TicketPercent size={promosActive ? 24 : 20} />
       </NavLink>
     </nav>
   )

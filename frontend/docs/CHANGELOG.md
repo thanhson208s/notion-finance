@@ -9,6 +9,14 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [FE-0.10.1] - 2026-03-31
+
+### Added
+
+- feat(reports): edit transaction modal — swipe edit on any transaction row opens a bottom sheet to update note and category; wired for Income, Expense, Transfer, and Adjustment types
+
+---
+
 ## [FE-0.10.0] - 2026-03-25
 
 ### Added

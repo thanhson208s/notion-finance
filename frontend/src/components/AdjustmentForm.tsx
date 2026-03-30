@@ -49,7 +49,7 @@ export default function AdjustmentForm({accountId, accountBalance, onSuccess, ti
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            accountId, balance, note, timestamp
+            accountId, balance, note: note.trim(), timestamp
           })
         });
 

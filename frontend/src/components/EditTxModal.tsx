@@ -1,4 +1,4 @@
-import './EditTxModal.css'
+import './modal.css'
 import { useState, useCallback } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -76,39 +76,39 @@ export function EditTxModal({ tx, type, accounts, cards, categories, onSave, onC
 
   return (
     <div
-      className={`edit-modal-backdrop${closing ? ' edit-modal-backdrop--closing' : ''}`}
+      className={`modal-backdrop${closing ? ' modal-backdrop--closing' : ''}`}
       onClick={() => { if (!busy) dismiss(onCancel) }}
       onTouchStart={e => e.stopPropagation()}
       onTouchMove={e => e.stopPropagation()}
       onTouchEnd={e => e.stopPropagation()}
     >
-      <div className={`edit-modal-sheet${closing ? ' edit-modal-sheet--closing' : ''}`} onClick={e => e.stopPropagation()}>
-        <div className="edit-modal-handle" />
-        <span className="edit-modal-title">EDIT TRANSACTION</span>
+      <div className={`modal-sheet${closing ? ' modal-sheet--closing' : ''}`} onClick={e => e.stopPropagation()}>
+        <div className="modal-handle" />
+        <span className="modal-title modal-title--center">EDIT TRANSACTION</span>
 
-        <div className="edit-modal-rows">
-          <div className="edit-modal-row">
-            <span className="edit-modal-label">Account</span>
-            <span className="edit-modal-value">{accountLabel}</span>
+        <div className="modal-rows">
+          <div className="modal-row">
+            <span className="modal-row-label">Account</span>
+            <span className="modal-row-value">{accountLabel}</span>
           </div>
-          <div className="edit-modal-row">
-            <span className="edit-modal-label">Date</span>
-            <span className="edit-modal-value">{date} · {time}</span>
+          <div className="modal-row">
+            <span className="modal-row-label">Date</span>
+            <span className="modal-row-value">{date} · {time}</span>
           </div>
-          <div className="edit-modal-row">
-            <span className="edit-modal-label">Amount</span>
-            <span className={`edit-modal-value edit-modal-amount edit-modal-amount--${typeLower}`}>
+          <div className="modal-row">
+            <span className="modal-row-label">Amount</span>
+            <span className={`modal-row-value modal-row-amount modal-row-amount--${typeLower}`}>
               {amountDisplay}
             </span>
           </div>
         </div>
 
-        <div className="edit-modal-fields">
-          <div className="edit-modal-field">
-            <label className="edit-modal-field-label">Category</label>
+        <div className="modal-fields">
+          <div className="modal-field">
+            <label className="modal-label">Category</label>
             <select
               title="Category"
-              className="edit-modal-select"
+              className="modal-select"
               value={categoryId}
               onChange={e => setCategoryId(e.target.value)}
               disabled={busy}
@@ -129,10 +129,10 @@ export function EditTxModal({ tx, type, accounts, cards, categories, onSave, onC
             </select>
           </div>
 
-          <div className="edit-modal-field">
-            <label className="edit-modal-field-label">Note</label>
+          <div className="modal-field">
+            <label className="modal-label">Note</label>
             <textarea
-              className="edit-modal-textarea"
+              className="modal-textarea"
               value={note}
               onChange={e => setNote(e.target.value)}
               placeholder="Add a note..."
@@ -144,11 +144,11 @@ export function EditTxModal({ tx, type, accounts, cards, categories, onSave, onC
 
         <button
           type="button"
-          className={`edit-modal-btn${btnState === 'saved' ? ' edit-modal-btn--saved' : ''}`}
+          className={`modal-btn modal-btn--submit modal-btn--full${btnState === 'saved' ? ' modal-btn--saved' : ''}`}
           onClick={handleSave}
           disabled={busy || !dirty}
         >
-          <span key={btnState} className="edit-modal-btn-content">
+          <span key={btnState} className="modal-btn-content">
             {btnState === 'saving' && <Loader2 size={18} className="icon-spin" />}
             {btnState === 'saved' && <Check size={18} />}
             {btnState === 'saving' ? 'Saving...' : btnState === 'saved' ? 'Saved' : 'Save Changes'}

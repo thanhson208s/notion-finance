@@ -12,6 +12,9 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    env:
+      TZ: Asia/Ho_Chi_Minh
+
     defaults:
       run:
         working-directory: frontend

@@ -1,9 +1,9 @@
 .nav-bar {
   position: fixed;
-  bottom: calc(12px + env(safe-area-inset-bottom));
+  bottom: calc(env(safe-area-inset-bottom));
   left: 32px;
   right: 32px;
-  height: 52px;
+  height: 64px;
   z-index: 100;
 
   display: grid;
@@ -21,12 +21,11 @@
 .nav-pill {
   position: absolute;
   width: 25%;
-  height: 46px;
+  height: 100%;
   top: 50%;
   transform: translateY(-50%);
   border-radius: 999px;
   background: rgba(30, 41, 59, 0.6);
-  border: 0.5px solid rgba(255, 255, 255, 0.5);
   transition: left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
   z-index: 0;

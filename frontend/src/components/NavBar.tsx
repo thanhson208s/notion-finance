@@ -17,19 +17,19 @@ export default function NavBar() {
     <nav className="nav-bar">
       <div className="nav-pill" style={{ left: `${activeIndex * 25}%` }} />
       <NavLink to="/" replace className={() => accountsActive ? 'nav-item active' : 'nav-item'} end>
-        <Wallet size={accountsActive ? 24 : 20} />
+        <Wallet size={accountsActive ? 28 : 24} />
       </NavLink>
 
       <NavLink to="/reports" replace className="nav-item">
-        <ChartBarBig size={reportsActive ? 24 : 20} />
+        <ChartBarBig size={reportsActive ? 28 : 24} />
       </NavLink>
 
       <NavLink to="/cards" replace className="nav-item">
-        <WalletCards size={cardsActive ? 24 : 20} />
+        <WalletCards size={cardsActive ? 28 : 24} />
       </NavLink>
 
       <NavLink to="/promos" replace className="nav-item">
-        <TicketPercent size={promosActive ? 24 : 20} />
+        <TicketPercent size={promosActive ? 28 : 24} />
       </NavLink>
     </nav>
   )

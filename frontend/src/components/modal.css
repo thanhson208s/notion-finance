@@ -1,0 +1,375 @@
+/* ============================================================
+   Shared Modal Styles
+   ============================================================ */
+
+/* ---------- Backdrop & Sheet ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+}
+
+.modal-sheet {
+  width: 100%;
+  background: #1e293b;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 20px calc(32px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: modal-sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@keyframes modal-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes modal-sheet-down {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+
+@keyframes modal-backdrop-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.modal-backdrop--closing {
+  animation: modal-backdrop-out 0.5s ease forwards;
+  pointer-events: none;
+}
+
+.modal-sheet--closing {
+  animation: modal-sheet-down 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* ---------- Handle & Title ---------- */
+
+.modal-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.modal-title--center {
+  font-size: 14px;
+  text-align: center;
+  letter-spacing: 0.06em;
+}
+
+/* ---------- Info Rows (read-only display) ---------- */
+
+.modal-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.modal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.modal-row-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.modal-row-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modal-row-amount {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.modal-row-amount--expense    { color: var(--red); }
+.modal-row-amount--income     { color: #10b981; }
+.modal-row-amount--transfer,
+.modal-row-amount--adjustment { color: #64748b; }
+
+/* ---------- Form Fields ---------- */
+
+.modal-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+}
+
+.modal-input,
+.modal-select,
+.modal-textarea {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 16px;
+  padding: 0 12px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-input,
+.modal-select {
+  height: 42px;
+}
+
+.modal-textarea {
+  padding: 10px 12px;
+  resize: none;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.modal-input:focus,
+.modal-select:focus,
+.modal-textarea:focus {
+  border-color: #3b82f6;
+}
+
+.modal-input:disabled,
+.modal-select:disabled,
+.modal-textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.modal-input--amount {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.modal-input-error {
+  border-color: #ef4444 !important;
+}
+
+/* date input fix */
+.modal-input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: center;
+  cursor: pointer;
+}
+
+.modal-input[type="date"]::-webkit-date-and-time-value {
+  text-align: center;
+}
+
+.modal-input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.modal-select {
+  font-size: 15px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.modal-select option,
+.modal-select optgroup {
+  background: #1e293b;
+  color: var(--text);
+}
+
+/* ---------- Input Row (input + toggle button) ---------- */
+
+.modal-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.modal-input-row .modal-input {
+  flex: 1;
+}
+
+.modal-mode-btn {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.modal-mode-btn:hover {
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+.modal-computed {
+  font-size: 12px;
+  color: #22c55e;
+  padding-left: 2px;
+}
+
+/* ---------- Preview Section (AddStatementModal) ---------- */
+
+.modal-preview {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.modal-preview-loading {
+  font-size: 13px;
+  color: #475569;
+  font-style: italic;
+  text-align: center;
+  padding: 4px 0;
+}
+
+.modal-preview-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-preview-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.modal-preview-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.modal-preview-value--cashback { color: #22c55e; }
+.modal-preview-value--discount { color: #f59e0b; }
+
+.modal-hint {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.5;
+  margin: -4px 0 0;
+}
+
+/* ---------- Buttons ---------- */
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter 0.15s ease, background 0.2s ease, opacity 0.15s;
+}
+
+.modal-btn:active:not(:disabled) {
+  filter: brightness(0.85);
+}
+
+.modal-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.modal-btn--cancel  { background: #334155; color: #94a3b8; }
+.modal-btn--submit  { background: #2563eb; color: #fff; }
+.modal-btn--saved   { background: #16a34a; color: #fff; }
+.modal-btn--danger  { background: #dc2626; color: #fff; }
+
+/* full-width single button */
+.modal-btn--full {
+  flex: unset;
+  width: 100%;
+  padding: 14px;
+  height: auto;
+}
+
+.modal-btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ---------- Spinner ---------- */
+
+@keyframes modal-spin {
+  to { transform: rotate(360deg); }
+}
+
+.icon-spin {
+  animation: modal-spin 0.7s linear infinite;
+}

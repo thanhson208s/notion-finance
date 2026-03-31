@@ -1,4 +1,4 @@
-import './ConfirmDeleteModal.css'
+import './modal.css'
 import { useState, useCallback } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import type { Account, Card, Category } from '../App'
@@ -19,7 +19,7 @@ type Props = {
 
 type BtnState = 'idle' | 'deleting' | 'deleted'
 
-export function ConfirmDeleteModal({ tx, type, accounts, cards, catMap, onConfirm, onCancel }: Props) {
+export function DeleteTxModal({ tx, type, accounts, cards, catMap, onConfirm, onCancel }: Props) {
   const [closing, setClosing] = useState(false)
   const [btnState, setBtnState] = useState<BtnState>('idle')
   const accountLabel = getAccountLabel(tx.fromAccountId ?? tx.toAccountId, tx.linkedCardId, accounts, cards)
@@ -55,42 +55,42 @@ export function ConfirmDeleteModal({ tx, type, accounts, cards, catMap, onConfir
 
   return (
     <div
-      className={`delete-modal-backdrop${closing ? ' delete-modal-backdrop--closing' : ''}`}
+      className={`modal-backdrop${closing ? ' modal-backdrop--closing' : ''}`}
       onClick={() => { if (!busy) dismiss(onCancel) }}
       onTouchStart={e => e.stopPropagation()}
       onTouchMove={e => e.stopPropagation()}
       onTouchEnd={e => e.stopPropagation()}
     >
-      <div className={`delete-modal-sheet${closing ? ' delete-modal-sheet--closing' : ''}`} onClick={e => e.stopPropagation()}>
-        <div className="delete-modal-handle" />
-        <span className="delete-modal-title">DELETE TRANSACTION?</span>
+      <div className={`modal-sheet${closing ? ' modal-sheet--closing' : ''}`} onClick={e => e.stopPropagation()}>
+        <div className="modal-handle" />
+        <span className="modal-title modal-title--center">DELETE TRANSACTION?</span>
 
-        <div className="delete-modal-rows">
-          <div className="delete-modal-row">
-            <span className="delete-modal-label">Account</span>
-            <span className="delete-modal-value">{accountDisplay}</span>
+        <div className="modal-rows">
+          <div className="modal-row">
+            <span className="modal-row-label">Account</span>
+            <span className="modal-row-value">{accountDisplay}</span>
           </div>
 
-          <div className="delete-modal-row">
-            <span className="delete-modal-label">Category</span>
-            <span className="delete-modal-value">{catName}{subName ? ` › ${subName}` : ''}</span>
+          <div className="modal-row">
+            <span className="modal-row-label">Category</span>
+            <span className="modal-row-value">{catName}{subName ? ` › ${subName}` : ''}</span>
           </div>
 
           {tx.note && (
-            <div className="delete-modal-row">
-              <span className="delete-modal-label">Note</span>
-              <span className="delete-modal-value">{tx.note}</span>
+            <div className="modal-row">
+              <span className="modal-row-label">Note</span>
+              <span className="modal-row-value">{tx.note}</span>
             </div>
           )}
 
-          <div className="delete-modal-row">
-            <span className="delete-modal-label">Date</span>
-            <span className="delete-modal-value">{date} · {time}</span>
+          <div className="modal-row">
+            <span className="modal-row-label">Date</span>
+            <span className="modal-row-value">{date} · {time}</span>
           </div>
 
-          <div className="delete-modal-row">
-            <span className="delete-modal-label">Amount</span>
-            <span className={`delete-modal-value delete-modal-amount delete-modal-amount--${typeLower}`}>
+          <div className="modal-row">
+            <span className="modal-row-label">Amount</span>
+            <span className={`modal-row-value modal-row-amount modal-row-amount--${typeLower}`}>
               {amountDisplay}
             </span>
           </div>
@@ -98,11 +98,11 @@ export function ConfirmDeleteModal({ tx, type, accounts, cards, catMap, onConfir
 
         <button
           type="button"
-          className={`delete-modal-btn delete-modal-btn--confirm${btnState === 'deleted' ? ' delete-modal-btn--deleted' : ''}`}
+          className={`modal-btn modal-btn--danger modal-btn--full${btnState === 'deleted' ? ' modal-btn--saved' : ''}`}
           onClick={handleDelete}
           disabled={busy}
         >
-          <span key={btnState} className="delete-modal-btn-content">
+          <span key={btnState} className="modal-btn-content">
             {btnState === 'deleting' && <Loader2 size={18} className="icon-spin" />}
             {btnState === 'deleted' && <Check size={18} />}
             {btnState === 'deleting' ? 'Deleting...' : btnState === 'deleted' ? 'Deleted' : 'Delete'}

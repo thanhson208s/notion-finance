@@ -19,7 +19,7 @@ type Props = {
 
 type BtnState = 'idle' | 'deleting' | 'deleted'
 
-export function ConfirmDeleteModal({ tx, type, accounts, cards, catMap, onConfirm, onCancel }: Props) {
+export function DeleteTxModal({ tx, type, accounts, cards, catMap, onConfirm, onCancel }: Props) {
   const [closing, setClosing] = useState(false)
   const [btnState, setBtnState] = useState<BtnState>('idle')
   const accountLabel = getAccountLabel(tx.fromAccountId ?? tx.toAccountId, tx.linkedCardId, accounts, cards)

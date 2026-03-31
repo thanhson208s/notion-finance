@@ -7,8 +7,8 @@ import { apiFetch, parseApiResponse } from '../lib/auth'
 import { toast } from 'sonner'
 import type { Card, CardWithSpending, Statement } from '../App'
 import { BadgePercent, CircleDollarSign, HandCoins, Info, List } from 'lucide-react'
-import { AddExpenseModal } from '../components/AddExpenseModal'
-import { AddStatementModal } from '../components/AddStatementModal'
+import { CardExpenseModal } from '../components/CardExpenseModal'
+import { CardStatementModal } from '../components/CardStatementModal'
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -414,7 +414,7 @@ export default function CardDetailPage() {
       )}
 
       {showAddExpense && card.linkedAccountId && (
-        <AddExpenseModal
+        <CardExpenseModal
           card={card}
           categories={categories}
           onClose={() => setShowAddExpense(false)}
@@ -437,7 +437,7 @@ export default function CardDetailPage() {
           lastCycleEnd = toInputDate(lastEnd.getTime())
         }
         return (
-          <AddStatementModal
+          <CardStatementModal
             cardId={card.id}
             defaultStartDate={lastCycleStart}
             defaultEndDate={lastCycleEnd}

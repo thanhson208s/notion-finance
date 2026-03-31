@@ -18,7 +18,7 @@ type Props = {
   onAdded: () => void
 }
 
-export function AddExpenseModal({ card, categories, onClose, onAdded }: Props) {
+export function CardExpenseModal({ card, categories, onClose, onAdded }: Props) {
   const [amount, setAmount] = useState(0)
   const [categoryId, setCategoryId] = useState('')
   const [note, setNote] = useState('')

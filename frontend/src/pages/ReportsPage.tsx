@@ -13,7 +13,7 @@ import { apiFetch, parseApiResponse } from '../lib/auth'
 import { toast } from 'sonner'
 import { useApp } from '../contexts/AppContext'
 import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'
-import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
+import { DeleteTxModal } from '../components/DeleteTxModal'
 import { EditTxModal } from '../components/EditTxModal'
 import { type Transaction, type TxType, fmtVND, fmtShort, getTxType, getDateParams } from '../App'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
@@ -700,7 +700,7 @@ export default function ReportsPage() {
       </div>
 
       {deleteTarget && (
-        <ConfirmDeleteModal
+        <DeleteTxModal
           tx={deleteTarget.tx}
           type={deleteTarget.type}
           accounts={accounts}

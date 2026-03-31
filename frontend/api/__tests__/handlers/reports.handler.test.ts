@@ -121,7 +121,7 @@ describe('getReports()', () => {
     const fetchAllTransactions = vi.fn().mockResolvedValue([])
     const connector = defaultConnector({ fetchAllTransactions })
     await getReports(makeEvent({ startDate: '2026-01-01', endDate: '2026-03-31' }), connector)
-    expect(fetchAllTransactions).toHaveBeenCalledWith('2026-01-01T00:00:00', '2026-03-31T23:59:59')
+    expect(fetchAllTransactions).toHaveBeenCalledWith('2026-01-01T00:00:00+07:00', '2026-03-31T23:59:59+07:00')
   })
 
   it('includes expense categories with no transactions as amount 0', async () => {

@@ -137,8 +137,12 @@
   line-height: 1.1;
 }
 
+.reports-summary-amount--pos {
+  color: #10b981;
+}
+
 .reports-summary-amount--neg {
-  color: var(--red);
+  color: #ef4444;
 }
 
 .reports-summary-sub {

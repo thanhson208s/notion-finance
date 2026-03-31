@@ -28,7 +28,7 @@ type Props = {
   onAdded: (stmt: Statement) => void
 }
 
-export function AddStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, onAdded }: Props) {
+export function CardStatementModal({ cardId, defaultStartDate, defaultEndDate, onClose, onAdded }: Props) {
   const [startDate, setStartDate] = useState(() => {
     if (defaultStartDate) return defaultStartDate
     const d = new Date()

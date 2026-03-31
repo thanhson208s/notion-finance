@@ -505,7 +505,7 @@ export default function ReportsPage() {
               {/* Summary card */}
               <div className="reports-summary">
                 <div className="reports-summary-label">NET SAVINGS</div>
-                <div className={`reports-summary-amount${(data?.netSavings ?? 0) < 0 ? ' reports-summary-amount--neg' : ''}`}>
+                <div className={`reports-summary-amount${(data?.netSavings ?? 0) < 0 ? ' reports-summary-amount--neg' : ((data?.netSavings ?? 0) > 0 ? ' reports-summary-amount--pos' : '')}`}>
                   {fmtVND(data?.netSavings ?? 0)}
                 </div>
                 <div className="reports-summary-sub">

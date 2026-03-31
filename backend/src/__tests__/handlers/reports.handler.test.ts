@@ -121,7 +121,7 @@ describe('getReports()', () => {
     const fetchAllTransactions = vi.fn().mockResolvedValue([])
     const connector = defaultConnector({ fetchAllTransactions })
     await getReports(makeEvent({ startDate: '2026-01-01', endDate: '2026-03-31' }), connector)
-    expect(fetchAllTransactions).toHaveBeenCalledWith('2026-01-01T00:00:00+07:00', '2026-03-31T23:59:59+07:00')
+    expect(fetchAllTransactions).toHaveBeenCalledWith('2026-01-01T00:00:00', '2026-03-31T23:59:59')
   })
 
   it('uses categoryId as fallback name when category not found in map', async () => {

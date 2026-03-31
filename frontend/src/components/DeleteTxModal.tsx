@@ -1,4 +1,4 @@
-import './ConfirmDeleteModal.css'
+import './DeleteTxModal.css'
 import { useState, useCallback } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import type { Account, Card, Category } from '../App'
@@ -19,7 +19,7 @@ type Props = {
 
 type BtnState = 'idle' | 'deleting' | 'deleted'
 
-export function ConfirmDeleteModal({ tx, type, accounts, cards, catMap, onConfirm, onCancel }: Props) {
+export function DeleteTxModal({ tx, type, accounts, cards, catMap, onConfirm, onCancel }: Props) {
   const [closing, setClosing] = useState(false)
   const [btnState, setBtnState] = useState<BtnState>('idle')
   const accountLabel = getAccountLabel(tx.fromAccountId ?? tx.toAccountId, tx.linkedCardId, accounts, cards)

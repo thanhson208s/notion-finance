@@ -13,7 +13,7 @@ import { apiFetch, parseApiResponse } from '../lib/auth'
 import { toast } from 'sonner'
 import { useApp } from '../contexts/AppContext'
 import { TxItem, AdjustmentTxItem, TransferTxItem } from '../components/TxItems'
-import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
+import { DeleteTxModal } from '../components/DeleteTxModal'
 import { EditTxModal } from '../components/EditTxModal'
 import { type Transaction, type TxType, fmtVND, fmtShort, getTxType, getDateParams } from '../App'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
@@ -505,7 +505,7 @@ export default function ReportsPage() {
               {/* Summary card */}
               <div className="reports-summary">
                 <div className="reports-summary-label">NET SAVINGS</div>
-                <div className={`reports-summary-amount${(data?.netSavings ?? 0) < 0 ? ' reports-summary-amount--neg' : ''}`}>
+                <div className={`reports-summary-amount${(data?.netSavings ?? 0) < 0 ? ' reports-summary-amount--neg' : ((data?.netSavings ?? 0) > 0 ? ' reports-summary-amount--pos' : '')}`}>
                   {fmtVND(data?.netSavings ?? 0)}
                 </div>
                 <div className="reports-summary-sub">
@@ -700,7 +700,7 @@ export default function ReportsPage() {
       </div>
 
       {deleteTarget && (
-        <ConfirmDeleteModal
+        <DeleteTxModal
           tx={deleteTarget.tx}
           type={deleteTarget.type}
           accounts={accounts}

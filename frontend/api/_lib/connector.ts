@@ -5,7 +5,7 @@ import { Transaction } from "./types/transaction.type";
 import { Card } from "./types/card.type";
 import { Promotion, PromotionCategory, PromotionType } from "./types/promotion.type";
 import { Statement } from "./types/statement.type";
-import { AddPromotionRequest, AddStatementRequest } from "./types/request";
+import { AddPromotionRequest, AddStatementRequest, UpdatePromotionRequest } from "./types/request";
 import { Snapshot } from "./types/snapshot.type";
 import { Archive } from "./types/archive.type";
 import { DatabaseError, SchemaError } from "./types/error";
@@ -103,6 +103,25 @@ export class Connector {
     if (!("properties" in response))
       throw new DatabaseError(`Promotion not created`);
     return this.mapPageToPromotion(response);
+  }
+
+  async updatePromotion(id: string, data: UpdatePromotionRequest): Promise<Promotion> {
+    const response = await this.notion.pages.update({
+      page_id: id,
+      properties: {
+        "Name": { type: "title", title: [{ type: "text", text: { content: data.name } }] },
+        "Card": { type: "relation", relation: data.cardId ? [{ id: data.cardId }] : [] },
+        "Category": data.category ? { type: "select", select: { name: data.category } } : { type: "select", select: null },
+        "Type": { type: "select", select: { name: data.type } },
+        "Expiry Date": data.expiresAt
+          ? { type: "date", date: { start: new Date(data.expiresAt).toISOString().split('T')[0]! } }
+          : { type: "date", date: null },
+        "Link": { type: "url", url: data.link ?? null }
+      }
+    });
+    if (!("properties" in response))
+      throw new DatabaseError(`Promotion ${id} not updated`);
+    return this.mapPageToPromotion(response as PageObjectResponse);
   }
 
   async deletePromotion(id: string): Promise<void> {

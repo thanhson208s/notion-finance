@@ -30,6 +30,10 @@ export function createMockConnector(overrides = {}): Connector {
     setArchiveTransactionsDb: vi.fn(),
     addTransactionToArchiveDb: vi.fn(),
     updateArchiveStats: vi.fn(),
+    fetchPromotions: vi.fn(),
+    addPromotion: vi.fn(),
+    updatePromotion: vi.fn(),
+    deletePromotion: vi.fn(),
     ...overrides
   } as unknown as Connector
 }

@@ -126,6 +126,8 @@ export type GetPromotionsResponse = {
 
 export type AddPromotionResponse = Promotion
 
+export type UpdatePromotionResponse = Promotion
+
 export type GetStatementsResponse = {
   statements: Statement[]
 }

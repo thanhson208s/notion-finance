@@ -142,18 +142,28 @@ export function EditTxModal({ tx, type, accounts, cards, categories, onSave, onC
           </div>
         </div>
 
-        <button
-          type="button"
-          className={`modal-btn modal-btn--submit modal-btn--full${btnState === 'saved' ? ' modal-btn--saved' : ''}`}
-          onClick={handleSave}
-          disabled={busy || !dirty}
-        >
-          <span key={btnState} className="modal-btn-content">
-            {btnState === 'saving' && <Loader2 size={18} className="icon-spin" />}
-            {btnState === 'saved' && <Check size={18} />}
-            {btnState === 'saving' ? 'Saving...' : btnState === 'saved' ? 'Saved' : 'Save Changes'}
-          </span>
-        </button>
+        <div className="modal-actions">
+          <button
+            type="button"
+            className="modal-btn modal-btn--cancel"
+            onClick={() => { if (!busy) dismiss(onCancel) }}
+            disabled={busy}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={`modal-btn modal-btn--submit${btnState === 'saved' ? ' modal-btn--saved' : ''}`}
+            onClick={handleSave}
+            disabled={busy || !dirty}
+          >
+            <span key={btnState} className="modal-btn-content">
+              {btnState === 'saving' && <Loader2 size={18} className="icon-spin" />}
+              {btnState === 'saved' && <Check size={18} />}
+              {btnState === 'saving' ? 'Saving...' : btnState === 'saved' ? 'Saved' : 'Save Changes'}
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   )

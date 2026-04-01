@@ -42,14 +42,31 @@ describe('runSnapshot()', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(new Response('{"ok":true,"result":{}}', { status: 200 }))
   })
 
-  it('skips account with no prior snapshot', async () => {
+  it('skips account with no prior snapshot and zero balance', async () => {
     const connector = createMockConnector({
-      fetchAllAccounts: vi.fn().mockResolvedValue([makeAccount(1000)]),
+      fetchAllAccounts: vi.fn().mockResolvedValue([makeAccount(0)]),
       fetchLatestSnapshotForAccount: vi.fn().mockResolvedValue(null),
     })
     const result = await runSnapshot(connector, FIRST_OF_MONTH)
     expect(result.results[0]).toMatchObject({ status: 'no_prior_snapshot' })
     expect(connector.createSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('bootstraps snapshot from current balance when no prior snapshot and balance !== 0', async () => {
+    const snap = { id: 'snap-boot', name: 'Cash-01-02-2026', accountId: 'acc-1', date: Date.now(), balance: 1000 }
+    const connector = createMockConnector({
+      fetchAllAccounts: vi.fn().mockResolvedValue([makeAccount(1000)]),
+      fetchLatestSnapshotForAccount: vi.fn().mockResolvedValue(null),
+      createSnapshot: vi.fn().mockResolvedValue(snap),
+    })
+    const result = await runSnapshot(connector, FIRST_OF_MONTH)
+    expect(connector.createSnapshot).toHaveBeenCalledWith('acc-1', 'Cash', 1000, expect.any(Number))
+    expect(result.results[0]).toMatchObject({
+      status: 'created',
+      calculatedBalance: 1000,
+      actualBalance: 1000,
+      mismatch: false
+    })
   })
 
   it('skips account with no transactions since last snapshot', async () => {

@@ -13,6 +13,10 @@ async function sendTelegramMessage(text: string): Promise<void> {
   });
 }
 
+function fmtVND(amount: number): string {
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+}
+
 function buildReport(label: string, results: SnapshotResult[]): string {
   const lines: string[] = [`[Snapshot ${label}] Run complete`];
 
@@ -21,9 +25,9 @@ function buildReport(label: string, results: SnapshotResult[]): string {
     lines.push(`\nCreated (${created.length}):`);
     for (const r of created) {
       if (r.mismatch) {
-        lines.push(`  ${r.accountName}: calculated=${r.calculatedBalance}, actual=${r.actualBalance} [MISMATCH]`);
+        lines.push(`  ${r.accountName}: calculated=${fmtVND(r.calculatedBalance!)}, actual=${fmtVND(r.actualBalance!)} [MISMATCH]`);
       } else {
-        lines.push(`  ${r.accountName}: ${r.calculatedBalance}`);
+        lines.push(`  ${r.accountName}: ${fmtVND(r.calculatedBalance!)}`);
       }
     }
   }
@@ -63,7 +67,20 @@ export async function runSnapshot(connector: Connector, now = new Date()): Promi
   for (const account of accounts) {
     const latest = await connector.fetchLatestSnapshotForAccount(account.id);
     if (!latest) {
-      results.push({ accountId: account.id, accountName: account.name, status: 'no_prior_snapshot' });
+      if (account.balance !== 0) {
+        const snapshot = await connector.createSnapshot(account.id, account.name, account.balance, snapshotDateMs);
+        results.push({
+          accountId: account.id,
+          accountName: account.name,
+          status: 'created',
+          snapshotId: snapshot.id,
+          calculatedBalance: account.balance,
+          actualBalance: account.balance,
+          mismatch: false
+        });
+      } else {
+        results.push({ accountId: account.id, accountName: account.name, status: 'no_prior_snapshot' });
+      }
       continue;
     }
 

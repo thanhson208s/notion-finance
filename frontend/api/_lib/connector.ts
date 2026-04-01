@@ -595,7 +595,7 @@ export class Connector {
         },
         "Date": {
           type: "date",
-          date: { start: dateISO }
+          date: { start: `${year}-${month}-${day}` }
         },
         "Balance": {
           type: "number",

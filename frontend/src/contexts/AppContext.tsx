@@ -38,6 +38,7 @@ type AppState = {
   refetchCards: () => void
   addPromotion: (p: Promotion) => void
   removePromotion: (id: string) => void
+  updatePromotion: (p: Promotion) => void
 }
 
 const AppContext = createContext<AppState | null>(null)
@@ -188,6 +189,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const refetchCards = useCallback(() => fetchCards(), [fetchCards])
   const addPromotion = useCallback((p: Promotion) => setPromotions(prev => [p, ...prev]), [])
   const removePromotion = useCallback((id: string) => setPromotions(prev => prev.filter(p => p.id !== id)), [])
+  const updatePromotion = useCallback((p: Promotion) => setPromotions(prev => prev.map(x => x.id === p.id ? p : x)), [])
 
   const refetchReports = useCallback((forced: boolean, reset: boolean, dateRange?: DateRangePreset, customStart?: string, customEnd?: string) => {
     if (dateRange) setDateRange(dateRange);
@@ -218,7 +220,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [fetchReports])
 
   return (
-    <AppContext.Provider value={{ accounts, totals, accountsLoading, categories, categoriesLoading, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, cards, cardsLoading, promotions, promotionsLoading, updateAccount, addAccount, refetchAccounts, refetchReports, refetchCards, addPromotion, removePromotion }}>
+    <AppContext.Provider value={{ accounts, totals, accountsLoading, categories, categoriesLoading, reports, thisMonthLoading, lastMonthLoading, customRangeLoading, dateRange, customStart, customEnd, cards, cardsLoading, promotions, promotionsLoading, updateAccount, addAccount, refetchAccounts, refetchReports, refetchCards, addPromotion, removePromotion, updatePromotion }}>
       {children}
     </AppContext.Provider>
   )

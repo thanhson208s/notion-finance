@@ -3,11 +3,12 @@ import { useState, useRef, useEffect } from 'react'
 import { useApp } from '../contexts/AppContext'
 import { API_BASE } from '../App'
 import { apiFetch, parseApiResponse } from '../lib/auth'
-import { toast } from 'sonner'
 import { SwipeableRow } from '../components/SwipeableRow'
 import type { Promotion, PromotionCategory, PromotionType } from '../App'
 import { Plane, Utensils, ShoppingBag, Tv, Smartphone, Tag, Plus } from 'lucide-react'
 import { AddPromotionModal } from '../components/AddPromotionModal'
+import { EditPromotionModal } from '../components/EditPromotionModal'
+import { DeletePromotionModal } from '../components/DeletePromotionModal'
 
 const PROMO_CATEGORIES: PromotionCategory[] = ['Shopping', 'F&B', 'Travel', 'Entertain', 'Digital']
 
@@ -90,22 +91,20 @@ function PromotionItem({ promotion, cardName, now }: {
 }
 
 export default function PromotionsPage() {
-  const { cards, promotions, promotionsLoading, addPromotion, removePromotion } = useApp()
+  const { cards, promotions, promotionsLoading, addPromotion, removePromotion, updatePromotion } = useApp()
   const [typeFilter, setTypeFilter] = useState<'all' | PromotionType>('all')
   const [cardFilter, setCardFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<PromotionCategory | 'all'>('all')
   const [showExpired, setShowExpired] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
+  const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null)
+  const [deletingPromotion, setDeletingPromotion] = useState<Promotion | null>(null)
   const [now] = useState(Date.now)
 
   const handleDelete = async (id: string) => {
-    try {
-      const res = await apiFetch(`${API_BASE}/promotions?id=${id}`, { method: 'DELETE' })
-      await parseApiResponse(res, 'Failed to delete promotion')
-      removePromotion(id)
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Something went wrong')
-    }
+    const res = await apiFetch(`${API_BASE}/promotions?id=${id}`, { method: 'DELETE' })
+    await parseApiResponse(res, 'Failed to delete promotion')
+    removePromotion(id)
   }
 
   const filtered = promotions.filter(p => {
@@ -174,7 +173,7 @@ export default function PromotionsPage() {
       ) : (
         <div className="promos-list">
           {filtered.map(p => (
-            <SwipeableRow key={p.id} onDelete={() => handleDelete(p.id)}>
+            <SwipeableRow key={p.id} onEdit={() => setEditingPromotion(p)} onDelete={() => setDeletingPromotion(p)}>
               <PromotionItem
                 promotion={p}
                 cardName={p.cardId ? cardMap.get(p.cardId) : undefined}
@@ -196,6 +195,27 @@ export default function PromotionsPage() {
             addPromotion(p)
             setShowAdd(false)
           }}
+        />
+      )}
+
+      {editingPromotion && (
+        <EditPromotionModal
+          promotion={editingPromotion}
+          cards={cards.map(c => ({ id: c.id, name: c.name }))}
+          onClose={() => setEditingPromotion(null)}
+          onSaved={(p) => {
+            updatePromotion(p)
+            setEditingPromotion(null)
+          }}
+        />
+      )}
+
+      {deletingPromotion && (
+        <DeletePromotionModal
+          promotion={deletingPromotion}
+          cardName={deletingPromotion.cardId ? cardMap.get(deletingPromotion.cardId) : undefined}
+          onConfirm={() => handleDelete(deletingPromotion.id)}
+          onCancel={() => setDeletingPromotion(null)}
         />
       )}
 

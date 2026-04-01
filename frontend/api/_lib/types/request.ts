@@ -54,6 +54,15 @@ export type AddPromotionRequest = {
   link?: string
 }
 
+export type UpdatePromotionRequest = {
+  name: string
+  cardId?: string
+  category?: 'Shopping' | 'F&B' | 'Travel' | 'Entertain' | 'Digital'
+  type: 'Cashback' | 'Discount'
+  expiresAt?: number
+  link?: string
+}
+
 export type AddStatementRequest = {
   cardId: string
   startDate: number

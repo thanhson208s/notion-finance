@@ -1,11 +1,15 @@
 .promos-page {
-  overflow-y: auto;
   padding-bottom: 8px;
 }
 
 /* ---------- FILTERS ---------- */
 
 .promos-filters {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,6 +17,8 @@
   gap: 8px;
   padding: 12px 16px;
   padding-top: calc(12px + env(safe-area-inset-top));
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
 }
 
 .promo-filter-pill {

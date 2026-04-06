@@ -17,8 +17,10 @@ The backend only queries and updates records — it never creates or modifies sc
 | `Name` | Title | `string` | Display name of the account |
 | `Balance` | Number | `number` | Current balance in VND |
 | `Type` | Select | `AccountType` | See enum below |
+| `Active` | Checkbox | `boolean` | `false` for deactivated accounts |
+| `Note` | Rich text | `string` | Optional free-text note; `""` if not set |
 | `Linked cards` | Relation | `string[]` | Relation to Card database — all linked card IDs returned in `GET /api/accounts` |
-| `Total Transactions` | Number | `number \| null` | Count of expense/income transactions; incremented by `POST /expense` and `POST /income`. Null for unused accounts. |
+| `Total Transactions` | Number | `number \| null` | Count of expense/income transactions; incremented by `POST /transactions?type=expense` and `POST /transactions?type=income`. Null for unused accounts. |
 | `Last Transaction Date` | Date | `number \| null` (epoch ms) | Date of the most recent expense/income; set to request `timestamp` on each write. Null for unused accounts. |
 
 > **Note**: `Total Transactions` and `Last Transaction Date` are used to compute `priorityScore` in `GET /api/accounts`. They are **not** updated by transfers or adjustments.
@@ -75,7 +77,9 @@ These are Category **page IDs** (not database IDs) that must be created in the C
 | `ToAccount` | Relation | `string \| null` | Relation to Account DB; set for income/transfer |
 | `Category` | Relation | `string` | Relation to Category DB; required |
 | `Note` | Rich Text | `string` | User-provided description |
-| `Linked card` | Relation | `string \| null` | Relation to Card DB; written to Notion when `linkedCardId` provided in request (~~🐛 BUG #2~~ resolved in v1.3.0) |
+| `Linked card` | Relation | `string \| null` | Relation to Card DB; written to Notion when `linkedCardId` provided in request |
+| `Cashback` | Number | `number \| null` | Cashback earned on this transaction (credit card rewards) |
+| `Discount` | Number | `number \| null` | Discount applied on this transaction |
 
 > **Note**: The property key is `"Linked card"` — with a space and lowercase `c`.
 
@@ -98,12 +102,19 @@ These are Category **page IDs** (not database IDs) that must be created in the C
 | Notion Property | Notion Type | TypeScript Type | Notes |
 |---|---|---|---|
 | `Name` | Title | `string` | Card display name |
-| `Number` | Rich text | `string` | Masked card number: first 6 digits + `*****` + last 4 digits (e.g. `415231*****9999`). Empty string if not set. |
-| `annualFee` | Number | `number \| null` | Annual fee in VND |
-| `linkedAccount` | Relation | `string \| null` | Relation to Account DB |
-| `Image` | URL | `string \| null` | Vercel Blob public URL of the card image |
+| `Number` | Rich text | `string` | Masked card number (e.g. `415231*****9999`). `""` if not set. |
+| `Image` | Files | `string` | Vercel Blob public URL of the card image. `""` if not set. |
+| `Annual Fee` | Number | `number \| null` | Annual fee in VND |
+| `Spending Limit` | Number | `number \| null` | Credit limit in VND |
+| `Required Spending` | Number | `number \| null` | Minimum spend required to unlock benefits |
+| `Last Charged Date` | Date | `number \| null` | Epoch ms of last annual fee charge |
+| `Billing Day` | Number | `number \| null` | Day of month the billing cycle resets (1–31). `null` for debit cards. |
+| `Linked Account` | Relation | `string \| null` | Relation to Account DB |
+| `Linked Services` | Multi-select | `string[]` | Services linked to this card (e.g. streaming, travel) |
+| `Cashback Cap` | Number | `number \| null` | Maximum cashback per billing cycle in VND |
+| `Network` | Select | `string \| null` | Card network (e.g. `Visa`, `Mastercard`) |
 
-**Status**: Card data is fetched and embedded in `GET /api/accounts` response (as `cards[]` per account).
+**Status**: Served via `GET /api/cards`.
 See [feature-cards.md](./feature-cards.md).
 
 ---
@@ -150,3 +161,38 @@ Each page in this database represents one calendar month of archived transaction
 > **Idempotency**: `fetchArchive(month, year)` checks for an existing archive page before creating a new one — re-running the cron safely re-uses existing pages.
 
 See [feature-archive.md](./feature-archive.md).
+
+---
+
+## 7. Promotion Database
+
+**ENV**: `NOTION_PROMOTION_DATABASE_ID`
+
+| Notion Property | Notion Type | TypeScript Type | Notes |
+|---|---|---|---|
+| `Name` | Title | `string` | Promotion display name |
+| `Card` | Relation | `string \| null` | Relation to Card DB (single); `null` for card-agnostic promotions |
+| `Category` | Select | `PromotionCategory \| null` | `Shopping \| F&B \| Travel \| Entertain \| Digital` |
+| `Type` | Select | `PromotionType` | `Cashback \| Discount` (required) |
+| `Expiry Date` | Date | `number \| null` | Epoch ms of promotion expiry |
+| `Link` | URL | `string \| null` | Source link or T&C URL |
+
+---
+
+## 8. Statement Database
+
+**ENV**: `NOTION_STATEMENT_DATABASE_ID`
+
+Each record represents a billing statement for a card, with spending totals computed at creation time from transactions in the given date range.
+
+| Notion Property | Notion Type | TypeScript Type | Notes |
+|---|---|---|---|
+| `Name` | Title | `string` | Auto-generated: `stmt-{cardId}-{startDate}-{endDate}` |
+| `Card` | Relation | `string` | Relation to Card DB (required) |
+| `Start Date` | Date | `number` (epoch ms) | Statement period start; stored as `YYYY-MM-DDT00:00:00+07:00` |
+| `End Date` | Date | `number` (epoch ms) | Statement period end; stored as `YYYY-MM-DDT23:59:59+07:00` |
+| `Spending` | Number | `number` | Sum of expense amounts linked to this card in the period |
+| `Cashback` | Number | `number` | Sum of cashback from linked transactions in the period |
+| `Discount` | Number | `number` | Sum of discounts from linked transactions in the period |
+
+> **Computed at creation**: `Spending`, `Cashback`, and `Discount` are calculated server-side from the Transaction DB at `POST /api/statements` time — they are not live-computed values.

@@ -7,7 +7,7 @@
 - Node.js 20.x
 - npm
 - Vercel CLI (`npm install -g vercel`)
-- A Notion integration token with access to the four databases
+- A Notion integration token with access to all databases
 
 ---
 
@@ -22,13 +22,19 @@ In production, all variables are set in the Vercel project settings dashboard.
 | `NOTION_ACCOUNT_DATABASE_ID` | DB ID | ID of the Account Notion database |
 | `NOTION_TRANSACTION_DATABASE_ID` | DB ID | ID of the Transaction Notion database |
 | `NOTION_CATEGORY_DATABASE_ID` | DB ID | ID of the Category Notion database |
+| `NOTION_CARD_DATABASE_ID` | DB ID | ID of the Card Notion database |
+| `NOTION_SNAPSHOT_DATABASE_ID` | DB ID | ID of the Snapshot Notion database |
+| `NOTION_ARCHIVE_DATABASE_ID` | DB ID | ID of the Archive Notion database (one page per calendar month) |
+| `NOTION_PROMOTION_DATABASE_ID` | DB ID | ID of the Promotion Notion database |
+| `NOTION_STATEMENT_DATABASE_ID` | DB ID | ID of the Statement Notion database |
 | `NOTION_TRANSFER_TRANSACTION_ID` | Page ID | Page ID of the "Transfer" category in the Category DB |
 | `NOTION_ADJUSTMENT_TRANSACTION_ID` | Page ID | Page ID of the "Adjustment" category in the Category DB |
+| `APP_SECRET` | Secret | Password for `POST /api/auth` — generate with `openssl rand -hex 32` |
+| `JWT_SECRET` | Secret | Secret used to sign/verify JWT tokens — generate with `openssl rand -hex 32` |
+| `CF_SECRET` | Secret | Secret injected by Cloudflare on every proxied request; validated in middleware |
+| `CRON_SECRET` | Secret | Secret used to authenticate Vercel cron requests — generate with `openssl rand -hex 32` |
 | `VITE_API_BASE` | URL | API base URL — `/api` in production, `http://localhost:3000/api` for local dev |
-| `NOTION_SNAPSHOT_DATABASE_ID` | DB ID | ID of the Account Snapshot Notion database |
-| `NOTION_ARCHIVE_DATABASE_ID` | DB ID | ID of the Archive Notion database (one page per calendar month) |
-| `CRON_SECRET` | Secret | Random secret used to authenticate Vercel cron requests — generate with `openssl rand -hex 32` |
-| `TELEGRAM_BOT_TOKEN` | Secret | Telegram bot token for sending run reports and alerts |
+| `TELEGRAM_BOT_TOKEN` | Secret | Telegram bot token for sending cron run reports |
 | `TELEGRAM_CHAT_ID` | String | Telegram chat/group ID to send reports to |
 | `TELEGRAM_TOPIC_ID` | Number | Telegram forum topic ID (thread); set to `0` if not using topics |
 
@@ -92,12 +98,15 @@ The archive cron runs daily at 00:00 UTC and archives any transactions older tha
    ```typescript
    import type { VercelRequest, VercelResponse } from '@vercel/node';
    import { yourHandler } from './_handlers/[domain].handler';
+   import { Connector } from './_lib/connector';
    import { handleError } from './_lib/error-handler';
 
    export default async function handler(req: VercelRequest, res: VercelResponse) {
+     const connector = new Connector();
+     const query = req.query as Record<string, string>;
      try {
-       const result = await yourHandler(req);
-       res.json(result);
+       const result = await yourHandler({ method: req.method ?? 'GET', path: req.url ?? '', query, body: req.body }, connector);
+       return res.status(result.statusCode).json(result.body);
      } catch (e) {
        handleError(e, res);
      }
@@ -121,11 +130,15 @@ Never call the Notion SDK directly from handler files.
 | Method | Notion type | Returns |
 |---|---|---|
 | `getTitleProperty(page, key)` | Title | `string` |
-| `getNumberProperty(page, key, required?)` | Number | `number \| null` |
-| `getSelectProperty(page, key, required?)` | Select | `string \| null` |
-| `getTextProperty(page, key, required?)` | Rich Text | `string \| null` |
-| `getRelationProperty(page, key, required?)` | Relation | `string \| null` |
-| `getDateProperty(page, key, required?)` | Date | `number \| null` (epoch ms) |
+| `getNumberProperty(page, key, required)` | Number | `number \| null` |
+| `getSelectProperty(page, key, required)` | Select | `string \| null` |
+| `getTextProperty(page, key, required)` | Rich Text | `string \| null` |
+| `getRelationProperty(page, key, required)` | Relation (single) | `string \| null` |
+| `getRelationsProperty(page, key)` | Relation (multi) | `string[]` |
+| `getDateProperty(page, key, required)` | Date | `number \| null` (epoch ms) |
+| `getCheckboxProperty(page, key)` | Checkbox | `boolean` |
+| `getMultiSelectProperty(page, key)` | Multi-select | `string[]` |
+| `getFileProperty(page, key, required)` | Files & media | `string \| null` (first file URL) |
 
 ---
 
@@ -144,7 +157,7 @@ Handlers return `ok(data)` on success or throw a typed error. All error mapping 
 
 ## Code Conventions
 
-- **Handler signature**: `async (req: VercelRequest): Promise<ResType>` — matches `RouteHandler<Res>` generic
+- **Handler signature**: `RouteHandler<Req, Res>` — `async (event: { method, path, query, body: Req }, connector: Connector): Promise<{ statusCode, body: Res }>`
 - **Response**: always `return ok(data satisfies ResponseType)` — use `satisfies` to enforce shape
 - **Timezone**: always use `Asia/Bangkok` for all timestamp formatting via `toISOStringWithTimezone(ms, tz)` in `api/_lib/connector.ts`
 - **Transaction ID format**: `${categoryId}-${Date.now()}-${amount}` (generated in `addTransaction()`)
@@ -158,7 +171,7 @@ Per `CLAUDE.md` Standard AI Workflow:
 
 ```bash
 npm run lint    # ESLint
-npm run test    # Vitest (88 tests)
+npm run test    # Vitest (141 tests)
 npm run build   # tsc -b && vite build
 ```
 

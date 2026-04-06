@@ -1,7 +1,6 @@
 # Notion Finance — Documentation Index
 
 Personal finance management webapp using Notion as the database layer.
-Architecture: CloudFront → AWS Lambda (TypeScript) ↔ Notion API, with a React frontend on Vercel.
 
 ---
 
@@ -48,21 +47,9 @@ Architecture: CloudFront → AWS Lambda (TypeScript) ↔ Notion API, with a Reac
 | List expenses by date range | ✅ DONE | ✅ DONE |
 | List incomes by date range | ✅ DONE | ✅ DONE |
 | Reports (GET /api/reports) | ✅ DONE | ✅ DONE |
-| Cards management | ❌ TODO | ⚠️ STUB |
+| Cards management | ✅ TODO | ✅ STUB |
+| Vouchers / promotions | ✅ TODO | ✅ STUB |
 | Budget management | ❌ TODO | ❌ TODO |
-| Vouchers / promotions | ❌ TODO | ⚠️ STUB |
-| Pagination (list endpoints) | ✅ DONE | ❌ TODO |
+| Pagination (list endpoints) | ❌ DONE | ❌ TODO |
 | Monthly balance snapshots (cron) | ✅ DONE | N/A |
 | Transaction archive (cron) | ✅ DONE | N/A |
-
----
-
-## Source of Truth Priority
-
-Per `CLAUDE.md`:
-
-1. `REQUIREMENTS.md` — high-level business requirements
-2. `./docs/feature-*.md` — detailed feature specifications (this folder)
-3. `src/` — implementation
-
-When conflicts exist between these levels, follow the higher-priority document and document the conflict in `known-issues.md`.

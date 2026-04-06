@@ -6,7 +6,14 @@
 Browser
   │
   ▼
-Vercel (finance.gootube.online)
+Cloudflare (finance.gootube.online)
+  ├── WAF Managed Rules  — OWASP & CF ruleset
+  ├── Bot Management     — block malicious bots
+  └── Proxy
+        │
+        │  (injects x-cf-secret header)
+        ▼
+Vercel (blocks requests without x-cf-secret)
   ├── /api/*  ──► Node.js Serverless Functions (api/*.ts)
   │                        │
   │                        ▼
@@ -19,6 +26,14 @@ Vercel (finance.gootube.online)
 
 ## Infrastructure Components
 
+### Cloudflare
+
+- **Role**: Reverse proxy and security layer in front of Vercel
+- **DNS**: `finance.gootube.online` is proxied through Cloudflare (orange cloud)
+- **WAF**: Managed rules enabled — Cloudflare OWASP Core Ruleset + Cloudflare Managed Ruleset
+- **Bot Management**: Bot Fight Mode enabled to block automated/malicious traffic
+- **Origin protection**: Cloudflare injects a secret header (`x-cloudflare-secret`) on every proxied request. Vercel middleware rejects any request missing this header with HTTP 403, preventing direct access to the Vercel deployment URL.
+
 ### Vercel Deployment
 
 - **Domain**: `finance.gootube.online`
@@ -30,7 +45,7 @@ Vercel (finance.gootube.online)
 ### Notion API
 
 - Acts as the sole database layer — no separate SQL/NoSQL database
-- All 4 tables were created manually in the Notion UI
+- All 8 tables were created manually in the Notion UI
 - The backend only queries and updates pages; it never creates or drops schema
 - SDK: `@notionhq/client` (Notion Data Sources API for queries, Pages API for mutations)
 
@@ -39,13 +54,18 @@ Vercel (finance.gootube.online)
 ## Request Lifecycle
 
 1. Browser sends a request to `https://finance.gootube.online`
-2. Vercel evaluates the path:
+2. Cloudflare receives the request, applies WAF and bot rules, injects `x-cf-secret` header, and proxies to Vercel
+3. Vercel middleware runs on all `/api/*` requests:
+   - `/api/auth` and `/api/cron/*` are bypassed (no auth required)
+   - All other requests: validates `x-cloudflare-secret` header — returns HTTP 403 if missing or invalid
+   - Then validates `Authorization: Bearer <JWT>` — returns HTTP 401 if missing or invalid
+4. Vercel evaluates the path:
    - `/api/*` → routes to the matching Node.js serverless function in `api/*.ts`
    - otherwise → serves the React frontend (Vite build)
-3. The serverless function receives `(req: VercelRequest, res: VercelResponse)`
-4. The handler calls `Connector` methods (Notion SDK wrapper)
-5. On success the handler writes the response via `res.json(data)`
-6. On error the handler calls `handleError(e, res)` which maps the error to an HTTP status
+5. The serverless function receives `(req: VercelRequest, res: VercelResponse)`
+6. The handler calls `Connector` methods (Notion SDK wrapper)
+7. On success the handler writes the response via `res.json(data)`
+8. On error the handler calls `handleError(e, res)` which maps the error to an HTTP status
 
 ---
 
@@ -53,21 +73,34 @@ Vercel (finance.gootube.online)
 
 ```
 api/
-├── accounts.ts          GET /api/accounts
-├── adjustment.ts        POST /api/adjustment
+├── accounts.ts          GET /api/accounts, POST /api/accounts?action=...
+├── auth.ts              POST /api/auth
+├── cards.ts             GET /api/cards, GET /api/cards?id=
 ├── categories.ts        GET /api/categories
-├── expense.ts           GET /api/expense, POST /api/expense
-├── income.ts            GET /api/income, POST /api/income
-├── transfer.ts          POST /api/transfer
+├── promotions.ts        GET/POST/PATCH/DELETE /api/promotions
 ├── reports.ts           GET /api/reports
-├── _handlers/           Business logic (account, category, transaction, reports)
+├── statements.ts        GET/POST/DELETE /api/statements
+├── transactions.ts      GET/POST/PATCH/DELETE /api/transactions
+├── cron/
+│   ├── snapshot.ts      GET /api/cron/snapshot
+│   └── archive.ts       GET /api/cron/archive
+├── _handlers/           Business logic per domain
+│   ├── account.handler.ts
+│   ├── card.handler.ts
+│   ├── category.handler.ts
+│   ├── promotion.handler.ts
+│   ├── reports.handler.ts
+│   ├── snapshot.handler.ts
+│   ├── archive.handler.ts
+│   ├── statement.handler.ts
+│   └── transaction.handler.ts
 ├── _lib/                Shared utilities
 │   ├── connector.ts     Notion SDK wrapper — all DB read/write operations
 │   ├── error-handler.ts handleError(e, res: VercelResponse)
 │   ├── helper.ts        ok(), err(), getQueryString(), getQueryInt(), etc.
 │   ├── router.ts        RouteHandler type definition
-│   └── types/           Type definitions (account, category, transaction, request, response, error, common)
-└── __tests__/           Vitest tests (88 tests)
+│   └── types/           Type definitions (account, card, category, transaction, promotion, statement, request, response, error, common)
+└── __tests__/           Vitest tests (141 tests)
 ```
 
 ---
@@ -88,24 +121,3 @@ Handler calls handleError(e, res)
     validation_error    →  HTTP 400
   Unknown Error         →  HTTP 500 (logged with stack trace)
 ```
-
----
-
-## Asset vs Liability Classification
-
-Defined in `api/_lib/types/account.type.ts → isAssetType()`:
-
-| Classification | Account Types |
-|---|---|
-| **Asset** | Cash, Prepaid, eWallet, Bank, Loan, Savings, Gold, Fund, Bond, Stock |
-| **Liability** | Credit, Debt, Crypto, PayLater |
-
-Note: `Loan` is an asset (money you have lent out — you are owed it).
-Note: `Crypto` is classified as a liability in the current implementation.
-
----
-
-## Timezone
-
-All timestamps are stored in `Asia/Bangkok` (UTC+7) timezone using the native `Intl.DateTimeFormat` API.
-The `toISOStringWithTimezone(ms, tz)` helper in `api/_lib/connector.ts` handles the conversion.

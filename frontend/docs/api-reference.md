@@ -33,8 +33,10 @@ Data is returned directly as the response body — no envelope wrapper:
 |---|---|
 | 200 | Success |
 | 400 | Bad request (missing/invalid query param, Notion validation error) |
-| 403 | Forbidden (Notion permission error) |
+| 401 | Unauthorized — missing or invalid JWT token |
+| 403 | Forbidden — missing or invalid `x-cloudflare-secret` header, or Notion permission error |
 | 404 | Route not found, or Notion object not found |
+| 405 | Method not allowed |
 | 409 | Conflict (Notion ConflictError) |
 | 429 | Rate limited by Notion |
 | 500 | Internal error or database schema mismatch |
@@ -43,6 +45,33 @@ Data is returned directly as the response body — no envelope wrapper:
 ---
 
 ## Endpoints
+
+---
+
+### POST /api/auth
+
+**Status**: ✅ DONE
+
+Authenticates the owner and returns a JWT token. This endpoint is **not** protected by middleware — no `x-cloudflare-secret` or JWT required.
+
+**Request Body**:
+```json
+{
+  "secret": "string (required)"
+}
+```
+
+**Response 200**:
+```json
+{ "token": "string" }
+```
+
+**Notes**:
+- Validates `secret` against `APP_SECRET` env var
+- Returns a signed JWT (`HS256`, `sub: owner`, `expiresIn: 30d`)
+- Token must be sent as `Authorization: Bearer <token>` on all subsequent API requests
+
+**Errors**: 401 if `secret` is missing or incorrect
 
 ---
 
@@ -305,11 +334,13 @@ Lists expense or income transactions, optionally filtered by date range.
       "id": "string",
       "timestamp": 0,
       "amount": 0,
-      "fromAccountId": "string",
+      "fromAccountId": "string | undefined",
       "toAccountId": "string | undefined",
       "categoryId": "string",
       "note": "string",
-      "linkedCardId": "string | undefined"
+      "linkedCardId": "string | undefined",
+      "cashback": "number | undefined",
+      "discount": "number | undefined"
     }
   ],
   "total": 0
@@ -345,7 +376,9 @@ Logs an expense and deducts the amount from the specified account.
   "categoryId": "string (required)",
   "note": "string (required, may be empty)",
   "timestamp": "number (optional, Unix ms)",
-  "linkedCardId": "string (optional)"
+  "linkedCardId": "string (optional)",
+  "cashback": "number (optional)",
+  "discount": "number (optional)"
 }
 ```
 
@@ -486,7 +519,9 @@ Updates a transaction and reconciles account balances when amount changes.
   "note": "string",
   "categoryId": "string",
   "timestamp": "number (Unix ms)",
-  "linkedCardId": "string | null"
+  "linkedCardId": "string | null",
+  "cashback": "number | null",
+  "discount": "number | null"
 }
 ```
 
@@ -542,6 +577,264 @@ Reverses a transaction's balance effects and trashes the Notion page.
 
 **Errors**: 400 if `id` missing, 404 if not found
 
+
+---
+
+### GET /api/cards
+
+**Status**: ✅ DONE
+
+Returns all cards.
+
+**Response 200**:
+```json
+{
+  "cards": [
+    {
+      "id": "string",
+      "name": "string",
+      "number": "string",
+      "imageUrl": "string",
+      "annualFee": 0,
+      "spendingLimit": 0,
+      "requiredSpending": 0,
+      "lastChargedDate": 0,
+      "billingDay": 0,
+      "linkedAccountId": "string | null",
+      "linkedServices": ["string"],
+      "cashbackCap": 0,
+      "network": "string | null"
+    }
+  ]
+}
+```
+
+---
+
+### GET /api/cards?id={cardId}
+
+**Status**: ✅ DONE
+
+Returns a single card with current billing cycle spending metrics.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | Yes | Card page ID |
+
+**Response 200**: `CardWithSpending` — all `Card` fields plus:
+```json
+{
+  "cycleStart": "YYYY-MM-DD | null",
+  "cycleEnd": "YYYY-MM-DD | null",
+  "currentCycleSpending": 0,
+  "currentCycleCashback": 0,
+  "currentCycleDiscount": 0
+}
+```
+
+**Notes**:
+- `cycleStart` / `cycleEnd` are `null` for cards without a `billingDay` (e.g. debit cards)
+- Spending metrics are summed from expense transactions linked to this card in the current billing cycle
+- Adjustment transactions are excluded from cycle totals
+
+---
+
+### GET /api/promotions
+
+**Status**: ✅ DONE
+
+Returns all promotions, optionally filtered by card.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `cardId` | `string` | No | Filter promotions linked to this card |
+
+**Response 200**:
+```json
+{
+  "promotions": [
+    {
+      "id": "string",
+      "name": "string",
+      "cardId": "string | null",
+      "category": "Shopping | F&B | Travel | Entertain | Digital | null",
+      "type": "Cashback | Discount",
+      "expiresAt": 0,
+      "link": "string | null"
+    }
+  ]
+}
+```
+
+---
+
+### POST /api/promotions
+
+**Status**: ✅ DONE
+
+Creates a new promotion.
+
+**Request Body**:
+```json
+{
+  "name": "string (required)",
+  "cardId": "string (optional)",
+  "category": "Shopping | F&B | Travel | Entertain | Digital (optional)",
+  "type": "Cashback | Discount (required)",
+  "expiresAt": "number (optional, Unix ms)",
+  "link": "string (optional)"
+}
+```
+
+**Response 200**: `Promotion` object
+
+**Errors**: 400 if `name` missing or `type` is not `Cashback` or `Discount`
+
+---
+
+### PATCH /api/promotions
+
+**Status**: ✅ DONE
+
+Updates an existing promotion (full replacement of all fields).
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | Yes | Promotion page ID |
+
+**Request Body**: Same shape as `POST /api/promotions`
+
+**Response 200**: Updated `Promotion` object
+
+---
+
+### DELETE /api/promotions
+
+**Status**: ✅ DONE
+
+Trashes a promotion.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | Yes | Promotion page ID |
+
+**Response 200**:
+```json
+{ "id": "string" }
+```
+
+---
+
+### GET /api/statements
+
+**Status**: ✅ DONE
+
+Returns all statements, optionally filtered by card.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `cardId` | `string` | No | Filter statements for this card |
+
+**Response 200**:
+```json
+{
+  "statements": [
+    {
+      "id": "string",
+      "cardId": "string",
+      "startDate": 0,
+      "endDate": 0,
+      "spending": 0,
+      "cashback": 0,
+      "discount": 0
+    }
+  ]
+}
+```
+
+---
+
+### GET /api/statements?preview=1
+
+**Status**: ✅ DONE
+
+Previews spending totals for a date range without creating a statement record.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `preview` | `"1"` | Yes | Must be `1` |
+| `cardId` | `string` | Yes | Card to compute totals for |
+| `startDate` | `number` (Unix ms) | Yes | Period start |
+| `endDate` | `number` (Unix ms) | Yes | Period end |
+
+**Response 200**:
+```json
+{
+  "spending": 0,
+  "cashback": 0,
+  "discount": 0
+}
+```
+
+**Errors**: 400 if any param missing, or `startDate >= endDate`
+
+---
+
+### POST /api/statements
+
+**Status**: ✅ DONE
+
+Creates a statement record with spending totals computed from transactions in the given period.
+
+**Request Body**:
+```json
+{
+  "cardId": "string (required)",
+  "startDate": "number (required, Unix ms)",
+  "endDate": "number (required, Unix ms)"
+}
+```
+
+**Response 200**: `Statement` object
+
+**Business logic**:
+1. Compute `startDateStr = YYYY-MM-DDT00:00:00+07:00`, `endDateStr = YYYY-MM-DDT23:59:59+07:00`
+2. Fetch all expense transactions linked to `cardId` in the period (excludes adjustment and transfer)
+3. Sum `amount`, `cashback`, `discount`
+4. Create Statement record in Notion with computed totals
+
+**Errors**: 400 if any required field missing or `startDate >= endDate`
+
+---
+
+### DELETE /api/statements
+
+**Status**: ✅ DONE
+
+Trashes a statement.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | Yes | Statement page ID |
+
+**Response 200**:
+```json
+{ "id": "string" }
+```
 
 ---
 
@@ -616,27 +909,16 @@ Archives transactions older than 3 calendar months into per-month Archive pages 
 **Response 200**:
 ```json
 {
-  "cutoff": "2025-12-21T00:00:00.000Z",
-  "totalFetched": 42,
-  "buckets": [
-    {
-      "month": 11,
-      "year": 2025,
-      "count": 20,
-      "archiveId": "string",
-      "status": "created"
-    },
-    {
-      "month": 10,
-      "year": 2025,
-      "count": 22,
-      "archiveId": "string",
-      "status": "existing"
-    }
-  ],
-  "totalArchived": 42
+  "archived": 42,
+  "archivesCreated": 1,
+  "archivesUpdated": 1
 }
 ```
+
+**Notes**:
+- `archived` = total number of transactions moved
+- `archivesCreated` = new Archive pages created (new months)
+- `archivesUpdated` = existing Archive pages that received more transactions
 
 **Business logic**:
 1. Compute cutoff = now minus 3 calendar months (midnight UTC)
@@ -645,9 +927,9 @@ Archives transactions older than 3 calendar months into per-month Archive pages 
 4. For each bucket:
    - Find or create an Archive page in the Archive DB
    - Find or create an inline child Transaction DB under that page
-   - Add each transaction to the inline DB
-   - Delete (in_trash) each transaction from the main Transaction DB
+   - Copy each transaction to the inline DB
+   - Trash each transaction from the main Transaction DB
    - Update archive stats (`Count`, `Debit`, `Credit`)
-5. Always sends a full Telegram run report
+5. Always sends a Telegram run report
 
 **Errors**: 401 if unauthorized, 500 on internal error

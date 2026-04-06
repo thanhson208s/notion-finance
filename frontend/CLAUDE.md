@@ -1,6 +1,6 @@
 # AGENTS Playbook — Personal Finance App - Front End
 
-This document guides AI agents working in this repo. All business logic, features, and code conventions are defined in `REQUIREMENTS.md` and `./docs`.
+This document guides AI agents working in this repo. All business logic, features, and code conventions are defined in `./docs`.
 
 ## 1) Mandatory Objectives
 
@@ -14,9 +14,9 @@ This document guides AI agents working in this repo. All business logic, feature
 
 When information conflicts, follow this priority order:
 
-1. `REQUIREMENTS.md`
-2. `./docs/feature-*.md` (detailed feature docs per module)
-4. Current code in `src/`
+1. `./docs/feature-*.md` (detailed feature docs per module)
+2. Frontend code in `src/`
+3. Backend code in `api/'
 
 When conflicts are found between docs and code:
 
@@ -30,7 +30,7 @@ When conflicts are found between docs and code:
 
 - Enter plan mode for any non-trivial task (3+ steps or architectural decisions)
 - If something goes wrong, STOP and re-plan immediately — don't keep pushing
-- Read `REQUIREMENTS.md` carefully and ask clarifying questions before planning
+- Read `./docs` carefully and ask clarifying questions before planning
 
 ### 3.2 Subagent Strategy
 
@@ -74,22 +74,13 @@ When conflicts are found between docs and code:
 
 Every task follows this flow:
 
-1. Identify affected components/pages in `src/`.
-2. Read `REQUIREMENTS.md` and related `./docs/feature-*.md`.
+1. Identify affected components/pages in `src/` and `api/`.
+2. Read related `./docs/feature-*.md`.
 3. Only modify code within the scope described in documentation.
 4. Run minimum checks after changes:
    - `npm run lint`
    - `npm run test`
    - `npm run build`
-5. If code changed, update version/changelog before commit with format in `CHANGELOG.md` like this template:
-
-```markdown
-## [0.7.4] - 2026-02-23
-
-### Changed
-
-- fix(test-cases): sectionId not updating when editing test case
-```
 
 Brief report: what was changed, which docs were followed, remaining issues.
 
@@ -102,7 +93,6 @@ Brief report: what was changed, which docs were followed, remaining issues.
 ## 6) Pre-task Checklist
 
 - [ ] Read all related feature docs.
-- [ ] Follow conventions in REQUIREMENTS.md.
 - [ ] Maintain response/error/pagination standards.
 - [ ] Handle error handling correctly (toast/inline).
 - [ ] Check role-based UI behavior.

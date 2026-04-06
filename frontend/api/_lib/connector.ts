@@ -147,8 +147,6 @@ export class Connector {
         and: [
           { property: "Linked card", relation: { contains: cardId } },
           { property: "FromAccount", relation: { is_not_empty: true } },
-          { property: "ToAccount", relation: { is_empty: true }},
-          { property: "Category", relation: { does_not_contain: process.env.NOTION_TRANSFER_TRANSACTION_ID as string } },
           { property: "Category", relation: { does_not_contain: process.env.NOTION_ADJUSTMENT_TRANSACTION_ID as string } },
           { property: "Timestamp", date: { on_or_after: startDateStr } },
           { property: "Timestamp", date: { on_or_before: endDateStr } }

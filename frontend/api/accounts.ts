@@ -6,7 +6,7 @@ import { handleError } from './_lib/error-handler';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const connector = new Connector();
-  const query = req.query as Record<string, string>;
+  const query = Object.fromEntries(new URL(req.url ?? '', 'http://localhost').searchParams) as Record<string, string>;
 
   try {
     if (req.method === 'GET') {

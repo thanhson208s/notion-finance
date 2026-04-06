@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).send('Method Not Allowed');
 
   const connector = new Connector();
-  const query = req.query as Record<string, string>;
+  const query = Object.fromEntries(new URL(req.url ?? '', 'http://localhost').searchParams) as Record<string, string>;
 
   try {
     const result = await getCategories({ method: 'GET', path: req.url ?? '', query, body: undefined }, connector);

@@ -20,9 +20,7 @@ Architecture: CloudFront → AWS Lambda (TypeScript) ↔ Notion API, with a Reac
 | Transaction archive (cron) | [feature-archive.md](./feature-archive.md) |
 | Cards management (backlog) | [feature-cards.md](./feature-cards.md) |
 | Budget management (backlog) | [feature-budget.md](./feature-budget.md) |
-| Known bugs & issues | [known-issues.md](./known-issues.md) |
 | Developer setup & conventions | [dev-guide.md](./dev-guide.md) |
-| Changelog | [CHANGELOG.md](./CHANGELOG.md) |
 
 ---
 

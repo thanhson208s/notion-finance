@@ -12,6 +12,13 @@ export default async function middleware(request: Request) {
     return
   }
 
+  if (request.headers.get('x-cloudflare-secret') !== process.env.CF_SECRET) {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const authHeader = request.headers.get('Authorization')
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
 

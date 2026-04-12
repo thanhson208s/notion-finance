@@ -85,7 +85,7 @@ export default function AdjustmentForm({accountId, accountBalance, onSuccess, ti
             else if (e.code.match(/^Digit[0-9]$/g)) { setDelta(delta * 10 + parseInt(e.code.slice(-1))); setError(false); resetToIdle() }
           }}
           placeholder='0 ₫'
-          inputMode="numeric"
+          inputMode="decimal"
           disabled={loading}
           className={`amount-input-small${error ? ' amount-error' : ''}`}
         />
@@ -107,11 +107,12 @@ export default function AdjustmentForm({accountId, accountBalance, onSuccess, ti
             onChange={() => {}}
             onKeyDown={(e) => {
               if (loading) return
-              if (e.code === 'Backspace') { setDelta(Math.abs(Math.floor(balance / 10) - accountBalance)); setDir(Math.floor(balance / 10) >= accountBalance ? 1 : -1); setError(false); resetToIdle() }
-              else if (e.code.match(/^Digit[0-9]$/g)) { setDelta(Math.abs(balance * 10 + parseInt(e.code.slice(-1)) - accountBalance)); setDir(balance * 10 + parseInt(e.code.slice(-1)) >= accountBalance ? 1 : -1); setError(false); resetToIdle() }
+              if (e.code === 'Backspace') { const nb = Math.trunc(balance / 10); setDelta(Math.abs(nb - accountBalance)); setDir(nb >= accountBalance ? 1 : -1); setError(false); resetToIdle() }
+              else if (e.code.match(/^Digit[0-9]$/g)) { const nb = balance * 10 + Math.sign(balance || 1) * parseInt(e.code.slice(-1)); setDelta(Math.abs(nb - accountBalance)); setDir(nb >= accountBalance ? 1 : -1); setError(false); resetToIdle() }
+              else if (e.code === 'Comma') { const nb = -balance; setDelta(Math.abs(nb - accountBalance)); setDir(nb >= accountBalance ? 1 : -1); setError(false); resetToIdle() }
             }}
             placeholder='0 ₫'
-            inputMode="numeric"
+            inputMode="decimal"
             disabled={loading}
             className={`amount-input-big${error ? ' amount-error' : ''}`}
           />

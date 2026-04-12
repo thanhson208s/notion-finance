@@ -26,7 +26,8 @@ function toInputDate(ms: number) {
 }
 
 const CARD_W = 90
-const CARD_GAP = 14
+const CARD_GAP = 6    // matches CSS gap: 6px on .carousel-track
+const ACTIVE_MARGIN = 12  // matches CSS margin: 0 12px on .carousel-item-active
 
 function CardCarousel({ cards, currentId, onSelect }: {
   cards: Card[]
@@ -37,7 +38,7 @@ function CardCarousel({ cards, currentId, onSelect }: {
   const currentIndex = cards.findIndex(c => c.id === currentId)
   if (currentIndex === -1) return null
 
-  const offset = currentIndex * (CARD_W + CARD_GAP) + CARD_W / 2
+  const offset = currentIndex * (CARD_W + CARD_GAP) + CARD_W / 2 + ACTIVE_MARGIN
 
   const goPrev = () => onSelect(cards[(currentIndex - 1 + n) % n].id)
   const goNext = () => onSelect(cards[(currentIndex + 1) % n].id)

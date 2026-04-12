@@ -86,7 +86,7 @@ export function CardExpenseModal({ card, categories, onClose, onAdded }: Props) 
           <label className="modal-label">Amount</label>
           <input
             title="Amount" className="modal-input modal-input--amount"
-            type="text" inputMode="numeric" placeholder="0 ₫"
+            type="text" inputMode="decimal" placeholder="0 ₫"
             value={fmtAmount(amount)} onChange={() => {}}
             onKeyDown={buildDigit(setAmount)}
             disabled={busy}
@@ -128,7 +128,7 @@ export function CardExpenseModal({ card, categories, onClose, onAdded }: Props) 
           <div className="modal-input-row">
             <input
               title="Cashback" className="modal-input"
-              type="text" inputMode="numeric"
+              type="text" inputMode="decimal"
               placeholder={cashbackMode === 'flat' ? '0 ₫' : '0'}
               value={cashbackMode === 'flat' ? fmtAmount(cashback) : (cashback > 0 ? cashback.toString() : '')}
               onChange={() => {}}
@@ -153,7 +153,7 @@ export function CardExpenseModal({ card, categories, onClose, onAdded }: Props) 
           <div className="modal-input-row">
             <input
               title="Discount" className="modal-input"
-              type="text" inputMode="numeric"
+              type="text" inputMode="decimal"
               placeholder={discountMode === 'flat' ? '0 ₫' : '0'}
               value={discountMode === 'flat' ? fmtAmount(discount) : (discount > 0 ? discount.toString() : '')}
               onChange={() => {}}

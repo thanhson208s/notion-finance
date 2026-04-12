@@ -223,7 +223,7 @@ export default function TransferForm({accountId, accounts, onTransferSuccess, ti
               else if (e.code.match(/^Digit[0-9]$/g)) { setAmount(amount * 10 + parseInt(e.code.slice(-1))); setErrors(p => ({...p, amount: false})); resetToIdle() }
             }}
             placeholder='0 ₫'
-            inputMode="numeric"
+            inputMode="decimal"
             disabled={loading}
             className={`amount-input-big${errors.amount ? ' amount-error' : ''}`}
           />

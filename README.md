@@ -181,7 +181,6 @@ npm run build   # tsc -b && vite build
 
 | Item | Value |
 |---|---|
-| Repo | `/Users/thanhson208s/Repos/notion-finance/frontend/` |
 | Framework | React 19 + Vite + TypeScript |
 | Deploy | Vercel (`finance.gootube.online`) |
 | API base | `/api` (relative, same deployment) |

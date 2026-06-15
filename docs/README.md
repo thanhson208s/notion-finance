@@ -17,6 +17,7 @@ Personal finance management webapp using Notion as the database layer.
 | Reports | [feature-reports.md](./feature-reports.md) |
 | Monthly snapshots (cron) | [feature-snapshots.md](./feature-snapshots.md) |
 | Transaction archive (cron) | [feature-archive.md](./feature-archive.md) |
+| Telegram webhook logging | [feature-webhooks.md](./feature-webhooks.md) |
 | Cards management (backlog) | [feature-cards.md](./feature-cards.md) |
 | Budget management (backlog) | [feature-budget.md](./feature-budget.md) |
 | Developer setup & conventions | [dev-guide.md](./dev-guide.md) |
@@ -53,3 +54,4 @@ Personal finance management webapp using Notion as the database layer.
 | Pagination (list endpoints) | ❌ DONE | ❌ TODO |
 | Monthly balance snapshots (cron) | ✅ DONE | N/A |
 | Transaction archive (cron) | ✅ DONE | N/A |
+| Telegram webhook logging | ✅ DONE | N/A |

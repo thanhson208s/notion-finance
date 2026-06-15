@@ -1,6 +1,6 @@
 # Feature: Transaction Archive
 
-**Status**: ✅ DONE (F-18)
+**Status**: ✅ DONE (F-17)
 
 ---
 

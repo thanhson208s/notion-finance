@@ -1,17 +1,6 @@
 import { Connector } from "../_lib/connector";
 import { SnapshotResult, SnapshotRunResponse } from "../_lib/types/response";
-
-async function sendTelegramMessage(text: string): Promise<void> {
-  await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: process.env.TELEGRAM_CHAT_ID,
-      message_thread_id: parseInt(process.env.TELEGRAM_TOPIC_ID ?? "0"),
-      text
-    })
-  });
-}
+import { sendTelegramMessage } from "../_lib/telegram";
 
 function fmtVND(amount: number): string {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);

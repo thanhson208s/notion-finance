@@ -80,6 +80,7 @@ Four Notion databases. Full schema with property names and types: [`docs/databas
 | F-15 | Voucher and promotions management | ❌ Todo |
 | F-16 | Cash flow projection | ❌ Todo |
 | F-17 | Periodic balance snapshot / screenshot archiving | ✅ Done |
+| F-18 | Telegram webhook → LLM-inferred transaction logging | ✅ Done |
 
 ---
 

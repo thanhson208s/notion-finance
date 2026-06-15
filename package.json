@@ -3,9 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
+    "vercel": "vercel dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
     "deploy": "vercel --prod",
     "test": "vitest run"
   },

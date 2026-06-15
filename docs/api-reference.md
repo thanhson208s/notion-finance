@@ -932,4 +932,25 @@ Archives transactions older than 3 calendar months into per-month Archive pages 
    - Update archive stats (`Count`, `Debit`, `Credit`)
 5. Always sends a Telegram run report
 
+---
+
+### POST /api/webhooks
+
+**Status**: ✅ DONE
+
+Receives Telegram updates (text + images) from a pre-configured group/topic, infers a transaction via a Gemini LLM, logs it to Notion, and posts a confirmation back to the chat. See [feature-webhooks.md](./feature-webhooks.md).
+
+**Auth**: Bypasses middleware (no `x-cloudflare-secret`, no JWT). Validates the `X-Telegram-Bot-Api-Secret-Token` header against `TELEGRAM_WEBHOOK_SECRET`; returns `401` if it does not match.
+
+**Request Body**: a Telegram [Update](https://core.telegram.org/bots/api#update) object. Updates not matching `TELEGRAM_CHAT_ID` + `TELEGRAM_TOPIC_ID` are acknowledged with no action.
+
+**Response 200**:
+```json
+{ "ok": true }
+```
+
+**Notes**:
+- Always returns `200` promptly (even for ignored/failed updates) so Telegram does not retry.
+- On a logging failure, an error message is posted to the same Telegram topic.
+
 **Errors**: 401 if unauthorized, 500 on internal error

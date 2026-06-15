@@ -37,6 +37,9 @@ In production, all variables are set in the Vercel project settings dashboard.
 | `TELEGRAM_BOT_TOKEN` | Secret | Telegram bot token for sending cron run reports |
 | `TELEGRAM_CHAT_ID` | String | Telegram chat/group ID to send reports to |
 | `TELEGRAM_TOPIC_ID` | Number | Telegram forum topic ID (thread); set to `0` if not using topics |
+| `TELEGRAM_WEBHOOK_SECRET` | Secret | Validated against the `X-Telegram-Bot-Api-Secret-Token` header on `/api/webhooks` |
+| `GEMINI_API_KEY` | Secret | Google AI Studio API key for the Telegram webhook LLM inference |
+| `GEMINI_MODEL_ID` | String | Gemini model id used by the Telegram webhook |
 
 > **How to get database IDs**: Open the Notion database, click Share → Copy link. The ID is the 32-character hex string in the URL.
 >

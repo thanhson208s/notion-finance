@@ -50,7 +50,7 @@ Fields consumed from the incoming [Telegram Update](https://core.telegram.org/bo
 | `message.message_thread_id` | Number | Must equal `TELEGRAM_TOPIC_ID` |
 | `message.text` / `message.caption` | String | Free-text transaction description, or the edit instruction when replying |
 | `message.photo[]` | Array | Receipt images — array of sizes; use the largest `file_id` |
-| `message.reply_to_message` | Message | Present when the user replies. Used to detect & route the [edit/delete flow](#editing-or-deleting-a-logged-transaction-via-reply): its `message_id` is the message to edit/tombstone, and its `text` carries the transaction ID inside `<code>...</code>` |
+| `message.reply_to_message` | Message | May be present for explicit replies or forum-topic context. It routes to the [edit/delete flow](#editing-or-deleting-a-logged-transaction-via-reply) only when its `text` carries the transaction ID inside `<code>...</code>` |
 
 **Image handling**: a `photo` entry only carries a `file_id`. To pass the image to Gemini: call `getFile` (`https://api.telegram.org/bot<token>/getFile?file_id=...`) to get a `file_path`, download from `https://api.telegram.org/file/bot<token>/<file_path>`, then send it to the LLM as inline base64 data.
 
@@ -171,7 +171,7 @@ For **edits**, only **amount, note, category, and timestamp** can be changed; th
 
 ### Flow
 
-1. **Detect the reply case.** Any update with `message.reply_to_message` is routed to the reply handler and is never treated as a new transaction. The replied-to message is a usable transaction confirmation only when its text contains a transaction ID inside `<code>...</code>` (the confirmation always includes it). If there is a reply but no text/caption instruction, or the replied-to message has no code-tagged transaction ID, the update is silently ignored.
+1. **Detect the reply edit/delete case.** An update with `message.reply_to_message` is routed to the reply handler only when the replied-to message text contains a transaction ID inside `<code>...</code>` (the confirmation always includes it). If Telegram includes `reply_to_message` without that code-tagged transaction ID, the update is treated as a normal new transaction message.
 2. **Extract & query.** Parse `transactionId` from the first `<code>...</code>` block in the replied-to text and load it with `connector.fetchTransaction(id)`. The transaction's account is `fromAccountId` (expense) or `toAccountId` (income).
 3. **Load reference data.** `connector.fetchCategories(null)` only (account and card are fixed, so neither accounts nor cards are needed).
 4. **Infer the intent.** Send Gemini the reply text **plus the transaction's current fields** (amount, category, note, timestamp) and the categories list. The model returns `action` = `edit` / `delete` / `none`, plus the changed fields for an edit. See [Reply inference contract](#reply-inference-contract).
@@ -271,6 +271,6 @@ To stop delivery: `POST .../deleteWebhook`.
 - **LLM mis-inference**: the model may pick the wrong account/category or misread an amount. There is no Accept/Reject confirmation, so corrections happen manually in Notion (or via the app).
 - **Non-atomic balance update**: matches existing transaction handlers — a failure between transaction creation and balance update leaves state inconsistent.
 - **Message deletion is not detectable**: the Telegram Bot API sends no update when a user deletes a message in a group (only `deleted_business_messages` for connected Telegram Business DMs, which doesn't apply here). So a transaction **cannot** be deleted by deleting its log message — deletion is done by **replying** "delete" to the confirmation instead.
-- **Edit/delete depends on the code-tagged transaction ID**: the reply flow finds the transaction by parsing the first `<code>...</code>` block from the replied-to message, so the transaction ID must remain wrapped in `<code>` in every confirmation and edited confirmation. After a delete, the message is tombstoned and the code-tagged ID is removed so it can't be acted on again. A reply without text/caption or to any message without that anchor is silently ignored and never falls through to normal new-transaction logging.
+- **Edit/delete depends on the code-tagged transaction ID**: the reply flow finds the transaction by parsing the first `<code>...</code>` block from the replied-to message, so the transaction ID must remain wrapped in `<code>` in every confirmation and edited confirmation. After a delete, the message is tombstoned and the code-tagged ID is removed so it can't be acted on again. A `reply_to_message` without that anchor is treated as normal new-transaction logging, which prevents Telegram forum-topic metadata from blocking fresh logs.
 - **Edit scope**: only amount, note, category, and timestamp are editable by reply; the account and the linked card cannot be changed this way, and a category can only change within the transaction's existing Income/Expense direction.
 - **`allowed_updates`**: replies arrive as ordinary `message` updates, so the existing `["message"]` registration already covers them — no `setWebhook` change is needed.

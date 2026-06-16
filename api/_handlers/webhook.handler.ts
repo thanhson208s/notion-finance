@@ -266,8 +266,10 @@ export async function processTelegramUpdate(
 
   try {
     const text = message.text ?? message.caption ?? "";
+    const replyAnchorText = message.reply_to_message?.text ?? message.reply_to_message?.caption ?? "";
+    const hasReplyTransactionId = Boolean(extractTransactionId(replyAnchorText));
 
-    if (message.reply_to_message) {
+    if (message.reply_to_message && hasReplyTransactionId) {
       return await processReplyUpdate(message, text, connector);
     }
 
@@ -383,7 +385,8 @@ export async function processTelegramUpdate(
     return { status: "logged", transactionId };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    const action = message.reply_to_message ? "process reply" : "log transaction";
+    const replyAnchorText = message.reply_to_message?.text ?? message.reply_to_message?.caption ?? "";
+    const action = extractTransactionId(replyAnchorText) ? "process reply" : "log transaction";
     console.error(`[webhooks] could not ${action}`, e);
     try {
       await sendTelegramMessage(`<b>⚠️ Could not ${escapeHtml(action)}</b>\n${escapeHtml(msg)}`, { parseMode: "HTML" });

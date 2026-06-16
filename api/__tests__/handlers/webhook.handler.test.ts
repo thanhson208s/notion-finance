@@ -228,7 +228,8 @@ describe('processTelegramUpdate()', () => {
     }))
   })
 
-  it('ignores a reply with no Tx anchor without notifying or logging', async () => {
+  it('logs normally when Telegram includes reply_to_message without a transaction id anchor', async () => {
+    inferMock.mockResolvedValue(inferred())
     const connector = makeConnector([expenseCat])
     const res = await processTelegramUpdate(makeUpdate(114, {
       text: '50k coffee momo',
@@ -239,11 +240,11 @@ describe('processTelegramUpdate()', () => {
         text: 'hello',
       },
     }), connector)
-    expect(res).toMatchObject({ status: 'ignored', reason: 'reply without transaction id' })
-    expect(inferMock).not.toHaveBeenCalled()
+    expect(res).toMatchObject({ status: 'logged', transactionId: 'tx-1' })
+    expect(inferMock).toHaveBeenCalled()
     expect(inferReplyMock).not.toHaveBeenCalled()
-    expect(connector.addExpense).not.toHaveBeenCalled()
-    expect(sendMock).not.toHaveBeenCalled()
+    expect(connector.addExpense).toHaveBeenCalled()
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('<b>✅ Logged</b>'), { parseMode: 'HTML' })
   })
 
   it('ignores an empty reply without notifying or inferring', async () => {

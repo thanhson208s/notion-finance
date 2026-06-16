@@ -5,10 +5,10 @@
 import { Account } from "./types/account.type";
 import { Category } from "./types/category.type";
 import { Card } from "./types/card.type";
-import { InferredTransaction } from "./types/telegram.type";
+import { InferredReply, InferredTransaction } from "./types/telegram.type";
 import { QueryError } from "./types/error";
 
-type InferInput = {
+type TransactionInferInput = {
   text: string
   image: { data: string; mimeType: string } | null
   // Current timestamp (ISO 8601, Asia/Bangkok). Used as the base the model
@@ -19,8 +19,20 @@ type InferInput = {
   cards: Card[]
 };
 
+type ReplyInferInput = {
+  text: string
+  now: string
+  transaction: {
+    amount: number
+    categoryId: string
+    timestamp: string
+    note: string
+  }
+  categories: Category[]
+};
+
 // Response schema forces the model to return exactly these fields.
-const RESPONSE_SCHEMA = {
+const TRANSACTION_RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
     kind: { type: "STRING", format: "enum", enum: ["transaction", "incomplete", "not_transaction"] },
@@ -36,17 +48,33 @@ const RESPONSE_SCHEMA = {
   required: ["kind", "amount", "categoryId", "accountId", "linkedCardId", "timestamp", "note", "suggestion", "reason"]
 };
 
-function buildPrompt(input: InferInput): string {
-  const accounts = input.accounts.map(a => `- id=${a.id} name="${a.name}" type=${a.type}`).join("\n");
+const REPLY_RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    action: { type: "STRING", format: "enum", enum: ["edit", "delete", "none"] },
+    amount: { type: "INTEGER", nullable: true },
+    categoryId: { type: "STRING", nullable: true },
+    timestamp: { type: "STRING", nullable: true },
+    note: { type: "STRING", nullable: true },
+    reason: { type: "STRING" }
+  },
+  required: ["action", "amount", "categoryId", "timestamp", "note", "reason"]
+};
 
-  // A category is a parent (context-only) if any other category lists it as parentId.
-  const parentIds = new Set(input.categories.map(c => c.parentId).filter((id): id is string => !!id));
-  const nameById = new Map(input.categories.map(c => [c.id, c.name]));
-  const categories = input.categories.map(c => {
+function formatCategories(categoriesInput: Category[]): string {
+  const parentIds = new Set(categoriesInput.map(c => c.parentId).filter((id): id is string => !!id));
+  const nameById = new Map(categoriesInput.map(c => [c.id, c.name]));
+  return categoriesInput.map(c => {
     const selectable = parentIds.has(c.id) ? "no" : "yes";
     const parent = c.parentId ? (nameById.get(c.parentId) ?? "unknown") : "none";
     return `- id=${c.id} name="${c.name}" type=${c.type} parent="${parent}" selectable=${selectable} note="${c.note}"`;
   }).join("\n");
+}
+
+function buildTransactionPrompt(input: TransactionInferInput): string {
+  const accounts = input.accounts.map(a => `- id=${a.id} name="${a.name}" type=${a.type}`).join("\n");
+
+  const categories = formatCategories(input.categories);
 
   const cards = input.cards.map(c => `- id=${c.id} name="${c.name}" number=${c.number} linkedAccountId=${c.linkedAccountId ?? "none"}`).join("\n");
 
@@ -78,11 +106,40 @@ function buildPrompt(input: InferInput): string {
   ].join("\n");
 }
 
-export async function inferTransaction(input: InferInput): Promise<InferredTransaction> {
+function buildReplyPrompt(input: ReplyInferInput): string {
+  const categories = formatCategories(input.categories);
+
+  return [
+    "You are a personal-finance bookkeeping assistant. The user replied to a previously logged transaction confirmation.",
+    "Classify the reply as an edit request, delete request, or no-op. Return ONLY JSON matching the required schema.",
+    "",
+    "Rules:",
+    "- action: \"edit\" when the user asks to change amount, category, timestamp, or note. \"delete\" when the user asks to remove/scrap/delete the transaction. \"none\" for comments, questions, thanks, or anything that is not an edit/delete instruction.",
+    "- For action=edit, fill ONLY the fields the user explicitly wants changed. Use null for unchanged fields.",
+    "- amount: positive integer in VND. Strip currency symbols/separators and round to an integer. Use null when unchanged.",
+    "- categoryId: select only a selectable=yes leaf category. Use null when unchanged.",
+    `- timestamp: ISO 8601 with Asia/Bangkok offset (YYYY-MM-DDTHH:mm:ss+07:00). Current time is ${input.now}. Start from the transaction timestamp and override only date/time components explicitly stated in the reply. Use null when unchanged.`,
+    "- note: the new transaction note only when explicitly changed. Use an empty string only when the user clearly wants to clear the note. Use null when unchanged.",
+    "- reason: for none, explain briefly why nothing will change. For delete, briefly summarize the delete intent. For edit, keep empty unless there is a useful warning.",
+    "",
+    "CURRENT TRANSACTION:",
+    `amount=${input.transaction.amount}`,
+    `categoryId=${input.transaction.categoryId}`,
+    `timestamp=${input.transaction.timestamp}`,
+    `note="${input.transaction.note}"`,
+    "",
+    "CATEGORIES (select only selectable=yes leaves; selectable=no are parents shown for context):",
+    categories || "(none)",
+    "",
+    `REPLY: ${input.text || "(no text)"}`
+  ].join("\n");
+}
+
+export async function inferTransaction(input: TransactionInferInput): Promise<InferredTransaction> {
   const apiKey = process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL_ID;
 
-  const parts: object[] = [{ text: buildPrompt(input) }];
+  const parts: object[] = [{ text: buildTransactionPrompt(input) }];
   if (input.image) {
     parts.push({ inlineData: { mimeType: input.image.mimeType, data: input.image.data } });
   }
@@ -96,7 +153,7 @@ export async function inferTransaction(input: InferInput): Promise<InferredTrans
         contents: [{ parts }],
         generationConfig: {
           responseMimeType: "application/json",
-          responseSchema: RESPONSE_SCHEMA
+          responseSchema: TRANSACTION_RESPONSE_SCHEMA
         }
       })
     }
@@ -115,6 +172,44 @@ export async function inferTransaction(input: InferInput): Promise<InferredTrans
   let parsed: InferredTransaction;
   try {
     parsed = JSON.parse(raw) as InferredTransaction;
+  } catch {
+    throw new QueryError("Gemini returned invalid JSON");
+  }
+  return parsed;
+}
+
+export async function inferReply(input: ReplyInferInput): Promise<InferredReply> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const model = process.env.GEMINI_MODEL_ID;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: buildReplyPrompt(input) }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: REPLY_RESPONSE_SCHEMA
+        }
+      })
+    }
+  );
+
+  if (!res.ok) {
+    throw new QueryError(`Gemini request failed: ${res.status}`);
+  }
+
+  const json = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[]
+  };
+  const raw = json.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw) throw new QueryError("Gemini returned no content");
+
+  let parsed: InferredReply;
+  try {
+    parsed = JSON.parse(raw) as InferredReply;
   } catch {
     throw new QueryError("Gemini returned invalid JSON");
   }

@@ -16,7 +16,9 @@ End-to-end flow:
 2. The handler loads accounts, categories, and cards from Notion.
 3. The message content plus the reference lists are sent to the Gemini endpoint, which returns a JSON object `{ kind, amount, categoryId, accountId, linkedCardId, timestamp, note, suggestion, reason }`.
 4. The transaction is logged to Notion (balance updated).
-5. A confirmation notification is posted back to the same group/topic.
+5. A formatted confirmation notification is posted back to the same group/topic.
+
+**Editing/deleting by reply:** a user can **reply** to a transaction's confirmation message in natural language to edit it (e.g. "change to 60k", "should be the Cafe category") or delete it (e.g. "delete this"). This branch is detected up front and handled separately — see [Editing or deleting a logged transaction (via reply)](#editing-or-deleting-a-logged-transaction-via-reply).
 
 ---
 
@@ -46,8 +48,9 @@ Fields consumed from the incoming [Telegram Update](https://core.telegram.org/bo
 | `message.message_id` | Number | Logging |
 | `message.chat.id` | Number | Must equal `TELEGRAM_CHAT_ID` |
 | `message.message_thread_id` | Number | Must equal `TELEGRAM_TOPIC_ID` |
-| `message.text` / `message.caption` | String | Free-text transaction description |
+| `message.text` / `message.caption` | String | Free-text transaction description, or the edit instruction when replying |
 | `message.photo[]` | Array | Receipt images — array of sizes; use the largest `file_id` |
+| `message.reply_to_message` | Message | Present when the user replies. Used to detect & route the [edit/delete flow](#editing-or-deleting-a-logged-transaction-via-reply): its `message_id` is the message to edit/tombstone, and its `text` carries the transaction ID inside `<code>...</code>` |
 
 **Image handling**: a `photo` entry only carries a `file_id`. To pass the image to Gemini: call `getFile` (`https://api.telegram.org/bot<token>/getFile?file_id=...`) to get a `file_path`, download from `https://api.telegram.org/file/bot<token>/<file_path>`, then send it to the LLM as inline base64 data.
 
@@ -115,7 +118,7 @@ Before logging, the handler branches on the model's `kind` (and defensively re-c
 
 | Case | Condition | Action |
 |---|---|---|
-| **Not a transaction** | `kind = not_transaction` | Post `🤖 <reason>` to the topic; do **not** log. Outcome `not_transaction`. |
+| **Not a transaction** | `kind = not_transaction` | Post `🤖 No action` with `<reason>` to the topic; do **not** log. Outcome `no_op`. |
 | **Incomplete** | `kind = incomplete`, **or** `amount`/`accountId`/`categoryId` is null or `amount <= 0` (even if the model said `transaction`) | Post `❓ Couldn't log — <reason>. Please resend with the missing info.`; do **not** log. Outcome `incomplete`. |
 | **Transaction** | `kind = transaction` and all critical fields present | Proceed to logging below. |
 
@@ -127,8 +130,8 @@ Critical fields are **amount, account, category** (card is optional; timestamp i
 
 Reuse the existing transaction flow — do not duplicate balance logic:
 
-1. Validate that `accountId` and `categoryId` returned by the LLM exist (`fetchAccount`, `fetchCategory`); if `linkedCardId` is non-null, validate it too.
-2. Resolve the timestamp: parse the model's ISO 8601 string to epoch milliseconds and pass it to `addExpense`/`addIncome`. The model always returns a full timestamp (current time with any stated date/time substituted in), so no null handling is needed; as a defensive fallback an unparseable value is omitted, letting `addExpense`/`addIncome` default to `Date.now()`.
+1. Validate that `accountId` and `categoryId` returned by the LLM exist in the loaded reference data; if `linkedCardId` is non-null, validate that it exists and belongs to the inferred account.
+2. Resolve the timestamp: parse the model's ISO 8601 string to epoch milliseconds and pass it to `addExpense`/`addIncome`. The model always returns a full timestamp (current time with any stated date/time substituted in), so no null handling is needed. An unparseable timestamp is treated as an error and the transaction is not logged.
 3. Determine direction from the category `type`: `Expense` → `addExpense(...)`, `Income` → `addIncome(...)` (see `api/_handlers/transaction.handler.ts`). The model's `note` is stored as the transaction note.
 4. The connector creates the transaction (ID format `${categoryId}-${Date.now()}-${amount}`) and the handler updates the account balance via `updateAccountAfterTransaction(...)` — expense decreases, income increases.
 
@@ -138,22 +141,80 @@ As with the existing handlers, the create + balance-update is **not atomic**.
 
 ## Confirmation Notification
 
-After a successful log, post a confirmation to the same group/topic using the existing `sendTelegramMessage()` pattern in `api/_handlers/snapshot.handler.ts` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ID`).
+After a successful log, post a confirmation to the same group/topic using `sendTelegramMessage()` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ID`). Webhook notifications use Telegram HTML `parse_mode`: headings are bold, dynamic content is HTML-escaped, and the transaction ID is rendered as monospace.
 
 Example:
 
-```
-✅ Logged: -50,000₫
+```html
+<b>✅ Logged</b>: -50,000₫
 Account: Momo
-Category: Food
+Card: Visa Platinum (411111******1111)
+Category: Food > Cafe
 Note: Highlands coffee
-Tx: 170c3752-...-1718000000000-50000
+Tx: <code>170c3752-...-1718000000000-50000</code>
 💡 Consider the Cafe subcategory
 ```
 
-The `Note:` line is shown when the model returned a note, and the `💡` line is appended when the model returned a non-empty `suggestion`.
+The `Card:` line shows `Card: name (number)` when a linked card is used, or `Card: "None"` otherwise. For categories with parents, the display label is `Parent > Child`; otherwise it is just the category name. The `Note:` line shows `Empty` when there is no note, and the `💡` line is appended when the model returned a non-empty `suggestion`.
 
 On failure (LLM could not produce valid JSON, IDs invalid, or Notion error), post an error message to the same topic instead so the user knows the message was not logged.
+
+---
+
+## Editing or deleting a logged transaction (via reply)
+
+A user can **reply** to a confirmation message with a natural-language instruction to either edit (e.g. "make it 60k", "wrong category, it's coffee", "yesterday 8pm") or delete it (e.g. "delete this", "remove", "that's wrong, scrap it"). This is checked **before** the normal new-transaction flow.
+
+> **Why reply-based, not "delete the message":** the Telegram **Bot API has no update for message deletion** in groups (only `deleted_business_messages`, which applies to connected Telegram Business DMs — not a group/topic). A bot therefore cannot detect a user deleting the log message, so deletion is driven by a **reply** instead. See [Known Constraints](#known-constraints).
+
+For **edits**, only **amount, note, category, and timestamp** can be changed; the **account and linked card are not editable** by reply (the account determines the transaction's direction and balance side).
+
+### Flow
+
+1. **Detect the reply case.** Any update with `message.reply_to_message` is routed to the reply handler and is never treated as a new transaction. The replied-to message is a usable transaction confirmation only when its text contains a transaction ID inside `<code>...</code>` (the confirmation always includes it). If there is a reply but no text/caption instruction, or the replied-to message has no code-tagged transaction ID, the update is silently ignored.
+2. **Extract & query.** Parse `transactionId` from the first `<code>...</code>` block in the replied-to text and load it with `connector.fetchTransaction(id)`. The transaction's account is `fromAccountId` (expense) or `toAccountId` (income).
+3. **Load reference data.** `connector.fetchCategories(null)` only (account and card are fixed, so neither accounts nor cards are needed).
+4. **Infer the intent.** Send Gemini the reply text **plus the transaction's current fields** (amount, category, note, timestamp) and the categories list. The model returns `action` = `edit` / `delete` / `none`, plus the changed fields for an edit. See [Reply inference contract](#reply-inference-contract).
+5. **Branch on `action`:**
+   - **`none`** → reply `🤖 No action` with the reason; do nothing.
+   - **`delete`** → go to [Delete](#delete-branch).
+   - **`edit`** → validate & apply ([Edit](#edit-branch)).
+
+### Edit branch
+
+1. **Validate** (defensive, like the logging path):
+   - If all change fields are `null` → treat as `none` ("nothing to change").
+   - **amount** (if set) must be `> 0`.
+   - **categoryId** (if set) must exist, be a `selectable=yes` leaf, not `System`, and be the **same type** (`Income`/`Expense`) as the transaction's existing direction — cross-type changes are rejected.
+   - **timestamp** (if set) must parse to a valid epoch (validate before converting).
+2. **Apply** by reusing the `updateTransaction` handler (`api/_handlers/transaction.handler.ts`) — pass `id` via `query` and only the changed fields in the body. It already reconciles account balances when `amount` changes (via `updateAccountBalance`) and writes the rest through `connector.updateTransactionPage`.
+3. **Edit the original message** — rebuild the confirmation from the updated transaction and `editMessageText(reply_to_message.message_id, newText)` (helper in `api/_lib/telegram.ts`), with an `(edited)` marker. The transaction ID remains inside `<code>...</code>` so further edits/deletes remain possible.
+4. **Confirm** — send a separate bold `✏️ Updated` message on success. On validation/Notion failure, send a bold warning and do not mutate the original confirmation.
+
+### Delete branch
+
+1. **Apply** by reusing the existing `deleteTransaction` handler (`api/_handlers/transaction.handler.ts:79`) — pass `id` via `query`. It already **reverses both account balances** and soft-deletes via `connector.archiveTransaction`.
+2. **Tombstone the original message** — `editMessageText(reply_to_message.message_id, "<b>🗑 Deleted</b>: <original summary>")`. The confirmation is kept (not removed) so chat history stays readable; the code-tagged transaction ID is removed so it can't be edited/deleted again.
+3. **Confirm** — send a separate bold `🗑 Deleted` message on success. On failure, send a bold warning and leave the original confirmation unchanged.
+
+### Reply inference contract
+
+A separate Gemini call (`inferReply` in `api/_lib/gemini.ts`) with its own schema. The edit fields are **nullable**, where `null` means **leave unchanged** — the model fills only the fields the user explicitly wants changed (and leaves them all `null` for `delete`/`none`):
+
+```json
+{
+  "action": "edit | delete | none",
+  "amount": 60000,
+  "categoryId": null,
+  "timestamp": null,
+  "note": null,
+  "reason": ""
+}
+```
+
+- `action` — `edit` (change one or more fields), `delete` (remove the transaction), or `none` (the reply isn't an edit/delete instruction — a comment, a question, etc.).
+- `amount` / `categoryId` / `timestamp` / `note` — for `action=edit`, the **new** value when the user wants it changed, otherwise `null` (unchanged); all `null` for `delete`/`none`. Same field semantics as the [main contract](#llm-inference-google-ai-studio--gemini) (amount = positive VND integer; categoryId = `selectable=yes` leaf; timestamp = full ISO 8601 `+07:00`).
+- `reason` — explanation when `action` is `none` (or `delete`, for the confirmation); otherwise a short optional remark.
 
 ---
 
@@ -162,14 +223,14 @@ On failure (LLM could not produce valid JSON, IDs invalid, or Notion error), pos
 | File | Role |
 |---|---|
 | `api/webhooks.ts` | Webhook route — validates `X-Telegram-Bot-Api-Secret-Token`, parses the update, always returns 200 |
-| `api/_handlers/webhook.handler.ts` | Business logic: filter chat/topic → load reference data → call LLM → reuse `logExpense`/`logIncome` → notify |
-| `api/_lib/gemini.ts` | Wraps the Google AI Studio request (text + inline images → strict JSON via `responseSchema`) |
-| `api/_lib/telegram.ts` | Shared Telegram helpers: `sendTelegramMessage`, `getTelegramFilePath`, `downloadTelegramFileAsBase64` (also used by `snapshot.handler.ts`) |
-| `api/_lib/types/telegram.type.ts` | `TelegramUpdate` / `TelegramMessage` / `InferredTransaction` types |
-| `api/_handlers/transaction.handler.ts` | Reused: `logExpense` / `logIncome` (validation + balance update) |
-| `api/_lib/connector.ts` | Reused: `fetchAllAccounts`, `fetchCategories`, `fetchAllCards`, `fetchAccount`, `fetchCategory`, `addExpense`, `addIncome`, `updateAccountAfterTransaction` |
+| `api/_handlers/webhook.handler.ts` | Business logic: filter chat/topic → route replies to edit/delete/no-op only, otherwise new transaction logging → load reference data → call LLM → reuse `logExpense`/`logIncome`, `updateTransaction` (edit), or `deleteTransaction` (delete) → notify |
+| `api/_lib/gemini.ts` | `inferTransaction` (new logs) and `inferReply` (reply edit/delete intent) — Google AI Studio requests returning strict JSON via `responseSchema` |
+| `api/_lib/telegram.ts` | Shared Telegram helpers: `sendTelegramMessage`, `editMessageText` (edit + delete tombstone), optional HTML `parse_mode`, `getTelegramFilePath`, `downloadTelegramFileAsBase64` (also used by `snapshot.handler.ts`) |
+| `api/_lib/types/telegram.type.ts` | `TelegramUpdate` / `TelegramMessage` (incl. `reply_to_message`) / `InferredTransaction` / `InferredReply` types |
+| `api/_handlers/transaction.handler.ts` | Reused: `logExpense` / `logIncome` (new transaction logging + balance update); `updateTransaction` (edit — balance reconcile + field update); `deleteTransaction` (delete — balance reverse + archive) |
+| `api/_lib/connector.ts` | Reused: `fetchAllAccounts`, `fetchCategories`, `fetchAllCards`, `fetchAccount`, `fetchCategory`, `addExpense`, `addIncome`, `updateAccountAfterTransaction`; for edit/delete `fetchTransaction`, `updateTransactionPage`, `updateAccountBalance`, `archiveTransaction` |
 | `middleware.ts` | `/api/webhooks` added to the auth bypass list |
-| `api/__tests__/handlers/webhook.handler.test.ts` | Unit tests (filtering, expense/income, timestamp parse, System reject, not_transaction, incomplete, image, error) |
+| `api/__tests__/handlers/webhook.handler.test.ts` | Unit tests (filtering, expense/income, timestamp parse, System reject, no-op/not-transaction, incomplete, image, error, ignored replies, reply-edit, reply-delete, not-an-edit/delete) |
 
 ---
 
@@ -209,3 +270,7 @@ To stop delivery: `POST .../deleteWebhook`.
 - **No persistent cache**: reference data is fetched fresh per message (see [Reference Data](#reference-data)).
 - **LLM mis-inference**: the model may pick the wrong account/category or misread an amount. There is no Accept/Reject confirmation, so corrections happen manually in Notion (or via the app).
 - **Non-atomic balance update**: matches existing transaction handlers — a failure between transaction creation and balance update leaves state inconsistent.
+- **Message deletion is not detectable**: the Telegram Bot API sends no update when a user deletes a message in a group (only `deleted_business_messages` for connected Telegram Business DMs, which doesn't apply here). So a transaction **cannot** be deleted by deleting its log message — deletion is done by **replying** "delete" to the confirmation instead.
+- **Edit/delete depends on the code-tagged transaction ID**: the reply flow finds the transaction by parsing the first `<code>...</code>` block from the replied-to message, so the transaction ID must remain wrapped in `<code>` in every confirmation and edited confirmation. After a delete, the message is tombstoned and the code-tagged ID is removed so it can't be acted on again. A reply without text/caption or to any message without that anchor is silently ignored and never falls through to normal new-transaction logging.
+- **Edit scope**: only amount, note, category, and timestamp are editable by reply; the account and the linked card cannot be changed this way, and a category can only change within the transaction's existing Income/Expense direction.
+- **`allowed_updates`**: replies arrive as ordinary `message` updates, so the existing `["message"]` registration already covers them — no `setWebhook` change is needed.

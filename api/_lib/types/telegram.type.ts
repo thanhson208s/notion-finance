@@ -21,6 +21,7 @@ export type TelegramMessage = {
   text?: string
   caption?: string
   photo?: TelegramPhoto[]
+  reply_to_message?: TelegramMessage
 }
 
 export type TelegramUpdate = {
@@ -51,5 +52,14 @@ export type InferredTransaction = {
   suggestion: string
   // User-facing explanation when kind != transaction (what's missing, or why the
   // message was not a transaction). Empty string when kind=transaction.
+  reason: string
+}
+
+export type InferredReply = {
+  action: "edit" | "delete" | "none"
+  amount: number | null
+  categoryId: string | null
+  timestamp: string | null
+  note: string | null
   reason: string
 }

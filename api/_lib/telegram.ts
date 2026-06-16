@@ -3,14 +3,32 @@
 
 const TELEGRAM_API = "https://api.telegram.org";
 
-export async function sendTelegramMessage(text: string): Promise<void> {
+type TelegramMessageOptions = {
+  parseMode?: "HTML"
+}
+
+export async function sendTelegramMessage(text: string, options: TelegramMessageOptions = {}): Promise<void> {
   await fetch(`${TELEGRAM_API}/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: process.env.TELEGRAM_CHAT_ID,
       message_thread_id: parseInt(process.env.TELEGRAM_TOPIC_ID ?? "0"),
-      text
+      text,
+      ...(options.parseMode && { parse_mode: options.parseMode })
+    })
+  });
+}
+
+export async function editMessageText(messageId: number, text: string, options: TelegramMessageOptions = {}): Promise<void> {
+  await fetch(`${TELEGRAM_API}/bot${process.env.TELEGRAM_BOT_TOKEN}/editMessageText`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: process.env.TELEGRAM_CHAT_ID,
+      message_id: messageId,
+      text,
+      ...(options.parseMode && { parse_mode: options.parseMode })
     })
   });
 }

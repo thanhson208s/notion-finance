@@ -384,7 +384,12 @@ export async function processTelegramUpdate(
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const action = message.reply_to_message ? "process reply" : "log transaction";
-    await sendTelegramMessage(`<b>⚠️ Could not ${escapeHtml(action)}</b>\n${escapeHtml(msg)}`, { parseMode: "HTML" });
+    console.error(`[webhooks] could not ${action}`, e);
+    try {
+      await sendTelegramMessage(`<b>⚠️ Could not ${escapeHtml(action)}</b>\n${escapeHtml(msg)}`, { parseMode: "HTML" });
+    } catch (sendError) {
+      console.error("[webhooks] failed to send error notification", sendError);
+    }
     return { status: "error", message: msg };
   }
 }

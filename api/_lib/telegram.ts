@@ -7,8 +7,20 @@ type TelegramMessageOptions = {
   parseMode?: "HTML"
 }
 
+async function assertTelegramOk(res: Response, action: string): Promise<void> {
+  if (res.ok) return;
+
+  let body = "";
+  try {
+    body = await res.text();
+  } catch {
+    body = "(failed to read response body)";
+  }
+  throw new Error(`Telegram ${action} failed: ${res.status} ${body}`);
+}
+
 export async function sendTelegramMessage(text: string, options: TelegramMessageOptions = {}): Promise<void> {
-  await fetch(`${TELEGRAM_API}/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+  const res = await fetch(`${TELEGRAM_API}/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -18,10 +30,11 @@ export async function sendTelegramMessage(text: string, options: TelegramMessage
       ...(options.parseMode && { parse_mode: options.parseMode })
     })
   });
+  await assertTelegramOk(res, "sendMessage");
 }
 
 export async function editMessageText(messageId: number, text: string, options: TelegramMessageOptions = {}): Promise<void> {
-  await fetch(`${TELEGRAM_API}/bot${process.env.TELEGRAM_BOT_TOKEN}/editMessageText`, {
+  const res = await fetch(`${TELEGRAM_API}/bot${process.env.TELEGRAM_BOT_TOKEN}/editMessageText`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -31,6 +44,7 @@ export async function editMessageText(messageId: number, text: string, options: 
       ...(options.parseMode && { parse_mode: options.parseMode })
     })
   });
+  await assertTelegramOk(res, "editMessageText");
 }
 
 // Resolves a Telegram file_id to a downloadable file_path via getFile.

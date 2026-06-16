@@ -285,17 +285,6 @@ export async function processTelegramUpdate(
     const replyTransactionId = extractTransactionId(replyAnchor.text, replyAnchor.entities);
     const hasReplyTransactionId = Boolean(replyTransactionId);
 
-    if (message.reply_to_message) {
-      console.info("[webhooks] reply routing", {
-        messageId: message.message_id,
-        replyMessageId: message.reply_to_message.message_id,
-        replyTextLength: replyAnchor.text.length,
-        replyEntityTypes: replyAnchor.entities.map(e => e.type),
-        hasReplyTransactionId,
-        transactionId: replyTransactionId,
-      });
-    }
-
     if (message.reply_to_message && hasReplyTransactionId) {
       return await processReplyUpdate(message, text, connector);
     }
@@ -414,11 +403,10 @@ export async function processTelegramUpdate(
     const msg = e instanceof Error ? e.message : String(e);
     const replyAnchor = getMessageTextAndEntities(message.reply_to_message);
     const action = extractTransactionId(replyAnchor.text, replyAnchor.entities) ? "process reply" : "log transaction";
-    console.error(`[webhooks] could not ${action}`, e);
     try {
       await sendTelegramMessage(`<b>⚠️ Could not ${escapeHtml(action)}</b>\n${escapeHtml(msg)}`, { parseMode: "HTML" });
-    } catch (sendError) {
-      console.error("[webhooks] failed to send error notification", sendError);
+    } catch {
+      // Outcome is logged by api/webhooks.ts; keep this handler quiet.
     }
     return { status: "error", message: msg };
   }

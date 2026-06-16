@@ -8,6 +8,10 @@ function parseUpdateBody(body: unknown): TelegramUpdate {
   return body as TelegramUpdate;
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed');
@@ -24,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const update = parseUpdateBody(req.body);
     const outcome = await processTelegramUpdate(update, new Connector());
     const message = update.message;
-    console.info('[webhooks] processed update', {
+    console.info('[webhooks] outcome', {
       updateId: update.update_id,
       status: outcome.status,
       reason: 'reason' in outcome ? outcome.reason : undefined,
@@ -38,7 +42,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hasPhoto: Boolean(message?.photo?.length),
     });
   } catch (e) {
-    console.error('Webhook processing error:', e);
+    console.info('[webhooks] outcome', {
+      status: 'error',
+      error: errorMessage(e),
+    });
   }
   return res.status(200).json({ ok: true });
 }

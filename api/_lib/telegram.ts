@@ -1,10 +1,11 @@
 // Shared Telegram Bot API helpers. Used by the webhook handler and the cron
-// run reports (snapshot/archive). All sends target the configured group/topic.
+// run reports (snapshot/archive). All sends target the configured chat.
 
 const TELEGRAM_API = "https://api.telegram.org";
 
 type TelegramMessageOptions = {
   parseMode?: "HTML"
+  replyToMessageId?: number
 }
 
 async function assertTelegramOk(res: Response, action: string): Promise<void> {
@@ -25,8 +26,10 @@ export async function sendTelegramMessage(text: string, options: TelegramMessage
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: process.env.TELEGRAM_CHAT_ID,
-      message_thread_id: parseInt(process.env.TELEGRAM_TOPIC_ID ?? "0"),
       text,
+      ...(options.replyToMessageId !== undefined && {
+        reply_parameters: { message_id: options.replyToMessageId }
+      }),
       ...(options.parseMode && { parse_mode: options.parseMode })
     })
   });

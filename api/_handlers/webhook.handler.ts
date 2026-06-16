@@ -132,8 +132,11 @@ function buildDeletedMessage(input: {
   ].join("\n");
 }
 
-async function sendNoOp(reason: string): Promise<WebhookOutcome> {
-  await sendTelegramMessage(`<b>🤖 No action</b>\n${escapeHtml(reason)}`, { parseMode: "HTML" });
+async function sendNoOp(reason: string, replyToMessageId?: number): Promise<WebhookOutcome> {
+  await sendTelegramMessage(
+    `<b>🤖 No action</b>\n${escapeHtml(reason)}`,
+    { parseMode: "HTML", replyToMessageId }
+  );
   return { status: "no_op", reason };
 }
 
@@ -179,7 +182,7 @@ async function processReplyUpdate(
   });
 
   if (action.action === "none") {
-    return sendNoOp(action.reason || "This reply is not an edit or delete instruction.");
+    return sendNoOp(action.reason || "This reply is not an edit or delete instruction.", message.message_id);
   }
 
   if (action.action === "delete") {
@@ -191,7 +194,10 @@ async function processReplyUpdate(
       buildDeletedMessage({ transaction, direction, accountName: account.name, cardLabel, categoryLabel }),
       { parseMode: "HTML" }
     );
-    await sendTelegramMessage(`<b>🗑 Deleted</b>\nDeleted transaction <code>${escapeHtml(transactionId)}</code>.`, { parseMode: "HTML" });
+    await sendTelegramMessage(
+      `<b>🗑 Deleted</b>\nDeleted transaction <code>${escapeHtml(transactionId)}</code>.`,
+      { parseMode: "HTML", replyToMessageId: message.message_id }
+    );
     return { status: "deleted", transactionId };
   }
 
@@ -200,7 +206,7 @@ async function processReplyUpdate(
   const hasTimestamp = action.timestamp !== null;
   const hasNote = action.note !== null;
   if (!hasAmount && !hasCategory && !hasTimestamp && !hasNote) {
-    return sendNoOp("Nothing to change.");
+    return sendNoOp("Nothing to change.", message.message_id);
   }
 
   const body: UpdateTransactionRequest = {};
@@ -258,7 +264,10 @@ async function processReplyUpdate(
     }),
     { parseMode: "HTML" }
   );
-  await sendTelegramMessage(`<b>✏️ Updated</b>\nUpdated transaction <code>${escapeHtml(transactionId)}</code>.`, { parseMode: "HTML" });
+  await sendTelegramMessage(
+    `<b>✏️ Updated</b>\nUpdated transaction <code>${escapeHtml(transactionId)}</code>.`,
+    { parseMode: "HTML", replyToMessageId: message.message_id }
+  );
   return { status: "updated", transactionId };
 }
 
@@ -269,14 +278,10 @@ export async function processTelegramUpdate(
   const message = update?.message;
   if (!message) return { status: "ignored", reason: "no message" };
 
-  // Restrict to the configured group + topic.
+  // Restrict to the configured chat.
   const chatId = process.env.TELEGRAM_CHAT_ID;
-  const topicId = parseInt(process.env.TELEGRAM_TOPIC_ID ?? "0");
   if (String(message.chat?.id) !== String(chatId)) {
     return { status: "ignored", reason: "wrong chat" };
-  }
-  if ((message.message_thread_id ?? 0) !== topicId) {
-    return { status: "ignored", reason: "wrong topic" };
   }
 
   try {
@@ -313,7 +318,10 @@ export async function processTelegramUpdate(
 
     // Not a transaction at all — notify briefly and stop.
     if (inferred.kind === "not_transaction") {
-      await sendTelegramMessage(`🤖 ${inferred.reason || "This doesn't look like a transaction, so nothing was logged."}`);
+      await sendTelegramMessage(
+        `🤖 ${inferred.reason || "This doesn't look like a transaction, so nothing was logged."}`,
+        { replyToMessageId: message.message_id }
+      );
       return { status: "not_transaction", reason: inferred.reason };
     }
 
@@ -324,7 +332,10 @@ export async function processTelegramUpdate(
       inferred.amount == null || inferred.amount <= 0 ||
       !inferred.accountId || !inferred.categoryId
     ) {
-      await sendTelegramMessage(`<b>❓ Couldn't log</b>\n${escapeHtml(inferred.reason || "missing critical details")}. Please resend with the missing info.`, { parseMode: "HTML" });
+      await sendTelegramMessage(
+        `<b>❓ Couldn't log</b>\n${escapeHtml(inferred.reason || "missing critical details")}. Please resend with the missing info.`,
+        { parseMode: "HTML", replyToMessageId: message.message_id }
+      );
       return { status: "incomplete", reason: inferred.reason };
     }
 
@@ -395,7 +406,7 @@ export async function processTelegramUpdate(
         note,
         suggestion: inferred.suggestion
       }),
-      { parseMode: "HTML" }
+      { parseMode: "HTML", replyToMessageId: message.message_id }
     );
 
     return { status: "logged", transactionId };
@@ -404,7 +415,10 @@ export async function processTelegramUpdate(
     const replyAnchor = getMessageTextAndEntities(message.reply_to_message);
     const action = extractTransactionId(replyAnchor.text, replyAnchor.entities) ? "process reply" : "log transaction";
     try {
-      await sendTelegramMessage(`<b>⚠️ Could not ${escapeHtml(action)}</b>\n${escapeHtml(msg)}`, { parseMode: "HTML" });
+      await sendTelegramMessage(
+        `<b>⚠️ Could not ${escapeHtml(action)}</b>\n${escapeHtml(msg)}`,
+        { parseMode: "HTML", replyToMessageId: message.message_id }
+      );
     } catch {
       // Outcome is logged by api/webhooks.ts; keep this handler quiet.
     }

@@ -35,7 +35,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: 'message' in outcome ? outcome.message : undefined,
       transactionId: 'transactionId' in outcome ? outcome.transactionId : undefined,
       chatId: message?.chat?.id,
-      threadId: message?.message_thread_id,
       messageId: message?.message_id,
       hasReply: Boolean(message?.reply_to_message),
       hasText: Boolean(message?.text || message?.caption),

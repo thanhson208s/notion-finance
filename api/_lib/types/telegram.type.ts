@@ -23,7 +23,6 @@ export type TelegramMessageEntity = {
 export type TelegramMessage = {
   message_id: number
   chat: TelegramChat
-  message_thread_id?: number
   text?: string
   caption?: string
   entities?: TelegramMessageEntity[]

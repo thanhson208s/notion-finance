@@ -20,7 +20,6 @@ const sendMock = vi.mocked(sendTelegramMessage)
 const editMessageMock = vi.mocked(editMessageText)
 
 const CHAT_ID = '12345'
-const TOPIC_ID = 7
 
 const expenseCat: Category = { id: 'cat-1', name: 'Food', type: 'Expense', parentId: null, note: '' }
 const parentExpenseCat: Category = { id: 'cat-parent', name: 'Food', type: 'Expense', parentId: null, note: '' }
@@ -82,7 +81,6 @@ const makeUpdate = (updateId: number, over: Partial<TelegramUpdate['message']> =
   message: {
     message_id: updateId,
     chat: { id: Number(CHAT_ID) },
-    message_thread_id: TOPIC_ID,
     text: '50k coffee momo',
     ...over,
   },
@@ -101,7 +99,6 @@ describe('processTelegramUpdate()', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubEnv('TELEGRAM_CHAT_ID', CHAT_ID)
-    vi.stubEnv('TELEGRAM_TOPIC_ID', String(TOPIC_ID))
   })
 
   it('ignores updates with no message', async () => {
@@ -118,12 +115,6 @@ describe('processTelegramUpdate()', () => {
     expect(sendMock).not.toHaveBeenCalled()
   })
 
-  it('ignores updates from the wrong topic', async () => {
-    const res = await processTelegramUpdate(makeUpdate(102, { message_thread_id: 999 }), makeConnector([expenseCat]))
-    expect(res).toMatchObject({ status: 'ignored', reason: 'wrong topic' })
-    expect(sendMock).not.toHaveBeenCalled()
-  })
-
   it('logs an expense and sends a confirmation', async () => {
     inferMock.mockResolvedValue(inferred({ amount: 50, categoryId: 'cat-1' }))
     const connector = makeConnector([expenseCat])
@@ -131,8 +122,8 @@ describe('processTelegramUpdate()', () => {
     expect(res).toMatchObject({ status: 'logged', transactionId: 'tx-1' })
     expect(connector.addExpense).toHaveBeenCalled()
     expect(connector.addIncome).not.toHaveBeenCalled()
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('<b>✅ Logged</b>'), { parseMode: 'HTML' })
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Card: None'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('<b>✅ Logged</b>'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 103 }))
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Card: None'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 103 }))
   })
 
   it('shows linked card name and number in confirmation', async () => {
@@ -142,7 +133,7 @@ describe('processTelegramUpdate()', () => {
     })
     await processTelegramUpdate(makeUpdate(122), connector)
     expect(connector.addExpense).toHaveBeenCalledWith('acc-1', 50, 'cat-1', 'coffee', expect.any(Number), 'card-1', undefined, undefined)
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Card: Visa Platinum (411111******1111)'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Card: Visa Platinum (411111******1111)'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 122 }))
   })
 
   it("uses the model's note as the transaction note and appends a suggestion", async () => {
@@ -150,7 +141,7 @@ describe('processTelegramUpdate()', () => {
     const connector = makeConnector([expenseCat])
     await processTelegramUpdate(makeUpdate(110), connector)
     expect(connector.addExpense).toHaveBeenCalledWith('acc-1', 50, 'cat-1', 'Highlands coffee', expect.any(Number), undefined, undefined, undefined)
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('💡 Consider the Cafe subcategory'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('💡 Consider the Cafe subcategory'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 110 }))
   })
 
   it('notifies and does not log when input is not a transaction', async () => {
@@ -159,7 +150,7 @@ describe('processTelegramUpdate()', () => {
     const res = await processTelegramUpdate(makeUpdate(111, { text: 'hello everyone' }), connector)
     expect(res).toMatchObject({ status: 'not_transaction' })
     expect(connector.addExpense).not.toHaveBeenCalled()
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Just a greeting'))
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Just a greeting'), expect.objectContaining({ replyToMessageId: 111 }))
   })
 
   it('notifies and does not log when a transaction is missing critical info', async () => {
@@ -168,7 +159,7 @@ describe('processTelegramUpdate()', () => {
     const res = await processTelegramUpdate(makeUpdate(112, { text: '50k coffee' }), connector)
     expect(res).toMatchObject({ status: 'incomplete' })
     expect(connector.addExpense).not.toHaveBeenCalled()
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('no account specified'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('no account specified'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 112 }))
   })
 
   it('treats kind=transaction with a null critical field as incomplete', async () => {
@@ -201,7 +192,7 @@ describe('processTelegramUpdate()', () => {
     const connector = makeConnector([systemCat])
     const res = await processTelegramUpdate(makeUpdate(106), connector)
     expect(res.status).toBe('error')
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('⚠️'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('⚠️'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 106 }))
   })
 
   it('reports an error when inference fails', async () => {
@@ -209,7 +200,7 @@ describe('processTelegramUpdate()', () => {
     const connector = makeConnector([expenseCat])
     const res = await processTelegramUpdate(makeUpdate(107), connector)
     expect(res).toMatchObject({ status: 'error' })
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Could not log'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Could not log'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 107 }))
   })
 
   it('downloads the largest photo and passes it to the LLM', async () => {
@@ -236,7 +227,6 @@ describe('processTelegramUpdate()', () => {
       reply_to_message: {
         message_id: 1,
         chat: { id: Number(CHAT_ID) },
-        message_thread_id: TOPIC_ID,
         text: 'hello',
       },
     }), connector)
@@ -244,7 +234,7 @@ describe('processTelegramUpdate()', () => {
     expect(inferMock).toHaveBeenCalled()
     expect(inferReplyMock).not.toHaveBeenCalled()
     expect(connector.addExpense).toHaveBeenCalled()
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('<b>✅ Logged</b>'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('<b>✅ Logged</b>'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 114 }))
   })
 
   it('ignores an empty reply without notifying or inferring', async () => {
@@ -254,7 +244,6 @@ describe('processTelegramUpdate()', () => {
       reply_to_message: {
         message_id: 1,
         chat: { id: Number(CHAT_ID) },
-        message_thread_id: TOPIC_ID,
         text: '✅ Logged\n<code>tx-1</code>',
       },
     }), connector)
@@ -273,14 +262,13 @@ describe('processTelegramUpdate()', () => {
       reply_to_message: {
         message_id: 1,
         chat: { id: Number(CHAT_ID) },
-        message_thread_id: TOPIC_ID,
         text: '✅ Logged\n<code>tx-1</code>',
       },
     }), connector)
     expect(res.status).toBe('no_op')
     expect(connector.updateTransactionPage).not.toHaveBeenCalled()
     expect(connector.archiveTransaction).not.toHaveBeenCalled()
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('just a comment'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('just a comment'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 115 }))
   })
 
   it('reply edit amount reuses updateTransaction balance reconciliation and edits the confirmation', async () => {
@@ -294,7 +282,6 @@ describe('processTelegramUpdate()', () => {
       reply_to_message: {
         message_id: 99,
         chat: { id: Number(CHAT_ID) },
-        message_thread_id: TOPIC_ID,
         text: '✅ Logged\n<code>tx-1</code>',
       },
     }), connector)
@@ -316,7 +303,6 @@ describe('processTelegramUpdate()', () => {
       reply_to_message: {
         message_id: 99,
         chat: { id: Number(CHAT_ID) },
-        message_thread_id: TOPIC_ID,
         text: repliedText,
         entities: [{ type: 'code', offset: repliedText.indexOf('tx-1'), length: 'tx-1'.length }],
       },
@@ -333,7 +319,6 @@ describe('processTelegramUpdate()', () => {
       reply_to_message: {
         message_id: 99,
         chat: { id: Number(CHAT_ID) },
-        message_thread_id: TOPIC_ID,
         text: '✅ Logged\n<code>tx-1</code>',
       },
     })
@@ -369,13 +354,12 @@ describe('processTelegramUpdate()', () => {
       reply_to_message: {
         message_id: 99,
         chat: { id: Number(CHAT_ID) },
-        message_thread_id: TOPIC_ID,
         text: '✅ Logged\n<code>tx-1</code>',
       },
     }), connector)
     expect(res.status).toBe('error')
     expect(connector.updateTransactionPage).not.toHaveBeenCalled()
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Inferred timestamp invalid'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Inferred timestamp invalid'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 118 }))
   })
 
   it('reply delete archives the transaction and tombstones the original message without a Tx anchor', async () => {
@@ -387,7 +371,6 @@ describe('processTelegramUpdate()', () => {
       reply_to_message: {
         message_id: 99,
         chat: { id: Number(CHAT_ID) },
-        message_thread_id: TOPIC_ID,
         text: '✅ Logged\n<code>tx-1</code>',
       },
     }), connector)
@@ -403,8 +386,8 @@ describe('processTelegramUpdate()', () => {
     inferMock.mockResolvedValue(inferred({ categoryId: 'cat-child' }))
     const connector = makeConnector([parentExpenseCat, childExpenseCat])
     await processTelegramUpdate(makeUpdate(120), connector)
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('<b>✅ Logged</b>'), { parseMode: 'HTML' })
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Tx: <code>tx-1</code>'), { parseMode: 'HTML' })
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Category: Food &gt; Cafe'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('<b>✅ Logged</b>'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 120 }))
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Tx: <code>tx-1</code>'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 120 }))
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Category: Food &gt; Cafe'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 120 }))
   })
 })

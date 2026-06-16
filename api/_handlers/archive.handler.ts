@@ -9,7 +9,6 @@ async function sendTelegramMessage(text: string): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: process.env.TELEGRAM_CHAT_ID,
-      message_thread_id: parseInt(process.env.TELEGRAM_TOPIC_ID ?? "0"),
       text
     })
   });

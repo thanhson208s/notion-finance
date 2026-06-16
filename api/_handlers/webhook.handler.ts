@@ -7,7 +7,7 @@ import {
   downloadTelegramFileAsBase64,
   editMessageText
 } from "../_lib/telegram";
-import { TelegramMessage, TelegramUpdate } from "../_lib/types/telegram.type";
+import { TelegramMessage, TelegramMessageEntity, TelegramUpdate } from "../_lib/types/telegram.type";
 import { LogExpenseRequest, LogIncomeRequest, UpdateTransactionRequest } from "../_lib/types/request";
 import { QueryError } from "../_lib/types/error";
 import { Category } from "../_lib/types/category.type";
@@ -36,7 +36,22 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function extractTransactionId(text: string): string | null {
+function getMessageTextAndEntities(message?: TelegramMessage): {
+  text: string
+  entities: TelegramMessageEntity[]
+} {
+  if (!message) return { text: "", entities: [] };
+  if (message.text !== undefined) return { text: message.text, entities: message.entities ?? [] };
+  return { text: message.caption ?? "", entities: message.caption_entities ?? [] };
+}
+
+function extractTransactionId(text: string, entities: TelegramMessageEntity[] = []): string | null {
+  const codeEntity = entities.find(e => e.type === "code");
+  if (codeEntity) {
+    const value = text.slice(codeEntity.offset, codeEntity.offset + codeEntity.length).trim();
+    if (value) return value;
+  }
+
   return text.match(/<code>([^<]+)<\/code>/)?.[1] ?? null;
 }
 
@@ -66,7 +81,7 @@ function getTransactionAccountId(transaction: Transaction): string {
 }
 
 function formatCardLabel(card: Card | null): string {
-  return card ? `${card.name} (${card.number})` : `"None"`;
+  return card ? `${card.name} (${card.number})` : `None`;
 }
 
 async function getTransactionCardLabel(transaction: Transaction, connector: Connector): Promise<string> {
@@ -128,8 +143,8 @@ async function processReplyUpdate(
   connector: Connector
 ): Promise<WebhookOutcome> {
   const repliedTo = message.reply_to_message;
-  const anchorText = repliedTo?.text ?? repliedTo?.caption ?? "";
-  const transactionId = extractTransactionId(anchorText);
+  const anchor = getMessageTextAndEntities(repliedTo);
+  const transactionId = extractTransactionId(anchor.text, anchor.entities);
 
   if (!transactionId) {
     return { status: "ignored", reason: "reply without transaction id" };
@@ -266,8 +281,20 @@ export async function processTelegramUpdate(
 
   try {
     const text = message.text ?? message.caption ?? "";
-    const replyAnchorText = message.reply_to_message?.text ?? message.reply_to_message?.caption ?? "";
-    const hasReplyTransactionId = Boolean(extractTransactionId(replyAnchorText));
+    const replyAnchor = getMessageTextAndEntities(message.reply_to_message);
+    const replyTransactionId = extractTransactionId(replyAnchor.text, replyAnchor.entities);
+    const hasReplyTransactionId = Boolean(replyTransactionId);
+
+    if (message.reply_to_message) {
+      console.info("[webhooks] reply routing", {
+        messageId: message.message_id,
+        replyMessageId: message.reply_to_message.message_id,
+        replyTextLength: replyAnchor.text.length,
+        replyEntityTypes: replyAnchor.entities.map(e => e.type),
+        hasReplyTransactionId,
+        transactionId: replyTransactionId,
+      });
+    }
 
     if (message.reply_to_message && hasReplyTransactionId) {
       return await processReplyUpdate(message, text, connector);
@@ -385,8 +412,8 @@ export async function processTelegramUpdate(
     return { status: "logged", transactionId };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    const replyAnchorText = message.reply_to_message?.text ?? message.reply_to_message?.caption ?? "";
-    const action = extractTransactionId(replyAnchorText) ? "process reply" : "log transaction";
+    const replyAnchor = getMessageTextAndEntities(message.reply_to_message);
+    const action = extractTransactionId(replyAnchor.text, replyAnchor.entities) ? "process reply" : "log transaction";
     console.error(`[webhooks] could not ${action}`, e);
     try {
       await sendTelegramMessage(`<b>⚠️ Could not ${escapeHtml(action)}</b>\n${escapeHtml(msg)}`, { parseMode: "HTML" });

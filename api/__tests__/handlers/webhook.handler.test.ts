@@ -132,7 +132,7 @@ describe('processTelegramUpdate()', () => {
     expect(connector.addExpense).toHaveBeenCalled()
     expect(connector.addIncome).not.toHaveBeenCalled()
     expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('<b>✅ Logged</b>'), { parseMode: 'HTML' })
-    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Card: &quot;None&quot;'), { parseMode: 'HTML' })
+    expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('Card: None'), { parseMode: 'HTML' })
   })
 
   it('shows linked card name and number in confirmation', async () => {
@@ -302,8 +302,29 @@ describe('processTelegramUpdate()', () => {
     expect(updateAccountBalance).toHaveBeenCalledWith('acc-1', 190)
     expect(updateTransactionPage).toHaveBeenCalledWith('tx-1', expect.objectContaining({ amount: 60 }))
     expect(editMessageMock).toHaveBeenCalledWith(99, expect.stringContaining('<b>✅ Logged (edited)</b>'), { parseMode: 'HTML' })
-    expect(editMessageMock).toHaveBeenCalledWith(99, expect.stringContaining('Card: &quot;None&quot;'), { parseMode: 'HTML' })
+    expect(editMessageMock).toHaveBeenCalledWith(99, expect.stringContaining('Card: None'), { parseMode: 'HTML' })
     expect(editMessageMock).toHaveBeenCalledWith(99, expect.stringContaining('Tx: <code>tx-1</code>'), { parseMode: 'HTML' })
+  })
+
+  it('detects transaction id from Telegram code entity in replied-to message', async () => {
+    inferReplyMock.mockResolvedValue(inferredReply({ amount: 60 }))
+    const fetchTransaction = vi.fn().mockResolvedValue(makeTx(50))
+    const connector = makeConnector([expenseCat], { fetchTransaction })
+    const repliedText = 'Logged\nTx: tx-1'
+    const res = await processTelegramUpdate(makeUpdate(123, {
+      text: 'make it 60k',
+      reply_to_message: {
+        message_id: 99,
+        chat: { id: Number(CHAT_ID) },
+        message_thread_id: TOPIC_ID,
+        text: repliedText,
+        entities: [{ type: 'code', offset: repliedText.indexOf('tx-1'), length: 'tx-1'.length }],
+      },
+    }), connector)
+    expect(res).toMatchObject({ status: 'updated', transactionId: 'tx-1' })
+    expect(fetchTransaction).toHaveBeenCalledWith('tx-1')
+    expect(inferReplyMock).toHaveBeenCalled()
+    expect(inferMock).not.toHaveBeenCalled()
   })
 
   it('reply edit rejects parent, System, and cross-direction categories', async () => {

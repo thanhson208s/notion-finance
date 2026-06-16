@@ -14,12 +14,20 @@ export type TelegramChat = {
   type?: string
 }
 
+export type TelegramMessageEntity = {
+  type: string
+  offset: number
+  length: number
+}
+
 export type TelegramMessage = {
   message_id: number
   chat: TelegramChat
   message_thread_id?: number
   text?: string
   caption?: string
+  entities?: TelegramMessageEntity[]
+  caption_entities?: TelegramMessageEntity[]
   photo?: TelegramPhoto[]
   reply_to_message?: TelegramMessage
 }

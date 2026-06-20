@@ -4,7 +4,7 @@ import { publishWebhookJobMessage } from "../../_lib/qstash";
 import { TelegramUpdate } from "../../_lib/types/telegram.type";
 
 vi.mock("../../_lib/qstash", () => ({
-  publicWebhookJobMessage: vi.fn(),
+  publishWebhookJobMessage: vi.fn(),
 }));
 
 const publishMock = vi.mocked(publishWebhookJobMessage);

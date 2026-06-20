@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { publicWebhookJobMessage } from "../_lib/qstash";
+import { publishWebhookJobMessage } from "../_lib/qstash";
 import { TelegramUpdate } from "../_lib/types/telegram.type";
 
 export async function handleWebhookRequest(req: VercelRequest, res: VercelResponse) {
@@ -27,7 +27,7 @@ export async function handleWebhookRequest(req: VercelRequest, res: VercelRespon
       return res.status(200).json({ ok: true });
     }
 
-    await publicWebhookJobMessage(`update.update_id`, update);
+    await publishWebhookJobMessage(`telegram:job:${update.update_id}`, update);
     console.info("[webhooks] outcome", {
       updateId: update.update_id,
       status: "queued",

@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { handleWebhookRequest } from "../../_handlers/webhook.handler";
-import { publicWebhookJobMessage } from "../../_lib/qstash";
+import { publishWebhookJobMessage } from "../../_lib/qstash";
 import { TelegramUpdate } from "../../_lib/types/telegram.type";
 
 vi.mock("../../_lib/qstash", () => ({
   publicWebhookJobMessage: vi.fn(),
 }));
 
-const publishMock = vi.mocked(publicWebhookJobMessage);
+const publishMock = vi.mocked(publishWebhookJobMessage);
 
 function makeResponse() {
   return {

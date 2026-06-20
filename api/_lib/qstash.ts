@@ -1,6 +1,6 @@
 import { Client } from "@upstash/qstash";
 
-export async function publicWebhookJobMessage(dedupId: string, update: unknown): Promise<void> {
+export async function publishWebhookJobMessage(dedupId: string, update: unknown): Promise<void> {
   const client = new Client({ token: process.env.QSTASH_TOKEN });
   await client.publishJSON({
     url: process.env.QSTASH_WORKER_URL as string,

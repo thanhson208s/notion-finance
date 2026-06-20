@@ -27,7 +27,7 @@ export async function handleWebhookRequest(req: VercelRequest, res: VercelRespon
       return res.status(200).json({ ok: true });
     }
 
-    await publishWebhookJobMessage(`telegram:job:${update.update_id}`, update);
+    await publishWebhookJobMessage(`telegram-job-${update.update_id}`, update);
     console.info("[webhooks] outcome", {
       updateId: update.update_id,
       status: "queued",

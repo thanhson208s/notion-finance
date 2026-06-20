@@ -6,7 +6,6 @@ import { Account } from "./types/account.type";
 import { Category } from "./types/category.type";
 import { Card } from "./types/card.type";
 import { InferredReply, InferredTransaction } from "./types/telegram.type";
-import { QueryError } from "./types/error";
 
 type TransactionInferInput = {
   text: string
@@ -160,20 +159,20 @@ export async function inferTransaction(input: TransactionInferInput): Promise<In
   );
 
   if (!res.ok) {
-    throw new QueryError(`Gemini request failed: ${res.status}`);
+    throw new Error(`Gemini request failed: ${res.status}`);
   }
 
   const json = (await res.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] } }[]
   };
   const raw = json.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!raw) throw new QueryError("Gemini returned no content");
+  if (!raw) throw new Error("Gemini returned no content");
 
   let parsed: InferredTransaction;
   try {
     parsed = JSON.parse(raw) as InferredTransaction;
   } catch {
-    throw new QueryError("Gemini returned invalid JSON");
+    throw new Error("Gemini returned invalid JSON");
   }
   return parsed;
 }
@@ -198,20 +197,20 @@ export async function inferReply(input: ReplyInferInput): Promise<InferredReply>
   );
 
   if (!res.ok) {
-    throw new QueryError(`Gemini request failed: ${res.status}`);
+    throw new Error(`Gemini request failed: ${res.status}`);
   }
 
   const json = (await res.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] } }[]
   };
   const raw = json.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!raw) throw new QueryError("Gemini returned no content");
+  if (!raw) throw new Error("Gemini returned no content");
 
   let parsed: InferredReply;
   try {
     parsed = JSON.parse(raw) as InferredReply;
   } catch {
-    throw new QueryError("Gemini returned invalid JSON");
+    throw new Error("Gemini returned invalid JSON");
   }
   return parsed;
 }

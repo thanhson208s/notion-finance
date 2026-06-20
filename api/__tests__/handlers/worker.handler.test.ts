@@ -535,6 +535,17 @@ describe('handleWorkerRequest()', () => {
     expect(setStateMock).not.toHaveBeenCalled()
   })
 
+  it('treats Gemini 503 as transient before the final attempt', async () => {
+    inferMock.mockRejectedValue(new Error('Gemini request failed: 503'))
+    const res = makeResponse()
+
+    await handleWorkerRequest(makeWorkerRequest({ 'upstash-retried': '1' }) as never, res as never)
+
+    expect(res.statusCode).toBe(500)
+    expect(sendMock).not.toHaveBeenCalled()
+    expect(setStateMock).not.toHaveBeenCalled()
+  })
+
   it('sends one failure reply and stores failed state on the final transient attempt', async () => {
     inferMock.mockRejectedValue(new Error('Gemini unavailable'))
     const res = makeResponse()

@@ -6,17 +6,17 @@
 
 ## Overview
 
-A Telegram bot receives messages (text and/or images) posted in a single pre-configured chat. Each message is parsed by a Google AI Studio (Gemini) LLM into a structured transaction, logged to Notion, and confirmed back in the same chat.
+A Telegram bot receives messages (text and/or images) posted in a single pre-configured chat. Telegram delivery is acknowledged quickly, then a QStash worker parses each message with Google AI Studio (Gemini), logs the transaction to Notion, and sends one final reply in Telegram.
 
 This replaces the retired self-hosted agent under `agent/` with a simpler server-side flow. There is **no Accept/Reject step** — the transaction is logged immediately and a confirmation message is sent.
 
 End-to-end flow:
 
 1. Telegram pushes an update to `POST /api/webhooks` (text + optional images), restricted to the configured chat.
-2. The handler loads accounts, categories, and cards from Notion.
-3. The message content plus the reference lists are sent to the Gemini endpoint, which returns a JSON object `{ kind, amount, categoryId, accountId, linkedCardId, timestamp, note, suggestion, reason }`.
-4. The transaction is logged to Notion (balance updated).
-5. A formatted confirmation notification is posted back to the same chat.
+2. The ingress handler validates Telegram, does cheap filtering, enqueues the update to QStash, and returns promptly.
+3. QStash calls `POST /api/worker`, which deduplicates by Telegram `update_id` using Redis.
+4. The worker loads accounts, categories, and cards from Notion, then sends message content plus reference lists to Gemini.
+5. The transaction is logged/edited/deleted in Notion, and one final Telegram reply is sent to the requesting user message.
 
 **Editing/deleting by reply:** a user can **reply** to a transaction's confirmation message in natural language to edit it (e.g. "change to 60k", "should be the Cafe category") or delete it (e.g. "delete this"). This branch is detected up front and handled separately — see [Editing or deleting a logged transaction (via reply)](#editing-or-deleting-a-logged-transaction-via-reply).
 
@@ -28,14 +28,15 @@ End-to-end flow:
 |---|---|
 | Method | `POST` |
 | Path | `/api/webhooks` |
-| Handler | `api/webhooks.ts` → `api/_handlers/webhook.handler.ts` |
+| Handler | `api/webhooks.ts` → `api/_handlers/webhook.handler.ts` → QStash → `api/worker.ts` → `api/_handlers/worker.handler.ts` |
 
-Telegram cannot send the `x-cloudflare-secret` header or a JWT, so the default middleware checks must not apply to this route:
+Telegram and QStash cannot send the normal Cloudflare/JWT headers, so default middleware checks must not apply to these routes:
 
 - `/api/webhooks` is added to the bypass list in `middleware.ts` (alongside `/api/auth` and `/api/cron/*`).
-- Authenticate instead by validating Telegram's `X-Telegram-Bot-Api-Secret-Token` header against `TELEGRAM_WEBHOOK_SECRET`. Reject with HTTP 401 if it does not match. The secret is registered with Telegram via `setWebhook` (see [Setup](#setup-setwebhook)).
+- `/api/worker` is also bypassed and authenticates by validating `X-QStash-Worker-Secret` against `QSTASH_WORKER_SECRET`.
+- `/api/webhooks` validates Telegram's `X-Telegram-Bot-Api-Secret-Token` header against `TELEGRAM_WEBHOOK_SECRET`. Reject with HTTP 401 if it does not match. The secret is registered with Telegram via `setWebhook` (see [Setup](#setup-setwebhook)).
 
-**Chat filtering**: ignore any update whose `message.chat.id` does not equal `TELEGRAM_CHAT_ID`. Filtered updates are acknowledged with HTTP 200 (no action). Always respond `200` promptly so Telegram does not retry the delivery.
+**Chat filtering**: ignore any update whose `message.chat.id` does not equal `TELEGRAM_CHAT_ID`. Filtered updates are acknowledged with HTTP 200 (no action). If enqueueing to QStash fails, `/api/webhooks` returns HTTP 500 so Telegram can retry.
 
 ---
 
@@ -52,6 +53,26 @@ Fields consumed from the incoming [Telegram Update](https://core.telegram.org/bo
 | `message.reply_to_message` | Message | May be present for explicit replies or other Telegram reply metadata. It routes to the [edit/delete flow](#editing-or-deleting-a-logged-transaction-via-reply) only when its text/caption carries the transaction ID as a Telegram `code` entity (or literal `<code>...</code>` markup in tests/raw text) |
 
 **Image handling**: a `photo` entry only carries a `file_id`. To pass the image to Gemini: call `getFile` (`https://api.telegram.org/bot<token>/getFile?file_id=...`) to get a `file_path`, download from `https://api.telegram.org/file/bot<token>/<file_path>`, then send it to the LLM as inline base64 data.
+
+---
+
+## Queue, Retry, and Deduplication
+
+`POST /api/webhooks` never runs Gemini or Notion work directly. It publishes the original Telegram update to QStash using constants from `api/_lib/qstash.ts`:
+
+- destination: `QSTASH_URL`
+- deduplication id: `telegram-update-${update.update_id}`
+- header: `X-QStash-Worker-Secret: <QSTASH_WORKER_SECRET>`
+- retries: `QSTASH_MAX_ATTEMPTS - 1` (total deliveries: 5)
+- timeout: `QSTASH_TIMEOUT_SECONDS` (60 seconds)
+
+`POST /api/worker` uses Upstash Redis:
+
+- state key: `telegram:update:${update_id}`
+- lock key: `telegram:lock:${update_id}`
+- state TTL: `JOB_STATE_TTL_SECONDS` (86400 / 1 day)
+
+If state already exists, the worker returns HTTP 200 without processing. If the lock exists, it also returns HTTP 200 because another delivery is already processing the update. Transient worker failures return HTTP 500 until the final configured attempt; permanent `QueryError` failures and final exhausted transient failures store a failed state and send one Telegram failure reply. Without a custom `retryDelay`, QStash uses its default exponential backoff after failures: about 12s, 2m28s, 30m8s, 6h7m, then capped at 24h.
 
 ---
 
@@ -121,7 +142,7 @@ Before logging, the handler branches on the model's `kind` (and defensively re-c
 | **Incomplete** | `kind = incomplete`, **or** `amount`/`accountId`/`categoryId` is null or `amount <= 0` (even if the model said `transaction`) | Post `❓ Couldn't log — <reason>. Please resend with the missing info.`; do **not** log. Outcome `incomplete`. |
 | **Transaction** | `kind = transaction` and all critical fields present | Proceed to logging below. |
 
-Critical fields are **amount, account, category** (card is optional; timestamp is always derived). The route still returns HTTP 200 in every case.
+Critical fields are **amount, account, category** (card is optional; timestamp is always derived). These outcomes are terminal worker states and are stored in Redis.
 
 ---
 
@@ -140,7 +161,7 @@ As with the existing handlers, the create + balance-update is **not atomic**.
 
 ## Confirmation Notification
 
-After a successful log, post a confirmation to the configured chat using `sendTelegramMessage()` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`). Webhook notifications use Telegram HTML `parse_mode`: headings are bold, dynamic content is HTML-escaped, and the transaction ID is rendered as monospace.
+After a successful log, post one confirmation reply to the requesting user message using `sendTelegramMessage()` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`). Webhook notifications use Telegram HTML `parse_mode`: headings are bold, dynamic content is HTML-escaped, and the transaction ID is rendered as monospace.
 
 Example:
 
@@ -156,7 +177,7 @@ Tx: <code>170c3752-...-1718000000000-50000</code>
 
 The `Card:` line shows `Card: name (number)` when a linked card is used, or `Card: None` otherwise. For categories with parents, the display label is `Parent > Child`; otherwise it is just the category name. The `Note:` line shows `Empty` when there is no note, and the `💡` line is appended when the model returned a non-empty `suggestion`.
 
-On failure (LLM could not produce valid JSON, IDs invalid, or Notion error), post an error message to the same chat instead so the user knows the message was not logged.
+On permanent failure or final exhausted transient failure, post one error reply to the requesting user message. Retryable transient failures before the final attempt are silent so the chat is not spammed.
 
 ---
 
@@ -188,13 +209,13 @@ For **edits**, only **amount, note, category, and timestamp** can be changed; th
    - **timestamp** (if set) must parse to a valid epoch (validate before converting).
 2. **Apply** by reusing the `updateTransaction` handler (`api/_handlers/transaction.handler.ts`) — pass `id` via `query` and only the changed fields in the body. It already reconciles account balances when `amount` changes (via `updateAccountBalance`) and writes the rest through `connector.updateTransactionPage`.
 3. **Edit the original message** — rebuild the confirmation from the updated transaction and `editMessageText(reply_to_message.message_id, newText)` (helper in `api/_lib/telegram.ts`), with an `(edited)` marker. The transaction ID remains inside `<code>...</code>` so further edits/deletes remain possible.
-4. **Confirm** — send a separate bold `✏️ Updated` message on success. On validation/Notion failure, send a bold warning and do not mutate the original confirmation.
+4. **Confirm** — send one bold `✏️ Updated` reply on success. On validation/Notion failure, send a bold warning only when the failure is permanent or retries are exhausted.
 
 ### Delete branch
 
 1. **Apply** by reusing the existing `deleteTransaction` handler (`api/_handlers/transaction.handler.ts:79`) — pass `id` via `query`. It already **reverses both account balances** and soft-deletes via `connector.archiveTransaction`.
 2. **Tombstone the original message** — `editMessageText(reply_to_message.message_id, "<b>🗑 Deleted</b>: <original summary>")`. The confirmation is kept (not removed) so chat history stays readable; the code-tagged transaction ID is removed so it can't be edited/deleted again.
-3. **Confirm** — send a separate bold `🗑 Deleted` message on success. On failure, send a bold warning and leave the original confirmation unchanged.
+3. **Confirm** — send one bold `🗑 Deleted` reply on success. On failure, send a bold warning only when the failure is permanent or retries are exhausted.
 
 ### Reply inference contract
 
@@ -221,15 +242,20 @@ A separate Gemini call (`inferReply` in `api/_lib/gemini.ts`) with its own schem
 
 | File | Role |
 |---|---|
-| `api/webhooks.ts` | Webhook route — validates `X-Telegram-Bot-Api-Secret-Token`, parses the update, always returns 200 |
-| `api/_handlers/webhook.handler.ts` | Business logic: filter chat → route replies to edit/delete/no-op only, otherwise new transaction logging → load reference data → call LLM → reuse `logExpense`/`logIncome`, `updateTransaction` (edit), or `deleteTransaction` (delete) → notify |
+| `api/webhooks.ts` | Lean Telegram ingress route |
+| `api/_handlers/webhook.handler.ts` | Webhook ingress logic — validates `X-Telegram-Bot-Api-Secret-Token`, cheaply filters, enqueues to QStash, returns 200/500 |
+| `api/worker.ts` | Lean QStash worker route |
+| `api/_handlers/worker.handler.ts` | Worker logic — validates `X-QStash-Worker-Secret`, deduplicates/locks with Redis, runs inference, controls retry/final failure behavior, and routes replies/logging |
+| `api/_lib/qstash.ts` | QStash publisher for Telegram updates |
+| `api/_lib/cache.ts` | Redis state and lock helpers for Telegram `update_id` idempotency |
 | `api/_lib/gemini.ts` | `inferTransaction` (new logs) and `inferReply` (reply edit/delete intent) — Google AI Studio requests returning strict JSON via `responseSchema` |
 | `api/_lib/telegram.ts` | Shared Telegram helpers: `sendTelegramMessage`, `editMessageText` (edit + delete tombstone), optional HTML `parse_mode`, `getTelegramFilePath`, `downloadTelegramFileAsBase64` (also used by `snapshot.handler.ts`) |
 | `api/_lib/types/telegram.type.ts` | `TelegramUpdate` / `TelegramMessage` (incl. `reply_to_message`) / `InferredTransaction` / `InferredReply` types |
 | `api/_handlers/transaction.handler.ts` | Reused: `logExpense` / `logIncome` (new transaction logging + balance update); `updateTransaction` (edit — balance reconcile + field update); `deleteTransaction` (delete — balance reverse + archive) |
 | `api/_lib/connector.ts` | Reused: `fetchAllAccounts`, `fetchCategories`, `fetchAllCards`, `fetchAccount`, `fetchCategory`, `addExpense`, `addIncome`, `updateAccountAfterTransaction`; for edit/delete `fetchTransaction`, `updateTransactionPage`, `updateAccountBalance`, `archiveTransaction` |
-| `middleware.ts` | `/api/webhooks` added to the auth bypass list |
-| `api/__tests__/handlers/webhook.handler.test.ts` | Unit tests (filtering, expense/income, timestamp parse, System reject, no-op/not-transaction, incomplete, image, error, ignored replies, reply-edit, reply-delete, not-an-edit/delete) |
+| `middleware.ts` | `/api/webhooks` and `/api/worker` added to the auth bypass list |
+| `api/__tests__/handlers/webhook.handler.test.ts` | Webhook ingress handler tests for cheap filtering and QStash enqueueing |
+| `api/__tests__/handlers/worker.handler.test.ts` | Worker-handler tests for transaction/reply processing, Redis idempotency, locking, retries, terminal state, and final failure notification |
 
 ---
 
@@ -238,6 +264,10 @@ A separate Gemini call (`inferReply` in `api/_lib/gemini.ts`) with its own schem
 | Variable | Type | Description |
 |---|---|---|
 | `TELEGRAM_WEBHOOK_SECRET` | Secret | Validated against the `X-Telegram-Bot-Api-Secret-Token` header on every webhook call |
+| `QSTASH_TOKEN` | Secret | Upstash QStash token used by `/api/webhooks` to enqueue inference jobs |
+| `KV_REST_API_URL` | URL | Upstash Redis REST URL used by `/api/worker` |
+| `KV_REST_API_TOKEN` | Secret | Upstash Redis REST token used by `/api/worker` |
+| `QSTASH_WORKER_SECRET` | Secret | Shared secret sent by QStash and validated by `/api/worker` |
 | `GEMINI_API_KEY` | Secret | Google AI Studio API key |
 | `GEMINI_MODEL_ID` | String | Gemini model id (chosen at implementation) |
 
@@ -265,7 +295,7 @@ To stop delivery: `POST .../deleteWebhook`.
 
 ## Known Constraints
 
-- **No deduplication**: Telegram retries deliveries until it receives a 200. The route always returns 200 promptly (failures are reported to the chat, not surfaced as non-200), so retries are unlikely; there is no dedup guard, so a retry after a slow success could double-log.
+- **Redis-only idempotency**: deduplication uses Telegram `update_id` in Redis for 1 day. No Notion `Source Event ID` property is used, so if Notion creates a transaction and the worker crashes before Redis records success, a later retry can still duplicate that transaction.
 - **No persistent cache**: reference data is fetched fresh per message (see [Reference Data](#reference-data)).
 - **LLM mis-inference**: the model may pick the wrong account/category or misread an amount. There is no Accept/Reject confirmation, so corrections happen manually in Notion (or via the app).
 - **Non-atomic balance update**: matches existing transaction handlers — a failure between transaction creation and balance update leaves state inconsistent.

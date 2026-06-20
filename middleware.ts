@@ -7,9 +7,14 @@ export const config = {
 export default async function middleware(request: Request) {
   const url = new URL(request.url)
 
-  // Pass through: login endpoint, Telegram webhook, and Vercel cron jobs.
-  // The webhook authenticates itself via the X-Telegram-Bot-Api-Secret-Token header.
-  if (url.pathname === '/api/auth' || url.pathname === '/api/webhooks' || url.pathname.startsWith('/api/cron/')) {
+  // Pass through: login endpoint, Telegram webhook, QStash worker,
+  // and Vercel cron jobs. These endpoints authenticate themselves.
+  if (
+    url.pathname === '/api/auth' ||
+    url.pathname === '/api/webhooks' ||
+    url.pathname === '/api/worker' ||
+    url.pathname.startsWith('/api/cron/')
+  ) {
     return
   }
 

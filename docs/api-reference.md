@@ -938,19 +938,31 @@ Archives transactions older than 3 calendar months into per-month Archive pages 
 
 **Status**: ✅ DONE
 
-Receives Telegram updates (text + images) from a pre-configured chat, infers a transaction via a Gemini LLM, logs it to Notion, and posts a confirmation back to the chat. See [feature-webhooks.md](./feature-webhooks.md).
+Receives Telegram updates (text + images) from a pre-configured chat, enqueues them to QStash, and returns quickly. The queued `/api/worker` endpoint performs Gemini inference, Notion mutation, and the final Telegram reply. See [feature-webhooks.md](./feature-webhooks.md).
 
 **Auth**: Bypasses middleware (no `x-cloudflare-secret`, no JWT). Validates the `X-Telegram-Bot-Api-Secret-Token` header against `TELEGRAM_WEBHOOK_SECRET`; returns `401` if it does not match.
 
 **Request Body**: a Telegram [Update](https://core.telegram.org/bots/api#update) object. Updates not matching `TELEGRAM_CHAT_ID` are acknowledged with no action.
 
-**Response 200**:
+**Response 200**: update was ignored by cheap filtering, or successfully enqueued.
 ```json
 { "ok": true }
 ```
 
-**Notes**:
-- Always returns `200` promptly (even for ignored/failed updates) so Telegram does not retry.
-- On a logging failure, an error message is posted to the same Telegram chat.
+**Errors**: 401 if unauthorized, 500 when enqueueing fails
 
-**Errors**: 401 if unauthorized, 500 on internal error
+---
+
+### POST /api/worker
+
+**Status**: ✅ DONE
+
+Internal QStash worker endpoint for Telegram inference jobs. Not called by clients or Telegram directly.
+
+**Auth**: Bypasses middleware and validates `X-QStash-Worker-Secret` against `QSTASH_WORKER_SECRET`.
+
+**Request Body**: the original Telegram Update object.
+
+**Response 200**: job reached a terminal state, was already terminal, or was skipped because another delivery is processing it.
+
+**Errors**: 401 if unauthorized, 500 when worker fails

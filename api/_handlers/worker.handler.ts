@@ -144,6 +144,10 @@ async function processReplyUpdate(
   }
 
   const transaction = await connector.fetchTransaction(transactionId);
+  if (transaction.archived) {
+    throw new QueryError("Transaction is already deleted");
+  }
+
   const categories = await connector.fetchCategories(null);
   const currentCategory = categories.find(c => c.id === transaction.categoryId);
   if (!currentCategory) throw new QueryError("Transaction category not found");

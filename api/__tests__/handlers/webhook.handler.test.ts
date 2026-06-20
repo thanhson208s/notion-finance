@@ -56,7 +56,7 @@ describe("handleWebhookRequest()", () => {
 
     await handleWebhookRequest(req as never, res as never);
 
-    expect(publishMock).toHaveBeenCalledWith("update.update_id", makeUpdate());
+    expect(publishMock).toHaveBeenCalledWith("telegram-job-123", makeUpdate());
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({ ok: true });
   });

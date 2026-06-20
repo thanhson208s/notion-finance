@@ -9,4 +9,5 @@ export type Transaction = {
   linkedCardId?: string
   cashback?: number
   discount?: number
+  archived?: boolean
 }

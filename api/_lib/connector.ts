@@ -706,7 +706,8 @@ export class Connector {
       note: note ?? "",
       linkedCardId: linkedCardId ?? undefined,
       cashback: cashback ?? undefined,
-      discount: discount ?? undefined
+      discount: discount ?? undefined,
+      archived: page.in_trash
     } satisfies Transaction;
   }
 

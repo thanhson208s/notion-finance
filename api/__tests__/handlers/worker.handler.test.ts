@@ -310,6 +310,25 @@ describe('processTelegramUpdateCore()', () => {
     expect(sendMock).toHaveBeenCalledWith(expect.stringContaining('just a comment'), expect.objectContaining({ parseMode: 'HTML', replyToMessageId: 115 }))
   })
 
+  it('reply to an already deleted transaction throws QueryError before inference or mutation', async () => {
+    const connector = makeConnector([expenseCat], {
+      fetchTransaction: vi.fn().mockResolvedValue(makeTx(50, { archived: true })),
+    })
+
+    await expect(processTelegramUpdate(makeUpdate(124, {
+      text: 'make it 60k',
+      reply_to_message: {
+        message_id: 99,
+        chat: { id: Number(CHAT_ID) },
+        text: '✅ Logged\n<code>tx-1</code>',
+      },
+    }), connector)).rejects.toThrow('Transaction is already deleted')
+
+    expect(inferReplyMock).not.toHaveBeenCalled()
+    expect(connector.updateTransactionPage).not.toHaveBeenCalled()
+    expect(connector.archiveTransaction).not.toHaveBeenCalled()
+  })
+
   it('reply edit amount reuses updateTransaction balance reconciliation and edits the confirmation', async () => {
     inferReplyMock.mockResolvedValue(inferredReply({ amount: 60 }))
     const fetchTransaction = vi.fn().mockResolvedValue(makeTx(50))

@@ -38,9 +38,14 @@ In production, all variables are set in the Vercel project settings dashboard.
 | `TELEGRAM_CHAT_ID` | String | Telegram chat/group ID to send reports to |
 | `TELEGRAM_WEBHOOK_SECRET` | Secret | Validated against the `X-Telegram-Bot-Api-Secret-Token` header on `/api/webhooks` |
 | `QSTASH_TOKEN` | Secret | Upstash QStash token used to enqueue Telegram inference jobs |
+| `QSTASH_URL` | String | Upstash QStash message storage |
 | `KV_REST_API_URL` | URL | Upstash Redis REST URL for webhook idempotency state |
 | `KV_REST_API_TOKEN` | Secret | Upstash Redis REST token for webhook idempotency state |
+| `REDIS_URL` | String | Upstash Redis url |
 | `QSTASH_WORKER_SECRET` | Secret | Shared secret sent by QStash to `/api/worker` |
+| `QSTASH_WORKER_RETRIES` | Number | How many time should qstash retry for each job |
+| `QSTASH_WORKER_TIMEOUT` | Number | How long should qstash wait for each worker request before timeout |
+| `QSTASH_WORKER_URL` | String | Where should qstash send worker request to |
 | `GEMINI_API_KEY` | Secret | Google AI Studio API key for the Telegram webhook LLM inference |
 | `GEMINI_MODEL_ID` | String | Gemini model id used by the Telegram webhook |
 

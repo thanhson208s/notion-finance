@@ -61,10 +61,10 @@ Fields consumed from the incoming [Telegram Update](https://core.telegram.org/bo
 `POST /api/webhooks` never runs Gemini or Notion work directly. It publishes the original Telegram update to QStash using constants from `api/_lib/qstash.ts`:
 
 - destination: `QSTASH_URL`
-- deduplication id: `telegram-update-${update.update_id}`
+- deduplication id: `telegram-job-${update.update_id}`
 - header: `X-QStash-Worker-Secret: <QSTASH_WORKER_SECRET>`
-- retries: `QSTASH_MAX_ATTEMPTS - 1` (total deliveries: 5)
-- timeout: `QSTASH_TIMEOUT_SECONDS` (60 seconds)
+- retries: `QSTASH_WORKER_RETRIES`
+- timeout: `QSTASH_WORKER_TIMEOUT`
 
 `POST /api/worker` uses Upstash Redis:
 
@@ -268,6 +268,9 @@ A separate Gemini call (`inferReply` in `api/_lib/gemini.ts`) with its own schem
 | `KV_REST_API_URL` | URL | Upstash Redis REST URL used by `/api/worker` |
 | `KV_REST_API_TOKEN` | Secret | Upstash Redis REST token used by `/api/worker` |
 | `QSTASH_WORKER_SECRET` | Secret | Shared secret sent by QStash and validated by `/api/worker` |
+| `QSTASH_WORKER_RETRIES` | Number | How many time should qstash retry for each job |
+| `QSTASH_WORKER_TIMEOUT` | Number | How long should qstash wait for each worker request before timeout |
+| `QSTASH_WORKER_URL` | String | Where should qstash send worker request to |
 | `GEMINI_API_KEY` | Secret | Google AI Studio API key |
 | `GEMINI_MODEL_ID` | String | Gemini model id (chosen at implementation) |
 
